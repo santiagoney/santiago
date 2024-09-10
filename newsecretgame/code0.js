@@ -36,6 +36,10 @@ gdjs.Untitled_32sceneCode.GDNewExternalTileMapObjects1= [];
 gdjs.Untitled_32sceneCode.GDNewExternalTileMapObjects2= [];
 gdjs.Untitled_32sceneCode.GDEnemy2Objects1= [];
 gdjs.Untitled_32sceneCode.GDEnemy2Objects2= [];
+gdjs.Untitled_32sceneCode.GDNewSpriteObjects1= [];
+gdjs.Untitled_32sceneCode.GDNewSpriteObjects2= [];
+gdjs.Untitled_32sceneCode.GDNewSprite2Objects1= [];
+gdjs.Untitled_32sceneCode.GDNewSprite2Objects2= [];
 
 
 gdjs.Untitled_32sceneCode.mapOfGDgdjs_9546Untitled_959532sceneCode_9546GDplayerObjects1Objects = Hashtable.newFrom({"player": gdjs.Untitled_32sceneCode.GDplayerObjects1});
@@ -421,6 +425,10 @@ gdjs.Untitled_32sceneCode.GDNewExternalTileMapObjects1.length = 0;
 gdjs.Untitled_32sceneCode.GDNewExternalTileMapObjects2.length = 0;
 gdjs.Untitled_32sceneCode.GDEnemy2Objects1.length = 0;
 gdjs.Untitled_32sceneCode.GDEnemy2Objects2.length = 0;
+gdjs.Untitled_32sceneCode.GDNewSpriteObjects1.length = 0;
+gdjs.Untitled_32sceneCode.GDNewSpriteObjects2.length = 0;
+gdjs.Untitled_32sceneCode.GDNewSprite2Objects1.length = 0;
+gdjs.Untitled_32sceneCode.GDNewSprite2Objects2.length = 0;
 
 gdjs.Untitled_32sceneCode.eventsList3(runtimeScene);
 gdjs.Untitled_32sceneCode.GDplayerObjects1.length = 0;
@@ -453,6 +461,10 @@ gdjs.Untitled_32sceneCode.GDNewExternalTileMapObjects1.length = 0;
 gdjs.Untitled_32sceneCode.GDNewExternalTileMapObjects2.length = 0;
 gdjs.Untitled_32sceneCode.GDEnemy2Objects1.length = 0;
 gdjs.Untitled_32sceneCode.GDEnemy2Objects2.length = 0;
+gdjs.Untitled_32sceneCode.GDNewSpriteObjects1.length = 0;
+gdjs.Untitled_32sceneCode.GDNewSpriteObjects2.length = 0;
+gdjs.Untitled_32sceneCode.GDNewSprite2Objects1.length = 0;
+gdjs.Untitled_32sceneCode.GDNewSprite2Objects2.length = 0;
 
 
 return;
