@@ -25,6 +25,8 @@ let brush21;
 let brush22;
 let brush23;
 let brush24;
+let brush25;
+let brush26;
 let saveButton;
 let currentBrush;
 let brush;
@@ -54,6 +56,8 @@ function preload() {
   brush22 = loadImage('images/image22.png');
   brush23 = loadImage('images/image23.png');
   brush24 = loadImage('images/image24.png');
+  brush23 = loadImage('images/image25.png');
+  brush24 = loadImage('images/image26.png');
 }
 
 function setup() {
@@ -244,6 +248,21 @@ let button21 = createButton("");
   button24.size(50, 50);
   button24.style("background-image", "url('images/image24.png')");
   button24.style("background-size", "cover");
+
+
+  let button25 = createButton("");
+  button25.mousePressed(() => currentBrush = brush23);
+  button25.position(200, 260);
+  button25.size(50, 50);
+  button25.style("background-image", "url('images/image25.png')");
+  button25.style("background-size", "cover");
+
+  let button26 = createButton("");
+  button26.mousePressed(() => currentBrush = brush24);
+  button26.position(260, 260);
+  button26.size(50, 50);
+  button26.style("background-image", "url('images/image26.png')");
+  button26.style("background-size", "cover");
 
 saveButton = createButton("Save");
 saveButton.position(320, 300);
