@@ -250,14 +250,14 @@ let button21 = createButton("");
 
 
   let button25 = createButton("");
-  button25.mousePressed(() => currentBrush = brush23);
+  button25.mousePressed(() => currentBrush = brush25);
   button25.position(200, 260);
   button25.size(50, 50);
   button25.style("background-image", "url('images/image25.png')");
   button25.style("background-size", "cover");
 
   let button26 = createButton("");
-  button26.mousePressed(() => currentBrush = brush24);
+  button26.mousePressed(() => currentBrush = brush26);
   button26.position(260, 260);
   button26.size(50, 50);
   button26.style("background-image", "url('images/image26.png')");
