@@ -62,7 +62,6 @@ function preload() {
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  background(230, 200, 170);
 
   tools = createDiv();
   tools.position(10, 10);
