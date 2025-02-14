@@ -56,8 +56,8 @@ function preload() {
   brush22 = loadImage('images/image22.png');
   brush23 = loadImage('images/image23.png');
   brush24 = loadImage('images/image24.png');
-  brush23 = loadImage('images/image25.png');
-  brush24 = loadImage('images/image26.png');
+  brush25 = loadImage('images/image25.png');
+  brush26 = loadImage('images/image26.png');
 }
 
 function setup() {
