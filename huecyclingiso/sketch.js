@@ -24,7 +24,7 @@ function preload() {
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-
+background (230,210,190)
   tools = createDiv();
   tools.position(10, 10);
   tools.style("width", "370px");
