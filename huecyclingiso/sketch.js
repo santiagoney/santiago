@@ -90,7 +90,7 @@ function draw() {
   }
 
   // If 'D' key is held down, decrease brush size every 6 frames
-  if (keyIsDown(68) && frameCount % 6 === 0) { // 68 = 'D'
+  if (keyIsDown(68) && frameCount % 1 === 0) { // 68 = 'D'
     brushSize.value(max(brushSize.value() - 1, 1)); // Min size limit at 1
   }
 
@@ -119,5 +119,5 @@ function keyPressed() {
 }
 
 function cycleHue() {
-  hueShift = (hueShift + 30) % 360; // Increment hue shift by 30 degrees
+  hueShift = (hueShift + 1) % 360; // Increment hue shift by 30 degrees
 }
