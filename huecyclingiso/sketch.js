@@ -7,7 +7,6 @@ let brush;
 let saveButton;
 let rotationAngle = 0;
 let hueShift = 0;
-let hueCyclingActive = false;
 
 function preload() {
   brush1 = loadImage('images/image1.png');
@@ -80,14 +79,19 @@ function saveImage() {
 function draw() {
   imageMode(CENTER);
 
-  // If 'V' key is held down, continuously cycle hue
-  if (keyIsDown(86) && frameCount % 5 === 0) { // 'V' key every 5 frames
+  // If 'V' key is held down, continuously cycle hue every 5 frames
+  if (keyIsDown(86) && frameCount % 1 === 0) { // 86 = 'V'
     cycleHue();
   }
 
   // If 'G' key is held down, increase brush size every 6 frames
   if (keyIsDown(71) && frameCount % 1 === 0) { // 71 = 'G'
-    brushSize.value(min(brushSize.value() + 1, 400)); // Max size limit to 400
+    brushSize.value(min(brushSize.value() + 1, 400)); // Max size limit at 400
+  }
+
+  // If 'D' key is held down, decrease brush size every 6 frames
+  if (keyIsDown(68) && frameCount % 6 === 0) { // 68 = 'D'
+    brushSize.value(max(brushSize.value() - 1, 1)); // Min size limit at 1
   }
 
   if (mouseIsPressed) {
