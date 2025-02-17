@@ -5,9 +5,9 @@ let brush1, brush2, brush3, brush4, brush5, brush6, brush7, brush8, brush9, brus
 let currentBrush;
 let brush;
 let saveButton;
-let rotationAngle = 0; // Variable to store the rotation angle
-let hueShift = 0; // Variable to store the hue shift value
-let hueCyclingActive = false; // Track if hue cycling is active
+let rotationAngle = 0;
+let hueShift = 0;
+let hueCyclingActive = false;
 
 function preload() {
   brush1 = loadImage('images/image1.png');
@@ -81,8 +81,13 @@ function draw() {
   imageMode(CENTER);
 
   // If 'V' key is held down, continuously cycle hue
-  if (keyIsDown(86) && frameCount % 5 === 0) { // 86 = 'V', limit changes for smooth effect
+  if (keyIsDown(86) && frameCount % 5 === 0) { // 'V' key every 5 frames
     cycleHue();
+  }
+
+  // If 'G' key is held down, increase brush size every 6 frames
+  if (keyIsDown(71) && frameCount % 1 === 0) { // 71 = 'G'
+    brushSize.value(min(brushSize.value() + 1, 400)); // Max size limit to 400
   }
 
   if (mouseIsPressed) {
