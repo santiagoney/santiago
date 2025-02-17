@@ -15,6 +15,7 @@ let currentBrush;
 let brush;
 let saveButton;
 let rotationAngle = 0; // Variable to store the rotation angle
+let hueShift = 0; // Variable to store the hue shift value
 
 function preload() {
   brush1 = loadImage('images/image1.png');
@@ -115,6 +116,12 @@ function setup() {
   button10.style("background-image", "url('images/image10.png')");
   button10.style("background-size", "cover");
 
+  // Add a button to cycle hue
+  let hueButton = createButton("Cycle Hue (C)");
+  hueButton.position(260, 80);
+  hueButton.size(100, 50);
+  hueButton.mousePressed(cycleHue);
+
   saveButton = createButton("Save");
   saveButton.position(320, 130);
   saveButton.mousePressed(saveImage);
@@ -132,6 +139,11 @@ function draw() {
     brush.imageMode(CENTER);
     brush.translate(brush.width / 2, brush.height / 2); // Move to the center of the brush
     brush.rotate(rotationAngle); // Apply rotation
+
+    // Apply hue shift
+    brush.colorMode(HSB, 360, 100, 100, 255);
+    brush.tint((hueShift + 180) % 360, 100, 100); // Cycle hue
+
     brush.image(currentBrush, 0, 0, brush.width, brush.height); // Draw the image
     tint(255, brushOpacity.value());
     image(brush, mouseX, mouseY);
@@ -142,4 +154,11 @@ function keyPressed() {
   if (key === 'R' || key === 'r') { // Check if 'R' key is pressed
     rotationAngle += radians(15); // Rotate 15 degrees to the right (convert to radians)
   }
+  if (key === 'C' || key === 'c') { // Check if 'C' key is pressed
+    cycleHue(); // Cycle the hue
+  }
+}
+
+function cycleHue() {
+  hueShift = (hueShift + 30) % 360; // Increment hue shift by 30 degrees
 }
