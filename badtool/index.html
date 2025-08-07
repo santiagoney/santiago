@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bad Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            background: #1a1a1a;
+        }
+        .ui-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 350px;
+            height: 100vh;
+            background: linear-gradient(135deg, #2c2c2c, #1a1a1a);
+            box-shadow: 2px 0 15px rgba(0,0,0,0.7);
+            z-index: 1000;
+            padding: 15px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+        }
+        .section h3 {
+            color: #fff;
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+        .brush-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        .brush-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #333;
+            position: relative;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+        .brush-btn:hover {
+            border-color: #4CAF50;
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+        .brush-btn.active {
+            border-color: #FFC107;
+            box-shadow: 0 0 20px rgba(255, 193, 7, 0.6);
+            transform: scale(1.08);
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .control-label {
+            color: #ccc;
+            font-size: 12px;
+            margin-bottom: 8px;
+            display: block;
+            font-weight: 500;
+        }
+        .slider {
+            width: 100%;
+            margin-bottom: 8px;
+            height: 6px;
+            border-radius: 3px;
+            background: #444;
+            outline: none;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+        .slider:hover {
+            opacity: 1;
+        }
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px;
+            margin: 3px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        .btn:hover:before {
+            left: 100%;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+        .btn.active {
+            background: linear-gradient(135deg, #FFC107, #FF9800);
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
+        }
+        .btn.danger {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+        .btn.generate {
+            background: linear-gradient(135deg, #FF5722, #E91E63);
+            font-size: 12px;
+            padding: 10px 14px;
+        }
+        .color-picker {
+            width: 100%;
+            height: 35px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .hotkeys {
+            font-size: 10px;
+            color: #aaa;
+            margin-top: 15px;
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            line-height: 1.3;
+        }
+        .key-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .key-indicator.show {
+            opacity: 1;
+        }
+        .live-value {
+            background: rgba(255,193,7,0.2);
+            color: #FFC107;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 10px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        .loading-spinner {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 175px; /* Half of toolbox width */
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border: 4px solid #fff;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 2000;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .shape-picker {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            background: #333;
+            color: #ccc;
+            font-size: 12px;
+            border: 1px solid rgba(255,255,255,0.15);
+            cursor: pointer;
+        }
+        .shape-picker:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div id="keyIndicator" class="key-indicator"></div>
+    <div id="loadingSpinner" class="loading-spinner"></div>
+    
+    <div class="ui-panel">
+        <div class="section">
+            <h3>🎨 Brush Controls</h3>
+            <div class="control-group">
+                <label class="control-label">Shape Preference</label>
+                <select id="shapePicker" class="shape-picker">
+                    <option value="random">Random</option>
+                    <option value="triangle">More Triangle</option>
+                    <option value="star">More Star</option>
+                    <option value="circle">More Circle</option>
+                    <option value="cross">More Cross</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Size: <span id="sizeValue">50</span></label>
+                <input type="range" id="brushSize" class="slider" min="10" max="1000" value="50">
+                <span class="live-value">G/D Keys: Live Resize</span>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Opacity: <span id="opacityValue">255</span></label>
+                <input type="range" id="brushOpacity" class="slider" min="0" max="255" value="255">
+            </div>
+            <div class="control-group">
+                <label class="control-label">Rotation: <span id="rotationValue">0</span>°</label>
+                <input type="range" id="brushRotation" class="slider" min="-180" max="180" value="0">
+                <span class="live-value">R/E Keys: Live Rotate</span>
+            </div>
+            <button id="saveBtn" class="btn">💾 Save Art</button>
+            <button id="clearBtn" class="btn danger">🗑️ Clear Canvas</button>
+            <button id="undoBtn" class="btn">↺ Undo</button>
+            <button id="redoBtn" class="btn">↻ Redo</button>
+            <button id="generateBrushesBtn" class="btn generate">🎲 Generate New Brushes</button>
+            <button id="selectionBtn" class="btn">📐 Selection Mode</button>
+            <button id="createBrushBtn" class="btn">✂️ Create Brush</button>
+            <button id="hueCycleBtn" class="btn">🌈 Hue Cycle</button>
+            <button id="lightnessCycleBtn" class="btn">💡 Lightness Cycle</button>
+        </div>
+        <div class="section">
+            <h3>🖌️ Dynamic Brushes (21 Regular + 24 Colors)</h3>
+            <div id="dynamicBrushes" class="brush-grid"></div>
+        </div>
+        <div class="section">
+            <h3>⚙️ Advanced Controls</h3>
+            <div class="control-group">
+                <label class="control-label">Hue Speed: <span id="hueSpeedValue">5</span></label>
+                <input type="range" id="hueCycleSpeed" class="slider" min="1" max="20" value="5">
+            </div>
+            <div class="control-group">
+                <label class="control-label">Spacing: <span id="spacingValue">0</span></label>
+                <input type="range" id="brushSpacing" class="slider" min="0" max="50" value="0">
+            </div>
+            <div class="control-group">
+                <label class="control-label">Lightness Amp: <span id="lightnessAmpValue">25</span></label>
+                <input type="range" id="lightnessAmplitude" class="slider" min="0" max="50" value="25">
+            </div>
+            <div class="control-group">
+                <label class="control-label">Lightness Speed: <span id="lightnessSpeedValue">5</span></label>
+                <input type="range" id="lightnessCycleSpeed" class="slider" min="1" max="20" value="5">
+            </div>
+        </div>
+        <div class="hotkeys">
+            <strong>🎹 Live Controls:</strong><br>
+            <strong>G/D</strong> - Grow/Shrink brush while drawing<br>
+            <strong>R/E</strong> - Rotate brush while drawing<br>
+            <strong>S</strong> - Save artwork instantly<br>
+            <strong>Ctrl+Z</strong> - Undo<br>
+            <strong>Ctrl+Y</strong> - Redo<br>
+            <strong>C</strong> - Toggle hue-cycling<br>
+            <strong>V</strong> - Pause/Resume hue-cycling<br>
+            <strong>L</strong> - Toggle lightness-cycling<br>
+            <strong>H</strong> - Toggle selection mode<br>
+            <strong>J</strong> - Create brush from selection<br>
+            <strong>Space</strong> - Generate new brushes (use Shape Picker for preference)<br>
+            <strong>Hold keys while drawing for live control!</strong>
+        </div>
+    </div>
+
+    <script>
+        let brushPanelLayer;
+        let masterpiece;
+        let brushOpacitySlider;
+        let brushSizeSlider;
+        let brushes = [];
+        let saveButton;
+        let clearButton;
+        let undoButton;
+        let redoButton;
+        let currentBrush;
+        let brushSizeGrowth = 5;
+        let brushRotation = 0;
+        let currentBrushIndex = 0;
+        let estampas = [];
+        let selectedBColors = [];
+        let undoStack = [];
+        let redoStack = [];
+
+        // Selection tool variables
+        let selectionMode = false;
+        let selectionStart = null;
+        let selectionEnd = null;
+        let selectionButton;
+        let createBrushFromSelectionButton;
+
+        // Hue-cycling variables
+        let hueCycleButton;
+        let hueCycling = false;
+        let hueCycleStopped = false;
+        let hueAngle = 0;
+        let hueCycleSpeed = 5;
+        let hueCycleSpeedSlider;
+
+        // Lightness-cycling variables
+        let lightnessCycleButton;
+        let lightnessCycling = false;
+        let lightnessAngle = 0;
+        let lightnessCycleSpeed = 5;
+        let lightnessAmplitudeSlider;
+        let lightnessCycleSpeedSlider;
+
+        // Brush spacing variables
+        let brushSpacingSlider;
+        let lastDrawPos = null;
+        let accumulatedDistance = 0;
+        let lastPaintTime = 0;
+
+        // Shape picker variable
+        let shapePicker;
+        let preferredShape = 'random'; // Default to random
+
+        // Toolbox variables
+        let toolboxWidth = 350;
+        let canvasXOffset;
+        let canvasWidth;
+
+        // Color brushes variables
+        let colorBrushes = [];
+        let paletteColors;
+
+        let growKeyPressed = false;
+        let decreaseKeyPressed = false;
+        let rotateClockwiseKeyPressed = false;
+        let rotateCounterClockwiseKeyPressed = false;
+        let keyIndicator;
+        let loadingSpinner;
+
+        // Cached preview for performance
+        let cachedPreview = null;
+        let lastBrushSize = null;
+        let lastBrushRotation = null;
+        let lastHueAngle = null;
+        let lastLightnessAngle = null;
+
+        // Debounce for brush generation
+        let lastGenerateTime = 0;
+        const generateCooldown = 1000; // 1 second cooldown
+
+        function setup() {
+            p5.disableFriendlyErrors = true;
+            createCanvas(windowWidth, windowHeight);
+
+            // Initialize DOM elements first with fallbacks
+            keyIndicator = document.getElementById('keyIndicator');
+            if (!keyIndicator) {
+                console.warn('keyIndicator not found, creating dynamically');
+                keyIndicator = document.createElement('div');
+                keyIndicator.id = 'keyIndicator';
+                keyIndicator.className = 'key-indicator';
+                document.body.appendChild(keyIndicator);
+            }
+            loadingSpinner = document.getElementById('loadingSpinner');
+            if (!loadingSpinner) {
+                console.warn('loadingSpinner not found, creating dynamically');
+                loadingSpinner = document.createElement('div');
+                loadingSpinner.id = 'loadingSpinner';
+                loadingSpinner.className = 'loading-spinner';
+                document.body.appendChild(loadingSpinner);
+            }
+
+            canvasXOffset = toolboxWidth;
+            canvasWidth = windowWidth - toolboxWidth;
+
+            brushPanelLayer = createGraphics(windowWidth, windowHeight);
+            masterpiece = createGraphics(canvasWidth, windowHeight);
+            masterpiece.background(220, 200, 180);
+            masterpiece.imageMode(CENTER);
+            saveState();
+
+            paletteColors = [
+                color(255, 204, 0), color(255, 102, 0), color(153, 0, 51),
+                color(0, 102, 153), color(0, 0, 153), color(255, 255, 0),
+                color(255, 153, 0), color(153, 51, 0), color(102, 0, 0),
+                color(0, 153, 204), color(0, 51, 102), color(204, 0, 0),
+                color(255, 204, 102), color(204, 102, 0), color(153, 0, 0),
+                color(0, 204, 255), color(0, 102, 204), color(153, 0, 0),
+                color(0, 204, 204), color(153, 0, 153), color(255, 255, 102),
+                color(255, 0, 0), color(180, 180, 180), color(220, 200, 180)
+            ];
+
+            for (let i = 0; i < paletteColors.length; i++) {
+                let colorBrush = createGraphics(20, 20);
+                colorBrush.noStroke();
+                colorBrush.fill(paletteColors[i]);
+                colorBrush.rect(0, 0, 20, 20);
+                colorBrushes.push(colorBrush);
+            }
+
+            try {
+                doEstampas();
+                brushes = estampas.slice(0, 21).filter(b => b && typeof b.width !== 'undefined');
+                currentBrush = brushes[0] || colorBrushes[0];
+            } catch (e) {
+                console.error('Error in doEstampas:', e);
+                showKeyIndicator('BRUSH GENERATION FAILED');
+            }
+
+            setupUI();
+            updateBrushUI();
+        }
+
+        function doEstampas() {
+            if (loadingSpinner && loadingSpinner.style) {
+                loadingSpinner.style.display = 'block';
+            }
+            estampas = [];
+            try {
+                for (let e = 0; e < 21; e++) {
+                    let tempE = createGraphics(400, 400);
+                    if (tempE) {
+                        estampas.push(tempE);
+                    } else {
+                        console.error(`Failed to create graphics for brush ${e}`);
+                    }
+                }
+                for (let e = 0; e < estampas.length; e++) {
+                    generateNewImage();
+                    trabaja(e, e < 11);
+                }
+            } catch (e) {
+                console.error('Error generating brushes:', e);
+                showKeyIndicator('BRUSH GENERATION FAILED');
+            } finally {
+                if (loadingSpinner && loadingSpinner.style) {
+                    loadingSpinner.style.display = 'none';
+                }
+            }
+            let displayShape = typeof preferredShape === 'string' ? preferredShape.toUpperCase() : 'RANDOM';
+            showKeyIndicator(`BRUSHES GENERATED (${displayShape})`);
+        }
+
+        function trabaja(e, useFixedGrid) {
+            let myG = estampas[e];
+            if (!myG) {
+                console.error(`Graphics object for estampas[${e}] is undefined.`);
+                return;
+            }
+            myG.clear();
+            let gridSize, dim;
+            try {
+                if (useFixedGrid) {
+                    gridSize = int(random(3, 11));
+                    dim = 400 / gridSize;
+                } else {
+                    dim = int(random(4, 30));
+                    gridSize = Math.floor(400 / dim);
+                }
+                for (let j = 0; j < gridSize; j++) {
+                    for (let i = 0; i < gridSize; i++) {
+                        let randomIndex = int(random(selectedBColors.length));
+                        if (selectedBColors[randomIndex]) {
+                            myG.fill(selectedBColors[randomIndex]);
+                        } else {
+                            myG.fill(0);
+                        }
+                        myG.noStroke();
+                        let shapeType = selectShapeType();
+                        let x = i * dim;
+                        let y = j * dim;
+                        switch (shapeType) {
+                            case 0: myG.square(x, y, dim, dim / 3); break;
+                            case 1: myG.ellipse(x + dim / 2, y + dim / 2, dim, dim); break;
+                            case 2: myG.triangle(x, y + dim, x + dim / 2, y, x + dim, y + dim); break;
+                            case 3: myG.rect(x, y, dim, dim / 3); break;
+                            case 4: myG.quad(x + dim / 2, y, x + dim, y + dim / 2, x + dim / 2, y + dim, x, y + dim / 2); break;
+                            case 5: myG.rect(x + dim / 3, y, dim / 3, dim); myG.rect(x, y + dim / 3, dim, dim / 3); break;
+                            case 6: myG.beginShape(); for (let a = 0; a < TWO_PI; a += PI / 3) myG.vertex(x + dim / 2 + cos(a) * dim / 3, y + dim / 2 + sin(a) * dim / 3); myG.endShape(CLOSE); break;
+                            case 7: for (let k = 0; k < 5; k++) myG.ellipse(x + random(dim), y + random(dim), dim / 6, dim / 6); break;
+                            case 8:
+                                if (selectedBColors[randomIndex]) {
+                                    myG.stroke(selectedBColors[randomIndex]);
+                                } else {
+                                    myG.stroke(0);
+                                }
+                                myG.strokeWeight(dim / 8);
+                                for (let k = 0; k < 3; k++) myG.line(x, y + k * dim / 3, x + dim, y + k * dim / 3);
+                                myG.noStroke();
+                                break;
+                            case 9: myG.beginShape(); for (let a = 0; a < TWO_PI; a += PI / 4) { let r = (a % (PI / 2) === 0) ? dim / 3 : dim / 6; myG.vertex(x + dim / 2 + cos(a) * r, y + dim / 2 + sin(a) * r); } myG.endShape(CLOSE); break;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error(`Error in trabaja for brush ${e}:`, e);
+            }
+        }
+
+        function selectShapeType() {
+            try {
+                if (preferredShape === 'random') {
+                    return int(random(10));
+                }
+                let shapeMap = {
+                    'triangle': 2,
+                    'star': 9,
+                    'circle': 1,
+                    'cross': 5
+                };
+                let preferredShapeType = shapeMap[preferredShape] || 0;
+                if (random() < 0.7) {
+                    return preferredShapeType;
+                } else {
+                    let otherShapes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(s => s !== preferredShapeType);
+                    return otherShapes[int(random(otherShapes.length))];
+                }
+            } catch (e) {
+                console.error('Error in selectShapeType:', e);
+                return 0; // Fallback to square
+            }
+        }
+
+        function generateNewImage() {
+            selectedBColors = [];
+            try {
+                let colorCount = int(random(2, 6));
+                for (let i = 0; i < colorCount; i++) {
+                    let randomIndex = int(random(paletteColors.length));
+                    selectedBColors.push(paletteColors[randomIndex]);
+                }
+            } catch (e) {
+                console.error('Error in generateNewImage:', e);
+                selectedBColors.push(color(0)); // Fallback to black
+            }
+        }
+
+        function newBrushes() {
+            let currentTime = millis();
+            if (currentTime - lastGenerateTime < generateCooldown) {
+                showKeyIndicator('GENERATION COOLDOWN');
+                return;
+            }
+            lastGenerateTime = currentTime;
+            try {
+                doEstampas();
+                brushes = estampas.slice(0, 21).filter(b => b && typeof b.width !== 'undefined');
+                currentBrush = brushes[0] || colorBrushes[0];
+                currentBrushIndex = 0;
+                updateBrushUI();
+            } catch (e) {
+                console.error('Error in newBrushes:', e);
+                showKeyIndicator('BRUSH GENERATION FAILED');
+            }
+        }
+
+        function setupUI() {
+            try {
+                brushSizeSlider = select('#brushSize');
+                brushOpacitySlider = select('#brushOpacity');
+                let rotationSlider = select('#brushRotation');
+                saveButton = select('#saveBtn');
+                clearButton = select('#clearBtn');
+                undoButton = select('#undoBtn');
+                redoButton = select('#redoBtn');
+                let generateBrushesBtn = select('#generateBrushesBtn');
+                selectionButton = select('#selectionBtn');
+                createBrushFromSelectionButton = select('#createBrushBtn');
+                hueCycleButton = select('#hueCycleBtn');
+                lightnessCycleButton = select('#lightnessCycleBtn');
+                hueCycleSpeedSlider = select('#hueCycleSpeed');
+                brushSpacingSlider = select('#brushSpacing');
+                lightnessAmplitudeSlider = select('#lightnessAmplitude');
+                lightnessCycleSpeedSlider = select('#lightnessCycleSpeed');
+                shapePicker = select('#shapePicker');
+
+                if (!brushSizeSlider || !brushOpacitySlider || !rotationSlider || !shapePicker) {
+                    console.error('One or more UI elements not found');
+                    showKeyIndicator('UI SETUP FAILED');
+                    return;
+                }
+
+                brushSizeSlider.input(() => {
+                    select('#sizeValue').html(brushSizeSlider.value());
+                    cachedPreview = null; // Invalidate cache on size change
+                });
+                brushOpacitySlider.input(() => {
+                    select('#opacityValue').html(brushOpacitySlider.value());
+                });
+                rotationSlider.input(() => {
+                    brushRotation = rotationSlider.value();
+                    select('#rotationValue').html(brushRotation);
+                    cachedPreview = null; // Invalidate cache on rotation change
+                });
+                hueCycleSpeedSlider.input(() => {
+                    hueCycleSpeed = parseFloat(hueCycleSpeedSlider.value());
+                    select('#hueSpeedValue').html(hueCycleSpeedSlider.value());
+                });
+                brushSpacingSlider.input(() => {
+                    select('#spacingValue').html(brushSpacingSlider.value());
+                });
+                lightnessAmplitudeSlider.input(() => {
+                    select('#lightnessAmpValue').html(lightnessAmplitudeSlider.value());
+                });
+                lightnessCycleSpeedSlider.input(() => {
+                    lightnessCycleSpeed = parseFloat(lightnessCycleSpeedSlider.value());
+                    select('#lightnessSpeedValue').html(lightnessCycleSpeedSlider.value());
+                });
+                shapePicker.changed(() => {
+                    preferredShape = shapePicker.value();
+                    showKeyIndicator(`SHAPE SET: ${preferredShape.toUpperCase()}`);
+                });
+
+                saveButton.mousePressed(saveImage);
+                clearButton.mousePressed(clearCanvas);
+                undoButton.mousePressed(undo);
+                redoButton.mousePressed(redo);
+                generateBrushesBtn.mousePressed(newBrushes);
+                selectionButton.mousePressed(toggleSelectionMode);
+                createBrushFromSelectionButton.mousePressed(createBrushFromSelection);
+                hueCycleButton.mousePressed(toggleHueCycling);
+                lightnessCycleButton.mousePressed(toggleLightnessCycling);
+            } catch (e) {
+                console.error('Error in setupUI:', e);
+                showKeyIndicator('UI SETUP FAILED');
+            }
+        }
+
+        function updateBrushUI() {
+            try {
+                const container = select('#dynamicBrushes');
+                if (!container) {
+                    console.error("Error: #dynamicBrushes element not found");
+                    showKeyIndicator('BRUSH UI FAILED');
+                    return;
+                }
+
+                container.html('');
+                let allBrushes = [...brushes, ...colorBrushes];
+                allBrushes.forEach((brush, index) => {
+                    const brushBtn = createDiv();
+                    brushBtn.class('brush-btn');
+
+                    if (brush && brush.canvas) {
+                        let previewCanvas = createGraphics(40, 40);
+                        previewCanvas.image(brush, 0, 0, 40, 40);
+                        brushBtn.style('background-image', `url(${previewCanvas.canvas.toDataURL()})`);
+                    } else {
+                        brushBtn.style('background', '#666');
+                        console.warn(`Brush at index ${index} is missing canvas property`);
+                    }
+
+                    brushBtn.mousePressed(() => {
+                        const currentlyActiveBtn = document.querySelector('#dynamicBrushes .brush-btn.active');
+                        if (currentlyActiveBtn) {
+                            currentlyActiveBtn.classList.remove('active');
+                        }
+                        brushBtn.class('active');
+                        currentBrush = allBrushes[index];
+                        currentBrushIndex = index;
+                        cachedPreview = null; // Invalidate cache on brush change
+                    });
+                    container.child(brushBtn);
+                });
+
+                const allCreatedBrushButtons = document.querySelectorAll('#dynamicBrushes .brush-btn');
+                if (allCreatedBrushButtons.length > 0 && currentBrushIndex < allCreatedBrushButtons.length) {
+                    allCreatedBrushButtons[currentBrushIndex].classList.add('active');
+                } else if (allCreatedBrushButtons.length > 0) {
+                    allCreatedBrushButtons[0].classList.add('active');
+                    currentBrushIndex = 0;
+                    currentBrush = allBrushes[0];
+                }
+            } catch (e) {
+                console.error('Error in updateBrushUI:', e);
+                showKeyIndicator('BRUSH UI FAILED');
+            }
+        }
+
+        function saveImage() {
+            try {
+                save(masterpiece, "artwork.png");
+                showKeyIndicator('SAVED');
+            } catch (e) {
+                console.error('Error in saveImage:', e);
+                showKeyIndicator('SAVE FAILED');
+            }
+        }
+
+        function clearCanvas() {
+            try {
+                masterpiece.background(230, 200, 170);
+                brushPanelLayer.clear();
+                saveState();
+                updateBrushUI();
+                showKeyIndicator('CANVAS CLEARED');
+            } catch (e) {
+                console.error('Error in clearCanvas:', e);
+                showKeyIndicator('CLEAR FAILED');
+            }
+        }
+
+        function saveState() {
+            try {
+                let state = createGraphics(canvasWidth, windowHeight);
+                state.image(masterpiece, 0, 0);
+                undoStack.push(state);
+                redoStack = [];
+                if (undoStack.length > 50) {
+                    undoStack.shift(); // Limit stack size
+                }
+            } catch (e) {
+                console.error('Error in saveState:', e);
+            }
+        }
+
+        function undo() {
+            try {
+                if (undoStack.length > 1) {
+                    redoStack.push(undoStack.pop());
+                    masterpiece = createGraphics(canvasWidth, windowHeight);
+                    masterpiece.image(undoStack[undoStack.length - 1], 0, 0);
+                    showKeyIndicator('UNDO');
+                }
+            } catch (e) {
+                console.error('Error in undo:', e);
+                showKeyIndicator('UNDO FAILED');
+            }
+        }
+
+        function redo() {
+            try {
+                if (redoStack.length > 0) {
+                    undoStack.push(redoStack.pop());
+                    masterpiece = createGraphics(canvasWidth, windowHeight);
+                    masterpiece.image(undoStack[undoStack.length - 1], 0, 0);
+                    showKeyIndicator('REDO');
+                }
+            } catch (e) {
+                console.error('Error in redo:', e);
+                showKeyIndicator('REDO FAILED');
+            }
+        }
+
+        function toggleSelectionMode() {
+            try {
+                selectionMode = !selectionMode;
+                if (!selectionMode) {
+                    selectionStart = null;
+                    selectionEnd = null;
+                    brushPanelLayer.clear();
+                } else {
+                    brushPanelLayer.clear();
+                }
+                selectionButton.toggleClass('active', selectionMode);
+                showKeyIndicator(selectionMode ? 'SELECTION ON' : 'SELECTION OFF');
+            } catch (e) {
+                console.error('Error in toggleSelectionMode:', e);
+                showKeyIndicator('SELECTION TOGGLE FAILED');
+            }
+        }
+
+        function createBrushFromSelection() {
+            try {
+                if (selectionStart && selectionEnd) {
+                    let adjustedStartX = selectionStart.x - canvasXOffset;
+                    let adjustedEndX = selectionEnd.x - canvasXOffset;
+                    let x = Math.min(adjustedStartX, adjustedEndX);
+                    let y = Math.min(selectionStart.y, selectionEnd.y);
+                    let w = Math.abs(adjustedStartX - adjustedEndX);
+                    let h = Math.abs(selectionStart.y - selectionEnd.y);
+
+                    if (w > 0 && h > 0) {
+                        let newBrush = createGraphics(w, h);
+                        newBrush.image(masterpiece, 0, 0, w, h, x, y, w, h);
+                        brushes.push(newBrush);
+                        brushes = brushes.filter(brush => brush && typeof brush.width !== 'undefined');
+                        let newIndex = brushes.length - 1;
+                        currentBrush = brushes[newIndex] || colorBrushes[0];
+                        currentBrushIndex = brushes.length - 1 + colorBrushes.length;
+                        updateBrushUI();
+                        brushPanelLayer.clear();
+                        selectionMode = false;
+                        selectionStart = null;
+                        selectionEnd = null;
+                        selectionButton.removeClass('active');
+                        showKeyIndicator('BRUSH CREATED');
+                    } else {
+                        showKeyIndicator('INVALID SELECTION');
+                    }
+                } else {
+                    showKeyIndicator('NO SELECTION');
+                }
+            } catch (e) {
+                console.error('Error in createBrushFromSelection:', e);
+                showKeyIndicator('BRUSH CREATION FAILED');
+            }
+        }
+
+        function toggleHueCycling() {
+            try {
+                hueCycling = !hueCycling;
+                if (hueCycling) hueAngle = 0;
+                else hueCycleStopped = false;
+                hueCycleButton.toggleClass('active', hueCycling);
+                cachedPreview = null; // Invalidate cache
+                showKeyIndicator(hueCycling ? 'HUE CYCLING ON' : 'HUE CYCLING OFF');
+            } catch (e) {
+                console.error('Error in toggleHueCycling:', e);
+                showKeyIndicator('HUE CYCLE TOGGLE FAILED');
+            }
+        }
+
+        function toggleHueCycleStop() {
+            try {
+                if (hueCycling) {
+                    hueCycleStopped = !hueCycleStopped;
+                    cachedPreview = null; // Invalidate cache
+                    showKeyIndicator(hueCycleStopped ? 'HUE CYCLE PAUSED' : 'HUE CYCLE RESUMED');
+                }
+            } catch (e) {
+                console.error('Error in toggleHueCycleStop:', e);
+                showKeyIndicator('HUE CYCLE STOP FAILED');
+            }
+        }
+
+        function toggleLightnessCycling() {
+            try {
+                lightnessCycling = !lightnessCycling;
+                if (lightnessCycling) lightnessAngle = 0;
+                lightnessCycleButton.toggleClass('active', lightnessCycling);
+                cachedPreview = null; // Invalidate cache
+                showKeyIndicator(lightnessCycling ? 'LIGHTNESS CYCLING ON' : 'LIGHTNESS CYCLING OFF');
+            } catch (e) {
+                console.error('Error in toggleLightnessCycling:', e);
+                showKeyIndicator('LIGHTNESS CYCLE TOGGLE FAILED');
+            }
+        }
+
+        function drawBrushStroke(x, y) {
+            if (!currentBrush || typeof currentBrush.width === 'undefined') {
+                console.warn("Current brush is undefined or lacks a 'width' property");
+                showKeyIndicator('INVALID BRUSH');
+                return;
+            }
+
+            try {
+                let tempBrushGraphic = createGraphics(brushSizeSlider.value(), brushSizeSlider.value());
+                tempBrushGraphic.imageMode(CENTER);
+                tempBrushGraphic.translate(tempBrushGraphic.width / 2, tempBrushGraphic.height / 2);
+                tempBrushGraphic.rotate(radians(brushRotation));
+                tempBrushGraphic.image(currentBrush, 0, 0, tempBrushGraphic.width, tempBrushGraphic.height);
+
+                if (hueCycling) {
+                    hueCycleSpeed = hueCycleSpeedSlider.value();
+                    if (!hueCycleStopped) hueAngle = (hueAngle + hueCycleSpeed) % 360;
+                    let hueCycledBrush = createGraphics(tempBrushGraphic.width, tempBrushGraphic.height);
+                    hueCycledBrush.loadPixels();
+                    tempBrushGraphic.loadPixels();
+                    for (let px = 0; px < tempBrushGraphic.width; px++) {
+                        for (let py = 0; py < tempBrushGraphic.height; py++) {
+                            let idx = 4 * (py * tempBrushGraphic.width + px);
+                            let r = tempBrushGraphic.pixels[idx], g = tempBrushGraphic.pixels[idx + 1], b = tempBrushGraphic.pixels[idx + 2], a = tempBrushGraphic.pixels[idx + 3];
+                            if (a === 0) continue;
+                            let [h, s, l] = rgbToHsl(r, g, b);
+                            h = hueAngle;
+                            let [newR, newG, newB] = hslToRgb(h, s, l);
+                            hueCycledBrush.pixels[idx] = newR;
+                            hueCycledBrush.pixels[idx + 1] = newG;
+                            hueCycledBrush.pixels[idx + 2] = newB;
+                            hueCycledBrush.pixels[idx + 3] = a;
+                        }
+                    }
+                    hueCycledBrush.updatePixels();
+                    tempBrushGraphic = hueCycledBrush;
+                }
+
+                if (lightnessCycling) {
+                    lightnessCycleSpeed = lightnessCycleSpeedSlider.value();
+                    lightnessAngle = (lightnessAngle + lightnessCycleSpeed) % 360;
+                    let lightnessCycledBrush = createGraphics(tempBrushGraphic.width, tempBrushGraphic.height);
+                    lightnessCycledBrush.loadPixels();
+                    tempBrushGraphic.loadPixels();
+                    for (let px = 0; px < tempBrushGraphic.width; px++) {
+                        for (let py = 0; py < tempBrushGraphic.height; py++) {
+                            let idx = 4 * (py * tempBrushGraphic.width + px);
+                            let r = tempBrushGraphic.pixels[idx], g = tempBrushGraphic.pixels[idx + 1], b = tempBrushGraphic.pixels[idx + 2], a = tempBrushGraphic.pixels[idx + 3];
+                            if (a === 0) continue;
+                            let [h, s, l] = rgbToHsl(r, g, b);
+                            let amplitude = lightnessAmplitudeSlider.value();
+                            l = constrain(l + amplitude * sin(radians(lightnessAngle)), 0, 100);
+                            let [newR, newG, newB] = hslToRgb(h, s, l);
+                            lightnessCycledBrush.pixels[idx] = newR;
+                            lightnessCycledBrush.pixels[idx + 1] = newG;
+                            lightnessCycledBrush.pixels[idx + 2] = newB;
+                            lightnessCycledBrush.pixels[idx + 3] = a;
+                        }
+                    }
+                    lightnessCycledBrush.updatePixels();
+                    tempBrushGraphic = lightnessCycledBrush;
+                }
+
+                masterpiece.push();
+                masterpiece.tint(255, brushOpacitySlider.value());
+                masterpiece.translate(x - canvasXOffset, y);
+                masterpiece.rotate(radians(brushRotation));
+                masterpiece.imageMode(CENTER);
+                masterpiece.image(tempBrushGraphic, 0, 0);
+                masterpiece.pop();
+            } catch (e) {
+                console.error('Error in drawBrushStroke:', e);
+                showKeyIndicator('BRUSH STROKE FAILED');
+            }
+        }
+
+        function rgbToHsl(r, g, b) {
+            try {
+                r /= 255; g /= 255; b /= 255;
+                let max = Math.max(r, g, b), min = Math.min(r, g, b);
+                let h, s, l = (max + min) / 2;
+                if (max === min) h = s = 0;
+                else {
+                    let d = max - min;
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                    switch (max) {
+                        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                        case g: h = (b - r) / d + 2; break;
+                        case b: h = (r - g) / d + 4; break;
+                    }
+                    h /= 6;
+                }
+                return [h * 360, s * 100, l * 100];
+            } catch (e) {
+                console.error('Error in rgbToHsl:', e);
+                return [0, 0, 50]; // Fallback to neutral color
+            }
+        }
+
+        function hslToRgb(h, s, l) {
+            try {
+                h /= 360; s /= 100; l /= 100;
+                let r, g, b;
+                if (s === 0) r = g = b = l;
+                else {
+                    let hue2rgb = (p, q, t) => {
+                        if (t < 0) t += 1;
+                        if (t > 1) t -= 1;
+                        if (t < 1/6) return p + (q - p) * 6 * t;
+                        if (t < 1/2) return q;
+                        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                        return p;
+                    };
+                    let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                    let p = 2 * l - q;
+                    r = hue2rgb(p, q, h + 1/3);
+                    g = hue2rgb(p, q, h);
+                    b = hue2rgb(p, q, h - 1/3);
+                }
+                return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+            } catch (e) {
+                console.error('Error in hslToRgb:', e);
+                return [128, 128, 128]; // Fallback to gray
+            }
+        }
+
+        function draw() {
+            try {
+                if (growKeyPressed) {
+                    brushSizeSlider.value(min(1000, parseFloat(brushSizeSlider.value()) + brushSizeGrowth));
+                    select('#sizeValue').html(brushSizeSlider.value());
+                    cachedPreview = null;
+                }
+                if (decreaseKeyPressed) {
+                    brushSizeSlider.value(max(10, parseFloat(brushSizeSlider.value()) - brushSizeGrowth));
+                    select('#sizeValue').html(brushSizeSlider.value());
+                    cachedPreview = null;
+                }
+                if (rotateClockwiseKeyPressed) {
+                    brushRotation = (parseFloat(brushRotation) + 1) % 360;
+                    select('#rotationValue').html(round(brushRotation));
+                    cachedPreview = null;
+                }
+                if (rotateCounterClockwiseKeyPressed) {
+                    brushRotation = (parseFloat(brushRotation) - 1 + 360) % 360;
+                    select('#rotationValue').html(round(brushRotation));
+                    cachedPreview = null;
+                }
+
+                background(26, 26, 26);
+                image(masterpiece, canvasXOffset, 0);
+
+                if (!selectionMode && mouseX >= canvasXOffset && mouseX <= windowWidth && mouseY >= 0 && mouseY <= windowHeight) {
+                    push();
+                    translate(mouseX, mouseY);
+                    rotate(radians(brushRotation));
+                    imageMode(CENTER);
+
+                    // Use cached preview if valid
+                    let currentSize = brushSizeSlider.value();
+                    if (!cachedPreview || 
+                        lastBrushSize !== currentSize || 
+                        lastBrushRotation !== brushRotation || 
+                        (hueCycling && lastHueAngle !== hueAngle) || 
+                        (lightnessCycling && lastLightnessAngle !== lightnessAngle)) {
+                        let previewBrushGraphic = createGraphics(currentSize, currentSize);
+                        previewBrushGraphic.imageMode(CENTER);
+                        previewBrushGraphic.translate(previewBrushGraphic.width / 2, previewBrushGraphic.height / 2);
+                        previewBrushGraphic.image(currentBrush, 0, 0, previewBrushGraphic.width, previewBrushGraphic.height);
+
+                        if (hueCycling) {
+                            let tempHueBrush = createGraphics(previewBrushGraphic.width, previewBrushGraphic.height);
+                            tempHueBrush.loadPixels();
+                            previewBrushGraphic.loadPixels();
+                            for (let px = 0; px < previewBrushGraphic.width; px++) {
+                                for (let py = 0; py < previewBrushGraphic.height; py++) {
+                                    let idx = 4 * (py * previewBrushGraphic.width + px);
+                                    let r = previewBrushGraphic.pixels[idx], g = previewBrushGraphic.pixels[idx + 1], b = previewBrushGraphic.pixels[idx + 2], a = previewBrushGraphic.pixels[idx + 3];
+                                    if (a === 0) continue;
+                                    let [h, s, l] = rgbToHsl(r, g, b);
+                                    h = hueAngle;
+                                    let [newR, newG, newB] = hslToRgb(h, s, l);
+                                    tempHueBrush.pixels[idx] = newR;
+                                    tempHueBrush.pixels[idx + 1] = newG;
+                                    tempHueBrush.pixels[idx + 2] = newB;
+                                    tempHueBrush.pixels[idx + 3] = a;
+                                }
+                            }
+                            tempHueBrush.updatePixels();
+                            previewBrushGraphic = tempHueBrush;
+                        }
+
+                        if (lightnessCycling) {
+                            let tempLightnessBrush = createGraphics(previewBrushGraphic.width, previewBrushGraphic.height);
+                            tempLightnessBrush.loadPixels();
+                            previewBrushGraphic.loadPixels();
+                            for (let px = 0; px < previewBrushGraphic.width; px++) {
+                                for (let py = 0; py < previewBrushGraphic.height; py++) {
+                                    let idx = 4 * (py * previewBrushGraphic.width + px);
+                                    let r = previewBrushGraphic.pixels[idx], g = previewBrushGraphic.pixels[idx + 1], b = previewBrushGraphic.pixels[idx + 2], a = previewBrushGraphic.pixels[idx + 3];
+                                    if (a === 0) continue;
+                                    let [h, s, l] = rgbToHsl(r, g, b);
+                                    let amplitude = lightnessAmplitudeSlider.value();
+                                    l = constrain(l + amplitude * sin(radians(lightnessAngle)), 0, 100);
+                                    let [newR, newG, newB] = hslToRgb(h, s, l);
+                                    tempLightnessBrush.pixels[idx] = newR;
+                                    tempLightnessBrush.pixels[idx + 1] = newG;
+                                    tempLightnessBrush.pixels[idx + 2] = newB;
+                                    tempLightnessBrush.pixels[idx + 3] = a;
+                                }
+                            }
+                            tempLightnessBrush.updatePixels();
+                            previewBrushGraphic = tempLightnessBrush;
+                        }
+
+                        cachedPreview = previewBrushGraphic;
+                        lastBrushSize = currentSize;
+                        lastBrushRotation = brushRotation;
+                        lastHueAngle = hueAngle;
+                        lastLightnessAngle = lightnessAngle;
+                    }
+
+                    tint(255, brushOpacitySlider.value());
+                    image(cachedPreview, 0, 0);
+                    pop();
+                }
+
+                if (selectionMode && selectionStart) {
+                    brushPanelLayer.clear();
+                    brushPanelLayer.fill(0, 255, 0, 50);
+                    brushPanelLayer.stroke(0, 255, 0);
+                    brushPanelLayer.strokeWeight(2);
+                    brushPanelLayer.drawingContext.setLineDash([5, 5]);
+
+                    let currentSelX = mouseX;
+                    let currentSelY = mouseY;
+                    currentSelX = constrain(currentSelX, canvasXOffset, windowWidth);
+                    currentSelY = constrain(currentSelY, 0, windowHeight);
+
+                    let rectX = min(selectionStart.x, currentSelX);
+                    let rectY = min(selectionStart.y, currentSelY);
+                    let rectW = abs(selectionStart.x - currentSelX);
+                    let rectH = abs(selectionStart.y - currentSelY);
+
+                    if (selectionEnd) {
+                        rectX = min(selectionStart.x, selectionEnd.x);
+                        rectY = min(selectionStart.y, selectionEnd.y);
+                        rectW = abs(selectionStart.x - selectionEnd.x);
+                        rectH = abs(selectionStart.y - selectionEnd.y);
+                    }
+
+                    brushPanelLayer.rect(rectX, rectY, rectW, rectH);
+                    brushPanelLayer.drawingContext.setLineDash([]);
+                }
+
+                image(brushPanelLayer, 0, 0);
+            } catch (e) {
+                console.error('Error in draw:', e);
+                showKeyIndicator('DRAW FAILED');
+            }
+        }
+
+        function mousePressed() {
+            if (mouseX < canvasXOffset) {
+                return;
+            }
+
+            try {
+                if (selectionMode) {
+                    selectionStart = createVector(mouseX, mouseY);
+                    selectionEnd = null;
+                    brushPanelLayer.clear();
+                } else {
+                    lastDrawPos = createVector(mouseX, mouseY);
+                    accumulatedDistance = 0;
+                    lastPaintTime = millis();
+                    drawBrushStroke(mouseX, mouseY);
+                }
+            } catch (e) {
+                console.error('Error in mousePressed:', e);
+                showKeyIndicator('MOUSE PRESS FAILED');
+            }
+        }
+
+        function mouseDragged() {
+            if (mouseX < canvasXOffset) {
+                return;
+            }
+
+            try {
+                if (selectionMode) {
+                    selectionEnd = createVector(
+                        constrain(mouseX, canvasXOffset, windowWidth),
+                        constrain(mouseY, 0, windowHeight)
+                    );
+                } else {
+                    let currentPos = createVector(mouseX, mouseY);
+                    if (lastDrawPos) {
+                        let distance = dist(lastDrawPos.x, lastDrawPos.y, currentPos.x, currentPos.y);
+                        let spacing = max(1, brushSpacingSlider.value());
+
+                        accumulatedDistance += distance;
+
+                        while (accumulatedDistance >= spacing) {
+                            let t = spacing / distance;
+                            let interpolatedX = lerp(lastDrawPos.x, currentPos.x, t);
+                            let interpolatedY = lerp(lastDrawPos.y, currentPos.y, t);
+
+                            drawBrushStroke(interpolatedX, interpolatedY);
+
+                            lastDrawPos.set(interpolatedX, interpolatedY);
+                            accumulatedDistance -= spacing;
+
+                            distance = dist(lastDrawPos.x, lastDrawPos.y, currentPos.x, currentPos.y);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error in mouseDragged:', e);
+                showKeyIndicator('MOUSE DRAG FAILED');
+            }
+        }
+
+        function mouseReleased() {
+            if (mouseX < canvasXOffset) {
+                return;
+            }
+
+            try {
+                if (selectionMode) {
+                    if (selectionStart) {
+                        selectionEnd = createVector(
+                            constrain(mouseX, canvasXOffset, windowWidth),
+                            constrain(mouseY, 0, windowHeight)
+                        );
+                    }
+                } else {
+                    saveState();
+                }
+            } catch (e) {
+                console.error('Error in mouseReleased:', e);
+                showKeyIndicator('MOUSE RELEASE FAILED');
+            }
+        }
+
+        function keyPressed() {
+            try {
+                showKeyIndicator(key);
+                if (keyCode === 71) {
+                    growKeyPressed = true;
+                } else if (keyCode === 68) {
+                    decreaseKeyPressed = true;
+                } else if (keyCode === 82) {
+                    rotateClockwiseKeyPressed = true;
+                } else if (keyCode === 69) {
+                    rotateCounterClockwiseKeyPressed = true;
+                } else if (keyCode === 83) {
+                    saveImage();
+                } else if (key === 'Z' && (keyIsDown(CONTROL) || keyIsDown(COMMAND))) {
+                    undo();
+                } else if (key === 'Y' && (keyIsDown(CONTROL) || keyIsDown(COMMAND))) {
+                    redo();
+                } else if (keyCode === 67) {
+                    toggleHueCycling();
+                } else if (keyCode === 86) {
+                    toggleHueCycleStop();
+                } else if (keyCode === 76) {
+                    toggleLightnessCycling();
+                } else if (keyCode === 72) {
+                    toggleSelectionMode();
+                } else if (keyCode === 74) {
+                    createBrushFromSelection();
+                } else if (keyCode === 32) {
+                    newBrushes();
+                }
+            } catch (e) {
+                console.error('Error in keyPressed:', e);
+                showKeyIndicator('KEY PRESS FAILED');
+            }
+        }
+
+        function keyReleased() {
+            try {
+                hideKeyIndicator();
+                if (keyCode === 71) {
+                    growKeyPressed = false;
+                } else if (keyCode === 68) {
+                    decreaseKeyPressed = false;
+                } else if (keyCode === 82) {
+                    rotateClockwiseKeyPressed = false;
+                } else if (keyCode === 69) {
+                    rotateCounterClockwiseKeyPressed = false;
+                }
+            } catch (e) {
+                console.error('Error in keyReleased:', e);
+                showKeyIndicator('KEY RELEASE FAILED');
+            }
+        }
+
+        function showKeyIndicator(keyName) {
+            try {
+                if (!keyIndicator) {
+                    console.warn('showKeyIndicator: keyIndicator element is undefined');
+                    return;
+                }
+                let displayText = typeof keyName === 'string' ? keyName.toUpperCase() : 'UNKNOWN';
+                keyIndicator.textContent = displayText;
+                keyIndicator.classList.add('show');
+                clearTimeout(keyIndicator.hideTimeout);
+                keyIndicator.hideTimeout = setTimeout(() => {
+                    keyIndicator.classList.remove('show');
+                }, 1000);
+            } catch (e) {
+                console.error('Error in showKeyIndicator:', e);
+            }
+        }
+
+        function hideKeyIndicator() {
+            try {
+                if (!keyIndicator) {
+                    console.warn('hideKeyIndicator: keyIndicator element is undefined');
+                    return;
+                }
+                clearTimeout(keyIndicator.hideTimeout);
+                keyIndicator.classList.remove('show');
+            } catch (e) {
+                console.error('Error in hideKeyIndicator:', e);
+            }
+        }
+
+        function windowResized() {
+            try {
+                resizeCanvas(windowWidth, windowHeight);
+                canvasWidth = windowWidth - toolboxWidth;
+                masterpiece = createGraphics(canvasWidth, windowHeight);
+                if (undoStack.length > 0) {
+                    masterpiece.image(undoStack[undoStack.length - 1], 0, 0);
+                } else {
+                    masterpiece.background(220, 200, 180);
+                }
+                brushPanelLayer = createGraphics(windowWidth, windowHeight);
+                cachedPreview = null; // Invalidate cache on resize
+            } catch (e) {
+                console.error('Error in windowResized:', e);
+                showKeyIndicator('RESIZE FAILED');
+            }
+        }
+    </script>
+</body>
+</html>
