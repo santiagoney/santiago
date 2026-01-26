@@ -17,7 +17,6 @@
 
     body {
       font-family: 'Courier New', monospace;
-      background-image: url('art2.png');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -62,14 +61,19 @@
       color: yellow;
       text-decoration: none;
       font-size: 1.2rem;
-      margin: 0 1.5rem;
+      margin: 0 0.5rem;
       letter-spacing: 0.05em;
       transition: color 0.3s ease;
       position: relative;
+      background: rgba(0,0,0,0.5);
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      display: inline-block;
     }
 
     nav a:hover {
       color: #000;
+      background: rgba(255,255,255,0.8);
     }
 
     nav a::after {
@@ -81,6 +85,7 @@
       left: 0;
       background-color: yellow;
       transition: width 0.3s ease;
+      display: none;
     }
 
     nav a:hover::after {
@@ -90,7 +95,7 @@
     main {
       max-width: 720px;
       margin: 0 auto;
-      background: linear-gradient(to bottom, rgba(255,100,100,0.8), rgba(255,200,100,0.8), rgba(255,255,150,0.8), rgba(100,255,100,0.8), rgba(100,100,255,0.8), rgba(150,100,255,0.8), rgba(255,100,255,0.8));
+      background: linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
       padding: 2rem;
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
@@ -200,7 +205,7 @@
 </footer>
 
 <script>
-  const images = ['134.png', '135.png', 'art1.png', 'art2.png', 'large1.png', 'large2.png', 'large3.png', 'large4.png', 'large5.png', 'large6.png', 'large7.png', 'magicalcoecon.gif', 'tool2.png', 'ww3.gif'];
+  const images = ['backgrounds/134.png', 'backgrounds/2344.png', 'backgrounds/33wwww01.png', 'backgrounds/34id01.png', 'backgrounds/TIME_ ancient internet  .png', 'backgrounds/YOUANDME343002.png', 'backgrounds/aa32.png', 'backgrounds/art1.png', 'backgrounds/bush2.gif', 'backgrounds/cars56.gif', 'backgrounds/corn.gif', 'backgrounds/ezgif.com-animated-gif-maker.gif', 'backgrounds/facey002.gif', 'backgrounds/hc.gif', 'backgrounds/pfp.gif', 'backgrounds/sweetrt.png', 'backgrounds/teiaberlinaa252_2.png', 'backgrounds/timroth.gif', 'backgrounds/trace.png', 'backgrounds/traced55.png', 'backgrounds/you as a bird.png', 'backgrounds/youcryptoartius.gif'];
   const randomImage = images[Math.floor(Math.random() * images.length)];
   document.body.style.backgroundImage = `url('${randomImage}')`;
 </script>
