@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>santiago</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background-color: #f9f5ee;
+      color: #1a1a1a;
+      line-height: 1.7;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 5rem;
+    }
+
+    h1 {
+      font-size: 4.5rem;
+      font-weight: 400;
+      letter-spacing: -0.05em;
+      color: #111;
+      margin-bottom: 1.5rem;
+      text-transform: lowercase;
+    }
+
+    nav {
+      margin-top: 1.5rem;
+    }
+
+    nav a {
+      color: #444;
+      text-decoration: none;
+      font-size: 1.2rem;
+      margin: 0 1.5rem;
+      letter-spacing: 0.05em;
+      transition: color 0.3s ease;
+      position: relative;
+    }
+
+    nav a:hover {
+      color: #000;
+    }
+
+    nav a::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 1px;
+      bottom: -4px;
+      left: 0;
+      background-color: #000;
+      transition: width 0.3s ease;
+    }
+
+    nav a:hover::after {
+      width: 100%;
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    section {
+      margin-bottom: 6rem;
+    }
+
+    h2 {
+      font-size: 2.2rem;
+      font-weight: 400;
+      margin-bottom: 1.8rem;
+      color: #222;
+      letter-spacing: -0.02em;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 0.6rem;
+    }
+
+    p {
+      font-size: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    ul {
+      list-style: none;
+    }
+
+    ul li {
+      font-size: 1.3rem;
+      margin-bottom: 1.2rem;
+      position: relative;
+      padding-left: 1.8rem;
+    }
+
+    ul li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #666;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 6rem;
+      padding-top: 3rem;
+      border-top: 1px solid #eee;
+      color: #777;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 3.5rem;
+      }
+      
+      nav a {
+        display: block;
+        margin: 1rem 0;
+        font-size: 1.4rem;
+      }
+      
+      main {
+        padding: 0 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>santiago</h1>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="digital.html">Digital / NFTs</a>
+    <a href="physical.html">Paintings</a>
+  </nav>
+</header>
+
+<main>
+  <section>
+    <h2>About</h2>
+    <p>artist.</p>
+  </section>
+
+  <section>
+    <h2>Practice</h2>
+    <ul>
+      <li>Digital Art</li>
+      <li>Paintings</li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  <p>© santiago — all works © their respective owners</p>
+</footer>
+
+</body>
+</html>

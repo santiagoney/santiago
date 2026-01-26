@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Paintings & Shop</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<header>
+  <h1>Physical Paintings</h1>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="digital.html">Digital / NFTs</a>
+  </nav>
+</header>
+
+<main>
+  <section>
+    <h2>Selected Works</h2>
+
+    <article>
+      <img src="painting1.jpg" alt="Painting" width="300">
+      <p>Title — Oil on canvas — 80×60 cm</p>
+    </article>
+
+    <article>
+      <img src="painting2.jpg" alt="Painting" width="300">
+      <p>Title — Acrylic — 2025</p>
+    </article>
+  </section>
+
+  <section>
+    <h2>Shop</h2>
+    <!-- Shopify Buy Button embed -->
+    <div id="shopify-buy-button"></div>
+
+    <script src="https://sdks.shopifycdn.com/buy-button/latest/buy-button-storefront.min.js"></script>
+    <script>
+      var client = ShopifyBuy.buildClient({
+        domain: 'your-store.myshopify.com',
+        storefrontAccessToken: 'YOUR_ACCESS_TOKEN'
+      });
+    </script>
+  </section>
+</main>
+
+<footer>
+  <p>Shipping worldwide</p>
+</footer>
+
+</body>
+</html>

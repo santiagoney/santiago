@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>santiago</title>
+    <style>
+        @font-face {
+            font-family: 'United';
+            src: url('fonts/united.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        body {
+            font-family: 'United';
+            background-color: #000000;
+            color: #ff0000;
+            text-align: center;
+            padding: 80px 50px 50px; /* increased top padding for the fixed button */
+            margin: 0;
+            position: relative; /* for absolute/fixed positioning context */
+        }
+        /* Home button - top left fixed */
+        .home-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 999;
+            background-color: #00c8ff;
+            color: #030d22;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-family: 'United', sans-serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+        }
+        .home-btn:hover {
+            background-color: #ff0000;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.7);
+            transform: scale(1.05);
+        }
+
+        h1 {
+            font-size: 3.5em;
+        }
+        p {
+            font-size: 1.2em;
+        }
+        .button {
+            background-color: #00c8ff;
+            color: #030d22;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 1em;
+            display: inline-block;
+            margin-top: 20px;
+        }
+        .button:hover {
+            background-color: #ff0000;
+        }
+        .images {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .images img {
+            width: 150px; 
+            height: auto;
+            margin: 0 10px 20px;
+            border-radius: 5px;
+        }
+        .large-images {
+            margin-top: 50px;
+        }
+        .large-images img {
+            width: 80%; /* Make the images take up 80% of the viewport width */
+            max-width: 1000px; /* Limit their max width */
+            height: auto;
+            margin-bottom: 30px;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .home-btn {
+                top: 15px;
+                left: 15px;
+                padding: 6px 12px;
+                font-size: 0.9em;
+            }
+            body {
+                padding: 70px 20px 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Home button -->
+    <a href="index.html" class="home-btn">Home</a>
+
+    <h1>santiago</h1>
+    <div class="images">
+        <a href="https://objkt.com/@ttiimmee" target="_blank"><img src="art1.png" alt="Art 1"></a>
+        <a href="https://objkt.com/@humankernel" target="_blank"><img src="art2.png" alt="Art 2"></a>
+        <a href="https://marketplace.emprops.ai/profile/tz1PwqkrfqAgaJ2iSM3SqxwCBs61UoC2H8gA/creations" target="_blank"><img src="135.png" alt="Art 3"></a>
+        <a href="https://objkt.com/collections/KT1SWtARdBWHs3UR5bwEcdX5iZoJtatJjoVF" target="_blank"><img src="134.png" alt="Art 4"></a>
+        <a href="tool/tool.html" target="_blank"><img src="136.png" alt="Art 5"></a>
+        <a href="https://wafflesdraw.tez.page" target="_blank"><img src="tool2.png" alt="Art 6"></a>
+    </div>
+    <p> Digital artist and painter researching and thinking about the limits of language and internet culture and the end of the world </p>
+    <a href="https://superrare.com/ttiimmee" class="button" target="_blank">superrare</a>
+    <a href="https://twitter.com/ttiimmees" class="button" target="_blank">X</a>
+    <a href="statement.html" class="button" target="_blank">Artist Statement</a>
+    <a href="http://santiagoney.xyz/tools/index.html" class="button" target="_blank">drawing tools</a>
+    <a href="http://santiagoney.xyz/interviews.html" class="button" target="_blank">interviews</a>   
+
+    <!-- New Section for Large Images -->
+    <div class="large-images">
+        <a href="https://lonewick.substack.com/p/a-conversation-with" target="_blank"><img src="large1.png" alt="interview with lonewick"></a>
+        <a href="https://open.spotify.com/episode/4z9hxxpy4tWktPCDym0bJM" target="_blank"><img src="ww3.gif" alt="interview with arbitrarily deterministic"></a>
+        <a href="https://oneofoneart.substack.com/p/rearranging-the-bookshelves-issue" target="_blank"><img src="large2.png" alt="interview with oneofone"></a>
+        <a href="https://www.youtube.com/watch?v=erTgFz539g4" target="_blank"><img src="large3.png" alt="interview with Adrian Pocobelli"></a>
+    </div>
+
+</body>
+</html>
