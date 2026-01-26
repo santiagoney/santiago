@@ -16,8 +16,11 @@
     }
 
     body {
-      font-family: 'Georgia', 'Times New Roman', serif;
-      background-color: #f9f5ee;
+      font-family: 'Courier New', monospace;
+      background-image: url('art2.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
       color: #1a1a1a;
       line-height: 1.7;
       min-height: 100vh;
@@ -30,12 +33,25 @@
     }
 
     h1 {
-      font-size: 4.5rem;
+      font-size: 6rem;
       font-weight: 400;
       letter-spacing: -0.05em;
-      color: #111;
+      color: yellow;
       margin-bottom: 1.5rem;
       text-transform: lowercase;
+    }
+
+    .tag {
+      font-size: 1rem;
+      color: #000;
+      background-color: yellow;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      display: block;
+      margin: 0 auto 1rem;
+      font-weight: bold;
+      text-align: center;
+      width: fit-content;
     }
 
     nav {
@@ -43,7 +59,7 @@
     }
 
     nav a {
-      color: #444;
+      color: yellow;
       text-decoration: none;
       font-size: 1.2rem;
       margin: 0 1.5rem;
@@ -63,7 +79,7 @@
       height: 1px;
       bottom: -4px;
       left: 0;
-      background-color: #000;
+      background-color: yellow;
       transition: width 0.3s ease;
     }
 
@@ -74,6 +90,10 @@
     main {
       max-width: 720px;
       margin: 0 auto;
+      background: linear-gradient(to bottom, rgba(255,100,100,0.8), rgba(255,200,100,0.8), rgba(255,255,150,0.8), rgba(100,255,100,0.8), rgba(100,100,255,0.8), rgba(150,100,255,0.8), rgba(255,100,255,0.8));
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 
     section {
@@ -124,7 +144,7 @@
 
     @media (max-width: 600px) {
       h1 {
-        font-size: 3.5rem;
+        font-size: 5rem;
       }
       
       nav a {
@@ -142,32 +162,48 @@
 <body>
 
 <header>
-  <h1>santiago</h1>
+  <h1>SANTIAGO</h1>
   <nav>
     <a href="index.html">Home</a>
     <a href="digital.html">Digital / NFTs</a>
     <a href="physical.html">Paintings</a>
+    <a href="ai.html">AI Work</a>
   </nav>
 </header>
+
+<p class="tag"><a href="ai.html">AI work</a></p>
 
 <main>
   <section>
     <h2>About</h2>
-    <p>artist.</p>
+    <p>Digital artist and painter researching and thinking about the limits of language and internet culture and the end of the world.</p>
   </section>
 
   <section>
-    <h2>Practice</h2>
+    <h2>Works</h2>
     <ul>
-      <li>Digital Art</li>
-      <li>Paintings</li>
+      <li><a href="digital.html">Digital Art & NFTs</a></li>
+      <li><a href="physical.html">Paintings</a></li>
+      <li><a href="https://santiagoney.xyz/tools/index.html">Drawing Tools</a></li>
+      <li><a href="https://santiagoney.xyz/interviews.html">Interviews</a></li>
+      <li><a href="statement.html">Artist Statement</a></li>
     </ul>
   </section>
 </main>
 
 <footer>
-  <p>© santiago — all works © their respective owners</p>
+  <p>santiago 2026</p>
+  <p>
+    <a href="https://superrare.com/ttiimmee" target="_blank">SuperRare</a> |
+    <a href="https://twitter.com/ttiimmees" target="_blank">X</a>
+  </p>
 </footer>
+
+<script>
+  const images = ['134.png', '135.png', 'art1.png', 'art2.png', 'large1.png', 'large2.png', 'large3.png', 'large4.png', 'large5.png', 'large6.png', 'large7.png', 'magicalcoecon.gif', 'tool2.png', 'ww3.gif'];
+  const randomImage = images[Math.floor(Math.random() * images.length)];
+  document.body.style.backgroundImage = `url('${randomImage}')`;
+</script>
 
 </body>
 </html>
