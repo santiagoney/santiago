@@ -263,23 +263,34 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     sk.draw = function() {
       sk.clear();
-      let x0 = 440, y0 = 120, size = 60, gap = 48; // x0 further increased for more right shift
+      let x0 = 440, y0 = 120, size = 60, gap = 48;
       let letters = 'SANTIAGO';
+      // Draw shadow (red, offset)
+      sk.push();
+      sk.translate(24, 24); // shadow offset
       for (let i = 0; i < letters.length; i++) {
         let x = x0 + i * (size + gap);
-        drawLetter(sk, letters[i], x, y0, size, t);
+        drawLetter(sk, letters[i], x, y0, size, t, [255,0,0]);
+      }
+      sk.pop();
+      // Draw main (yellow)
+      for (let i = 0; i < letters.length; i++) {
+        let x = x0 + i * (size + gap);
+        drawLetter(sk, letters[i], x, y0, size, t, [255,220,40]);
       }
       t += 0.02;
     };
-    function drawLetter(sk, ch, x, y, s, t) {
+    function drawLetter(sk, ch, x, y, s, t, colorArr) {
       sk.push();
       sk.translate(x, y);
-      sk.stroke(255, 220, 40);
-      sk.strokeWeight(12 + 2 * sk.sin(t + x * 0.01)); // much thicker
+      sk.stroke(colorArr[0], colorArr[1], colorArr[2]);
+      sk.strokeWeight(12 + 2 * sk.sin(t + x * 0.01));
       sk.noFill();
       // Squared, thick geometric letterforms
       switch (ch) {
         case 'S':
+          sk.push();
+          sk.scale(-1, 1); // Flip horizontally
           sk.beginShape();
           sk.vertex(-s*0.4, -s*0.4);
           sk.vertex(s*0.4, -s*0.4);
@@ -288,6 +299,7 @@ document.addEventListener('DOMContentLoaded', function() {
           sk.vertex(-s*0.4, s*0.4);
           sk.vertex(s*0.4, s*0.4);
           sk.endShape();
+          sk.pop();
           break;
         case 'A':
           sk.beginShape();
