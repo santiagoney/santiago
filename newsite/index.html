@@ -5,6 +5,13 @@
   <title>santiago</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    @font-face {
+      font-family: 'boxmd';
+      src: url('./fonts/boxmd.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -38,6 +45,8 @@
       color: yellow;
       margin-bottom: 1.5rem;
       text-transform: lowercase;
+      font-family: 'boxmd', 'Courier New', monospace !important;
+      font-display: swap;
     }
 
     .tag {
@@ -165,8 +174,11 @@
   </style>
 </head>
 <body>
-  <div style="position:fixed;top:24px;right:24px;z-index:1000;width:320px;max-width:40vw;box-shadow:0 4px 16px rgba(0,0,0,0.18);border-radius:10px;overflow:hidden;opacity:0.92;">
-    <iframe width="100%" height="180" src="https://www.youtube.com/embed/F4gGlEW8fAs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="display:block;"></iframe>
+  <div style="position:fixed;top:24px;right:24px;z-index:1000;width:420px;max-width:60vw;box-shadow:0 4px 16px rgba(0,0,0,0.18);border-radius:10px;overflow:hidden;opacity:0.92;">
+    <iframe width="100%" height="220" src="https://www.youtube.com/embed/F4gGlEW8fAs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="display:block;"></iframe>
+    <div id="image-slideshow" style="width:100%;height:320px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden;margin-top:8px;border-radius:8px;">
+      <img id="slideshow-img" src="" alt="slideshow" style="max-width:100%;max-height:100%;display:block;transition:opacity 0.5s;opacity:1;" />
+    </div>
   </div>
   <div style="position:fixed;top:24px;left:24px;z-index:1000;width:320px;max-width:40vw;box-shadow:0 4px 16px rgba(0,0,0,0.18);border-radius:10px;overflow:hidden;opacity:0.92;">
     <iframe width="100%" height="180" src="https://www.youtube.com/embed/JSLK454msNQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="display:block;"></iframe>
@@ -183,7 +195,7 @@
   </div>
 
 <header>
-  <h1>SANTIAGO</h1>
+  <div id="p5-banner-container" style="width:100%;height:180px;display:flex;align-items:center;justify-content:center;margin-bottom:2rem;"></div>
   <nav>
     <a href="index.html">Home</a>
     <a href="digital.html">Digital / NFTs</a>
@@ -218,10 +230,107 @@
   </p>
 </footer>
 
+<script src="p5.min.js"></script>
 <script>
+// Slideshow code (runs immediately, not inside DOMContentLoaded)
+const slideshowImages = Array.from({length: 242}, (_, i) => `images/${String(i+1).padStart(2, '0')}.png`);
+let slideshowIndex = 0;
+const slideshowImg = document.getElementById('slideshow-img');
+if (slideshowImg && slideshowImages.length > 0) {
+  slideshowImg.src = slideshowImages[0];
+  setInterval(() => {
+    slideshowIndex = (slideshowIndex + 1) % slideshowImages.length;
+    slideshowImg.style.opacity = 0;
+    setTimeout(() => {
+      slideshowImg.src = slideshowImages[slideshowIndex];
+      slideshowImg.style.opacity = 1;
+    }, 0);
+  }, 2000);
+}
+// P5.js animated banner for "SANTIAGO"
+document.addEventListener('DOMContentLoaded', function() {
+  new p5((sk) => {
+    let t = 0;
+    sk.setup = function() {
+      let canvas = sk.createCanvas(sk.windowWidth, 180);
+      canvas.parent('p5-banner-container');
+      sk.noFill();
+      sk.strokeWeight(4);
+      sk.frameRate(60);
+    };
+    sk.windowResized = function() {
+      sk.resizeCanvas(sk.windowWidth, 180);
+    };
+    sk.draw = function() {
+      sk.clear();
+      let x0 = 440, y0 = 120, size = 60, gap = 48; // x0 further increased for more right shift
+      let letters = 'SANTIAGO';
+      for (let i = 0; i < letters.length; i++) {
+        let x = x0 + i * (size + gap);
+        drawLetter(sk, letters[i], x, y0, size, t);
+      }
+      t += 0.02;
+    };
+    function drawLetter(sk, ch, x, y, s, t) {
+      sk.push();
+      sk.translate(x, y);
+      sk.stroke(255, 220, 40);
+      sk.strokeWeight(12 + 2 * sk.sin(t + x * 0.01)); // much thicker
+      sk.noFill();
+      // Squared, thick geometric letterforms
+      switch (ch) {
+        case 'S':
+          sk.beginShape();
+          sk.vertex(-s*0.4, -s*0.4);
+          sk.vertex(s*0.4, -s*0.4);
+          sk.vertex(s*0.4, 0);
+          sk.vertex(-s*0.4, 0);
+          sk.vertex(-s*0.4, s*0.4);
+          sk.vertex(s*0.4, s*0.4);
+          sk.endShape();
+          break;
+        case 'A':
+          sk.beginShape();
+          sk.vertex(-s*0.4, s*0.4);
+          sk.vertex(0, -s*0.4);
+          sk.vertex(s*0.4, s*0.4);
+          sk.endShape();
+          sk.line(-s*0.18, 0, s*0.18, 0);
+          break;
+        case 'N':
+          sk.line(-s*0.4, s*0.4, -s*0.4, -s*0.4);
+          sk.line(-s*0.4, -s*0.4, s*0.4, s*0.4);
+          sk.line(s*0.4, s*0.4, s*0.4, -s*0.4);
+          break;
+        case 'T':
+          sk.line(-s*0.4, -s*0.4, s*0.4, -s*0.4);
+          sk.line(0, -s*0.4, 0, s*0.4);
+          break;
+        case 'I':
+          sk.line(0, -s*0.4, 0, s*0.4);
+          break;
+        case 'G':
+          sk.beginShape();
+          sk.vertex(s*0.4, -s*0.4);
+          sk.vertex(-s*0.4, -s*0.4);
+          sk.vertex(-s*0.4, s*0.4);
+          sk.vertex(s*0.4, s*0.4);
+          sk.vertex(s*0.4, 0);
+          sk.vertex(0, 0);
+          sk.endShape();
+          break;
+        case 'O':
+          sk.rect(-s*0.4, -s*0.4, s*0.8, s*0.8, 6);
+          break;
+      }
+      sk.pop();
+    }
+  }, 'p5-banner-container');
+
   const images = ['backgrounds/134.png', 'backgrounds/2344.png', 'backgrounds/33wwww01.png', 'backgrounds/34id01.png', 'backgrounds/TIME_ ancient internet  .png', 'backgrounds/YOUANDME343002.png', 'backgrounds/aa32.png', 'backgrounds/art1.png', 'backgrounds/bush2.gif', 'backgrounds/cars56.gif', 'backgrounds/corn.gif', 'backgrounds/ezgif.com-animated-gif-maker.gif', 'backgrounds/facey002.gif', 'backgrounds/hc.gif', 'backgrounds/pfp.gif', 'backgrounds/sweetrt.png', 'backgrounds/teiaberlinaa252_2.png', 'backgrounds/timroth.gif', 'backgrounds/trace.png', 'backgrounds/traced55.png', 'backgrounds/you as a bird.png', 'backgrounds/youcryptoartius.gif'];
   const randomImage = images[Math.floor(Math.random() * images.length)];
   document.body.style.backgroundImage = `url('${randomImage}')`;
+});
 </script>
 
 </body>
