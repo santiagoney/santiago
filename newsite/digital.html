@@ -272,12 +272,27 @@ document.addEventListener('DOMContentLoaded', function() {
             t += 0.02;
         };
         function drawLetter(sk, ch, x, y, s, t, colorArr) {
+            // Subtle blur: draw several times with low alpha and small offsets
+            for (let b = 4; b >= 1; b--) {
+                sk.push();
+                sk.translate(x, y);
+                sk.stroke(colorArr[0], colorArr[1], colorArr[2], 18 * b); // lower alpha for outer blurs
+                sk.strokeWeight((12 + 2 * sk.sin(t + x * 0.01)) + b * 2);
+                sk.noFill();
+                drawLetterShape(sk, ch, s + b * 1.2);
+                sk.pop();
+            }
+            // Main sharp contour
             sk.push();
             sk.translate(x, y);
-            sk.stroke(colorArr[0], colorArr[1], colorArr[2]);
+            sk.stroke(colorArr[0], colorArr[1], colorArr[2], 255);
             sk.strokeWeight(12 + 2 * sk.sin(t + x * 0.01));
             sk.noFill();
-            // Squared, thick geometric letterforms
+            drawLetterShape(sk, ch, s);
+            sk.pop();
+        }
+
+        function drawLetterShape(sk, ch, s) {
             switch (ch) {
                 case 'S':
                     sk.push();
@@ -326,7 +341,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     sk.rect(-s*0.4, -s*0.4, s*0.8, s*0.8, 6);
                     break;
             }
-            sk.pop();
         }
     }, 'p5-banner-container');
 });
