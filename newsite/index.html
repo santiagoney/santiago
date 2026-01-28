@@ -249,13 +249,13 @@ if (slideshowImg && slideshowImages.length > 0) {
 }
 // P5.js animated banner for "SANTIAGO"
 document.addEventListener('DOMContentLoaded', function() {
+
   new p5((sk) => {
     let t = 0;
     sk.setup = function() {
       let canvas = sk.createCanvas(sk.windowWidth, 180);
       canvas.parent('p5-banner-container');
       sk.noFill();
-      sk.strokeWeight(4);
       sk.frameRate(60);
     };
     sk.windowResized = function() {
@@ -263,20 +263,27 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     sk.draw = function() {
       sk.clear();
+      sk.blendMode(sk.MULTIPLY);
       let x0 = 440, y0 = 120, size = 60, gap = 48;
       let letters = 'SANTIAGO';
-      // Draw shadow (red, offset)
-      sk.push();
-      sk.translate(24, 24); // shadow offset
+      let amp = 20;
+      // Blue (back)
       for (let i = 0; i < letters.length; i++) {
         let x = x0 + i * (size + gap);
-        drawLetter(sk, letters[i], x, y0, size, t, [255,0,0]);
+        let y = y0 + sk.sin(t + i * 0.3 + 2) * amp;
+        drawLetter(sk, letters[i], x, y, size, t, [0, 100, 255]);
       }
-      sk.pop();
-      // Draw main (yellow)
+      // Red (middle)
       for (let i = 0; i < letters.length; i++) {
         let x = x0 + i * (size + gap);
-        drawLetter(sk, letters[i], x, y0, size, t, [255,220,40]);
+        let y = y0 + sk.sin(t + i * 0.3 + 1) * amp;
+        drawLetter(sk, letters[i], x, y, size, t, [255, 0, 0]);
+      }
+      // Yellow (front)
+      for (let i = 0; i < letters.length; i++) {
+        let x = x0 + i * (size + gap);
+        let y = y0 + sk.sin(t + i * 0.3) * amp;
+        drawLetter(sk, letters[i], x, y, size, t, [255, 255, 0]);
       }
       t += 0.02;
     };
