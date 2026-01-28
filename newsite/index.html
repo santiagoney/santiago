@@ -11,6 +11,12 @@
       font-weight: normal;
       font-style: normal;
     }
+    @font-face {
+      font-family: 'United';
+      src: url('./fonts/united.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
 
     * {
       margin: 0;
@@ -176,22 +182,27 @@
 <body>
   <div style="position:fixed;top:24px;right:24px;z-index:1000;width:420px;max-width:60vw;box-shadow:0 4px 16px rgba(0,0,0,0.18);border-radius:10px;overflow:hidden;opacity:0.92;">
     <iframe width="100%" height="220" src="https://www.youtube.com/embed/F4gGlEW8fAs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="display:block;"></iframe>
-    <div id="image-slideshow" style="width:100%;height:320px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden;margin-top:8px;border-radius:8px;">
+    <a href="digital.html" id="image-slideshow" style="width:100%;height:320px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden;margin-top:8px;border-radius:8px;text-decoration:none;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.10);">
       <img id="slideshow-img" src="" alt="slideshow" style="max-width:100%;max-height:100%;display:block;transition:opacity 0.5s;opacity:1;" />
-    </div>
+    </a>
   </div>
   <div style="position:fixed;top:24px;left:24px;z-index:1000;width:320px;max-width:40vw;box-shadow:0 4px 16px rgba(0,0,0,0.18);border-radius:10px;overflow:hidden;opacity:0.92;">
     <iframe width="100%" height="180" src="https://www.youtube.com/embed/JSLK454msNQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="display:block;"></iframe>
-    <a href="https://neeii.bandcamp.com/" target="_blank" style="display:block;text-align:center;text-decoration:none;margin-top:8px;">
-      <img src="coverneeii.png" alt="neeii music cover" style="width:90%;max-width:220px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.13);margin:0 auto;display:block;">
-      <span style="display:inline-block;margin-top:4px;padding:2px 10px;background:yellow;color:#000;font-weight:bold;border-radius:4px;font-size:1rem;letter-spacing:0.04em;">music</span>
+    <a href="https://neeii.bandcamp.com/" target="_blank" style="display:block;text-align:center;text-decoration:none;margin-top:8px;position:relative;width:90%;max-width:220px;margin-left:auto;margin-right:auto;">
+      <img src="coverneeii.png" alt="neeii music cover" style="width:100%;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.13);display:block;">
+      <span style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%);padding:2px 16px;background:yellow;color:#000;font-weight:bold;border-radius:4px;font-size:1.1rem;letter-spacing:0.04em;box-shadow:0 1px 4px rgba(0,0,0,0.10);">music</span>
     </a>
-    <a href="https://www.youtube.com/watch?v=rDeJ6ehqmSI" target="_blank" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">
-      <span style="display:inline-block;padding:2px 14px;background:magenta;color:#fff;font-weight:bold;border-radius:4px;font-size:1rem;letter-spacing:0.04em;">tiempo lateral</span>
-    </a>
-    <a href="other.html" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">
-      <button style="padding:8px 18px;background:#222;color:#fff;font-weight:bold;border:none;border-radius:4px;font-size:1rem;letter-spacing:0.04em;cursor:pointer;">other projects</button>
-    </a>
+    <div style="margin-top:50px;">
+      <a href="https://www.youtube.com/watch?v=rDeJ6ehqmSI" target="_blank" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">
+        <span style="display:inline-block;padding:2px 14px;background:magenta;color:#fff;font-weight:bold;border-radius:4px;font-size:1rem;letter-spacing:0.04em;">tiempo lateral</span>
+      </a>
+      <a href="ai.html" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">
+        <button style="padding:8px 18px;background:#ffe600;color:#000;font-weight:bold;border:none;border-radius:4px;font-size:1rem;letter-spacing:0.04em;cursor:pointer;">AI work</button>
+      </a>
+      <a href="other.html" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">
+        <button style="padding:8px 18px;background:#222;color:#fff;font-weight:bold;border:none;border-radius:4px;font-size:1rem;letter-spacing:0.04em;cursor:pointer;">other projects</button>
+      </a>
+    </div>
   </div>
 
 <header>
@@ -208,7 +219,7 @@
 
 <main>
   <section>
-    <div style="width:100%;max-width:100%;display:block;margin:0 auto 2.5rem auto;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);opacity:0.85;padding:2.5rem 0;text-align:center;font-size:2.2rem;font-family:'boxmd','Courier New',monospace;letter-spacing:-0.03em;">
+    <div style="width:100%;max-width:100%;display:block;margin:0 auto 2.5rem auto;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);opacity:0.85;padding:2.5rem 0;text-align:center;font-size:1.1rem;font-family:'Courier New', Courier, monospace;letter-spacing:-0.03em;">
       Digital artist and painter researching and thinking about the limits of language and internet culture and the end of the world.
     </div>
   </section>
