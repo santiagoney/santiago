@@ -232,20 +232,12 @@
 
 <script src="p5.min.js"></script>
 <script>
-// Slideshow code (runs immediately, not inside DOMContentLoaded)
+// PNG randomizer (shows one random PNG per load)
 const slideshowImages = Array.from({length: 242}, (_, i) => `images/${String(i+1).padStart(2, '0')}.png`);
-let slideshowIndex = 0;
 const slideshowImg = document.getElementById('slideshow-img');
 if (slideshowImg && slideshowImages.length > 0) {
-  slideshowImg.src = slideshowImages[0];
-  setInterval(() => {
-    slideshowIndex = (slideshowIndex + 1) % slideshowImages.length;
-    slideshowImg.style.opacity = 0;
-    setTimeout(() => {
-      slideshowImg.src = slideshowImages[slideshowIndex];
-      slideshowImg.style.opacity = 1;
-    }, 0);
-  }, 2000);
+  const randomIndex = Math.floor(Math.random() * slideshowImages.length);
+  slideshowImg.src = slideshowImages[randomIndex];
 }
 // P5.js animated banner for "SANTIAGO"
 document.addEventListener('DOMContentLoaded', function() {
