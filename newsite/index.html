@@ -5,6 +5,69 @@
   <title>santiago</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+            /* --- Mobile Navigation Improvements --- */
+            @media (max-width: 600px) {
+              nav {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.7em;
+                margin-top: 1.2em;
+              }
+              nav a {
+                display: block;
+                width: 90vw;
+                max-width: 320px;
+                margin: 0.3em auto;
+                font-size: 1.2em;
+                padding: 0.9em 0;
+                border-radius: 2em;
+                background: #222;
+                color: yellow;
+                text-align: center;
+                letter-spacing: 0.05em;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+              }
+              nav a:hover {
+                background: #444;
+                color: #ffd700;
+              }
+              header {
+                margin-bottom: 2.5rem;
+              }
+              h1 {
+                font-size: 2.2rem;
+                margin-bottom: 1rem;
+              }
+              .tag {
+                font-size: 0.9rem;
+                padding: 0.15rem 0.4rem;
+              }
+              main {
+                max-width: 99vw;
+                padding: 0.7rem 0.2rem;
+                border-radius: 0.7em;
+              }
+              section {
+                margin-bottom: 2.5rem;
+              }
+              h2 {
+                font-size: 1.2rem;
+                margin-bottom: 0.8rem;
+                padding-bottom: 0.3rem;
+              }
+              p, ul li {
+                font-size: 1em;
+              }
+              ul li {
+                margin-bottom: 0.7rem;
+                padding-left: 1.1rem;
+              }
+              footer {
+                margin-top: 2.5rem;
+                padding-top: 1.2rem;
+              }
+            }
         @media (max-width: 600px) {
           body {
             padding: 0.5rem 0.2rem;
