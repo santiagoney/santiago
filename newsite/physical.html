@@ -2,36 +2,86 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Paintings & Shop</title>
+  <title>store</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
+<style>
+        .physical-images-row {
+          display: flex;
+          flex-direction: row;
+          gap: 2em;
+          justify-content: center;
+          align-items: flex-start;
+          margin: 2em 0;
+          flex-wrap: wrap;
+        }
+        .physical-images-row img {
+          max-width: 300px;
+          height: auto;
+          border-radius: 1em;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+          background: #fff;
+          padding: 0.5em;
+        }
+      .bottom-nav {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background: rgba(255,255,255,0.95);
+        text-align: center;
+        padding: 1em 0 1.5em 0;
+        box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
+        z-index: 100;
+      }
+    nav a {
+      display: inline-block;
+      padding: 0.5em 1.5em;
+      margin: 0 0.5em;
+      background: #222;
+      color: #fff;
+      border-radius: 2em;
+      text-decoration: none;
+      font-size: 1.1em;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    nav a:hover {
+      background: #444;
+      color: #ffd700;
+    }
+  header h1 {
+    font-size: 4em;
+    font-weight: bold;
+    margin: 0.5em 0;
+    text-align: center;
+  }
+</style>
 <body>
 
 <header>
-  <h1>Physical Paintings</h1>
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="digital.html">Digital / NFTs</a>
-  </nav>
+  <h1>store</h1>
 </header>
 
 <main>
   <section>
-    <h2>Selected Works</h2>
-
-    <article>
-      <img src="painting1.jpg" alt="Painting" width="300">
-      <p>Title — Oil on canvas — 80×60 cm</p>
-    </article>
-
-    <article>
-      <img src="painting2.jpg" alt="Painting" width="300">
-      <p>Title — Acrylic — 2025</p>
-    </article>
+    <div class="physical-images-row">
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <a href="physicals/painting1.png" target="_blank" style="border:none; background:none; padding:0; cursor:pointer;">
+          <img src="physicals/painting1.png" alt="Painting 1">
+        </a>
+        <span style="margin-top:0.5em; font-size:1em; color:#444;">20x30cm, acrylic on canvas</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <a href="physicals/painting2.png" target="_blank" style="border:none; background:none; padding:0; cursor:pointer;">
+          <img src="physicals/painting2.png" alt="Painting 2">
+        </a>
+        <span style="margin-top:0.5em; font-size:1em; color:#444;">25x20, oil on canvas</span>
+      </div>
+    </div>
   </section>
 
   <section>
-    <h2>Shop</h2>
     <!-- Shopify Buy Button embed -->
     <div id="shopify-buy-button"></div>
 
@@ -45,9 +95,12 @@
   </section>
 </main>
 
-<footer>
-  <p>Shipping worldwide</p>
-</footer>
+<nav class="bottom-nav">
+  <a href="index.html">Home</a>
+  <a href="digital.html">Digital / NFTs</a>
+</nav>
+
+
 
 </body>
 </html>
