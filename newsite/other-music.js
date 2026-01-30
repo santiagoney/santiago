@@ -16,25 +16,42 @@ let playing = false;
 let noteTimeout, noteTimeout2;
 
 
+window.onload = function() {
   noCanvas();
   osc = new p5.Oscillator('sine');
   osc2 = new p5.Oscillator('triangle');
   const btn = document.getElementById('play-music-btn');
   if (btn) {
-    btn.textContent = 'Play Arabic Scale Music';
+    btn.textContent = 'music';
     btn.addEventListener('click', () => {
       if (!playing) {
         startPlaying();
-        btn.textContent = 'Stop Music';
+        btn.textContent = 'music';
       } else {
         stopPlaying();
-        btn.textContent = 'Play Arabic Scale Music';
+        btn.textContent = 'music';
       }
     });
   } else {
     // fallback: auto start if no button (should not happen)
     startPlaying();
   }
+}
+
+function startPlaying() {
+  if (!playing) {
+    playing = true;
+    playRandomNote();
+    playRandomNote2();
+  }
+}
+
+function stopPlaying() {
+  playing = false;
+  osc.stop();
+  osc2.stop();
+  clearTimeout(noteTimeout);
+  clearTimeout(noteTimeout2);
 }
 
   if (!playing) {
