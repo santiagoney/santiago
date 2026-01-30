@@ -1,38 +1,52 @@
-let txt = "santiago";
-let fontSize = 160;
-let yBase;
+// Arabic scale (Hijaz) notes in C: C, Db, E, F, G, Ab, B, C
+// Frequencies for one octave (C4 as root)
+const hijazScale = [
+  { note: 'C4', freq: 261.63 },
+  { note: 'Db4', freq: 277.18 },
+  { note: 'E4', freq: 329.63 },
+  { note: 'F4', freq: 349.23 },
+  { note: 'G4', freq: 392.00 },
+  { note: 'Ab4', freq: 415.30 },
+  { note: 'B4', freq: 493.88 },
+  { note: 'C5', freq: 523.25 }
+];
+
+let osc;
+let playing = false;
+let noteTimeout;
 
 function setup() {
-  createCanvas(windowWidth, 400);
-  textFont('boxmd');
-  textSize(fontSize);
-  textAlign(CENTER, CENTER);
-  yBase = height / 2;
+  noCanvas();
+  osc = new p5.Oscillator('sine');
+  document.getElementById('playBtn').addEventListener('click', startPlaying);
+  document.getElementById('stopBtn').addEventListener('click', stopPlaying);
 }
 
-function draw() {
-  background(255);
-  blendMode(MULTIPLY);
-  let t = millis() * 0.002;
-  let amp = 20;
-  let y1 = yBase + sin(t) * amp;
-  let y2 = yBase + sin(t + PI / 2) * amp;
-  let y3 = yBase + sin(t + PI) * amp;
-
-  // Blue shadow (back)
-  fill(0, 100, 255);
-  noStroke();
-  text(txt, width / 2, y3 + 16);
-
-  // Red shadow (middle)
-  fill(255, 0, 0);
-  text(txt, width / 2, y2 + 8);
-
-  // Yellow (front)
-  fill(255, 255, 0);
-  text(txt, width / 2, y1);
+function startPlaying() {
+  if (!playing) {
+    playing = true;
+    playRandomNote();
+  }
 }
 
-function windowResized() {
-  resizeCanvas(windowWidth, 400);
+function stopPlaying() {
+  playing = false;
+  osc.stop();
+  clearTimeout(noteTimeout);
+}
+
+function playRandomNote() {
+  if (!playing) return;
+  const note = random(hijazScale);
+  document.getElementById('noteName').textContent = note.note;
+  osc.freq(note.freq);
+  osc.amp(0.5, 0.05);
+  if (!osc.started) osc.start();
+  // Play for 0.4-0.7s, then next note
+  noteTimeout = setTimeout(() => {
+    osc.amp(0, 0.1);
+    setTimeout(() => {
+      if (playing) playRandomNote();
+    }, 100);
+  }, random(400, 700));
 }
