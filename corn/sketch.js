@@ -40,7 +40,7 @@ function setup() {
   tools.style("border", "1px solid black");
 
   currentBrush = brush1;
-  brushOpacity = createSlider(0, 255, 255);
+  brushOpacity = createSlider(0, 155, 255);
   brushSize = createSlider(1, 400, 50);
   brushSize.position(20, 130);
   brushOpacity.position(20, 160);
