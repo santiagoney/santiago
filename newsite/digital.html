@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>santiago</title>
+        <style>
+            body {
+                position: relative;
+                min-height: 100vh;
+                overflow-x: hidden;
+                background: rgb(180,200,220) !important;
+                background-color: rgb(180,200,220) !important;
+                color: #222;
+                font-family: 'United', sans-serif;
+            }
+            #gol-bg {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                z-index: -1;
+                display: block;
+                background: transparent !important;
+                pointer-events: none;
+            }
+        @font-face {
+            font-family: 'United';
+            src: url('fonts/united.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'boxmd';
+            src: url('fonts/boxmd.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        body {
+            font-family: 'United';
+            background-color: #000000;
+            color: #ff0000;
+            text-align: center;
+            padding: 80px 50px 50px; /* increased top padding for the fixed button */
+            margin: 0;
+            position: relative; /* for absolute/fixed positioning context */
+        }
+        /* Home button - top left fixed */
+        .home-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 999;
+            background-color: #00c8ff;
+            color: #030d22;
+            padding: 8px 16px;
+            text-decoration: none;
+            font-size: 1em;
+            font-family: 'United', sans-serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+        }
+        .home-btn:hover {
+            background-color: #ff0000;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.7);
+            transform: scale(1.05);
+        }
+
+        h1 {
+            font-size: 3.5em;
+            font-family: 'boxmd', 'United', sans-serif !important;
+        }
+        p {
+            font-size: 1.2em;
+        }
+        .button {
+            background-color: #00c8ff;
+            color: #030d22;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 1em;
+            display: inline-block;
+            margin-top: 20px;
+        }
+        .button:hover {
+            background-color: #ff0000;
+        }
+        .images {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .images img {
+            width: 150px; 
+            height: auto;
+            margin: 0 10px 20px;
+            border-radius: 5px;
+        }
+        .large-images {
+            margin-top: 50px;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 24px;
+        }
+        .large-images img {
+            width: 270px;
+            height: 270px;
+            margin-bottom: 0;
+            border-radius: 10px;
+            object-fit: cover;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+            transition: transform 0.2s;
+        }
+        .large-images img:hover {
+            transform: scale(1.08);
+        }
+
+        @media (max-width: 600px) {
+            .home-btn {
+                top: 15px;
+                left: 15px;
+                padding: 6px 12px;
+                font-size: 0.9em;
+            }
+            body {
+                padding: 70px 20px 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+<script>
+// Conway's Game of Life overlay
+const golCanvas = document.getElementById('gol-bg');
+const golCtx = golCanvas.getContext('2d');
+let gw = window.innerWidth;
+let gh = window.innerHeight;
+golCanvas.width = gw;
+golCanvas.height = gh;
+const gCellSize = 12;
+let gCols = Math.floor(gw / gCellSize);
+let gRows = Math.floor(gh / gCellSize);
+let gGrid = Array.from({length: gRows}, () => Array.from({length: gCols}, () => Math.random() > 0.8 ? 1 : 0));
+
+function drawGOL() {
+    golCtx.clearRect(0, 0, gw, gh);
+    for (let y = 0; y < gRows; y++) {
+        for (let x = 0; x < gCols; x++) {
+            if (gGrid[y][x]) {
+                golCtx.fillStyle = 'rgba(255,255,255,0.18)';
+                golCtx.fillRect(x * gCellSize, y * gCellSize, gCellSize-1, gCellSize-1);
+            }
+        }
+    }
+}
+
+function nextGenGOL() {
+    const newGrid = gGrid.map(arr => [...arr]);
+    for (let y = 0; y < gRows; y++) {
+        for (let x = 0; x < gCols; x++) {
+            let neighbors = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const ny = y + dy;
+                    const nx = x + dx;
+                    if (ny >= 0 && ny < gRows && nx >= 0 && nx < gCols) {
+                        neighbors += gGrid[ny][nx];
+                    }
+                }
+            }
+            if (gGrid[y][x] && (neighbors < 2 || neighbors > 3)) newGrid[y][x] = 0;
+            if (!gGrid[y][x] && neighbors === 3) newGrid[y][x] = 1;
+        }
+    }
+    gGrid = newGrid;
+}
+https://wafflesdraw.tez.page/
+function animateGOL() {
+    drawGOL();
+    nextGenGOL();
+    requestAnimationFrame(animateGOL);
+}
+
+window.addEventListener('resize', () => {
+    gw = window.innerWidth;
+    gh = window.innerHeight;
+    golCanvas.width = gw;
+    golCanvas.height = gh;
+    gCols = Math.floor(gw / gCellSize);
+    gRows = Math.floor(gh / gCellSize);
+    gGrid = Array.from({length: gRows}, () => Array.from({length: gCols}, () => Math.random() > 0.8 ? 1 : 0));
+});
+
+animateGOL();
+</script>
+
+    <!-- Home button -->
+    <a href="index.html" class="home-btn">Home</a>
+
+    <div id="p5-banner-container" style="width:100%;height:180px;display:flex;align-items:center;justify-content:center;margin-bottom:2rem;"></div>
+    <div class="images">
+        <a href="https://objkt.com/@ttiimmee" target="_blank"><img src="art1.png" alt="Art 1"></a>
+        <a href="https://objkt.com/@humankernel" target="_blank"><img src="art2.png" alt="Art 2"></a>
+        <a href="https://marketplace.emprops.ai/profile/tz1PwqkrfqAgaJ2iSM3SqxwCBs61UoC2H8gA/creations" target="_blank"><img src="135.png" alt="Art 3"></a>
+        <a href="https://objkt.com/collections/KT1SWtARdBWHs3UR5bwEcdX5iZoJtatJjoVF" target="_blank"><img src="134.png" alt="Art 4"></a>
+        <a href="tool/tool.html" target="_blank"><img src="136.png" alt="Art 5"></a>
+        <a href="https://wafflesdraw.netlify.app/" target="_blank"><img src="tool2.png" alt="Art 6"></a>
+    </div>
+
+        <p> Digital artist and painter researching and thinking about the limits of language and internet culture and the end of the world </p>
+        <div style="display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; gap: 18px; margin: 18px 0 32px 0;">
+            <a href="https://superrare.com/ttiimmee" class="button" target="_blank">superrare</a>
+            <a href="https://twitter.com/ttiimmees" class="button" target="_blank">X</a>
+            <a href="https://objkt.com/@ttiimmee" class="button" target="_blank">objktcom</a>
+            <a href="statement.html" class="button" target="_blank">Artist Statement</a>
+            <a href="http://santiagoney.xyz/tools/index.html" class="button" target="_blank">drawing tools</a>
+            <a href="http://santiagoney.xyz/interviews.html" class="button" target="_blank">interviews</a>
+        </div>
+
+
+<script src="p5.min.js"></script>
+<script>
+// P5.js animated banner for "SANTIAGO"
+document.addEventListener('DOMContentLoaded', function() {
+    new p5((sk) => {
+        let t = 0;
+        sk.setup = function() {
+            let canvas = sk.createCanvas(sk.windowWidth, 180);
+            canvas.parent('p5-banner-container');
+            sk.noFill();
+            sk.frameRate(60);
+        };
+        sk.windowResized = function() {
+            sk.resizeCanvas(sk.windowWidth, 180);
+        };
+        sk.draw = function() {
+            sk.clear();
+            sk.blendMode(sk.MULTIPLY);
+                let x0 = 490, y0 = 120;
+            let baseSize = 60, gap = 48;
+            let letters = 'SANTIAGO';
+            let amp = 20;
+            // Breathing effect
+            let breathe = sk.sin(t * 0.07) * 10; // -10 to +10 px, very slow
+            let size = baseSize + breathe;
+            // Cyan (back)
+            for (let i = 0; i < letters.length; i++) {
+                let x = x0 + i * (size + gap);
+                let y = y0 + sk.sin(t + i * 0.3 + 2) * amp;
+                drawLetter(sk, letters[i], x, y, size, t, [0, 255, 255]);
+            }
+            // Magenta (middle)
+            for (let i = 0; i < letters.length; i++) {
+                let x = x0 + i * (size + gap);
+                let y = y0 + sk.sin(t + i * 0.3 + 1) * amp;
+                drawLetter(sk, letters[i], x, y, size, t, [255, 0, 255]);
+            }
+            // Yellow (front)
+            for (let i = 0; i < letters.length; i++) {
+                let x = x0 + i * (size + gap);
+                let y = y0 + sk.sin(t + i * 0.3) * amp;
+                drawLetter(sk, letters[i], x, y, size, t, [255, 255, 0]);
+            }
+            t += 0.02;
+        };
+        function drawLetter(sk, ch, x, y, s, t, colorArr) {
+            // Subtle blur: draw several times with low alpha and small offsets
+            for (let b = 4; b >= 1; b--) {
+                sk.push();
+                sk.translate(x, y);
+                sk.stroke(colorArr[0], colorArr[1], colorArr[2], 18 * b); // lower alpha for outer blurs
+                sk.strokeWeight((12 + 2 * sk.sin(t + x * 0.01)) + b * 2);
+                sk.noFill();
+                drawLetterShape(sk, ch, s + b * 1.2);
+                sk.pop();
+            }
+            // Main sharp contour
+            sk.push();
+            sk.translate(x, y);
+            sk.stroke(colorArr[0], colorArr[1], colorArr[2], 255);
+            sk.strokeWeight(12 + 2 * sk.sin(t + x * 0.01));
+            sk.noFill();
+            drawLetterShape(sk, ch, s);
+            sk.pop();
+        }
+
+        function drawLetterShape(sk, ch, s) {
+            switch (ch) {
+                case 'S':
+                    sk.push();
+                    sk.scale(-1, 1); // Flip horizontally
+                    sk.beginShape();
+                    sk.vertex(-s*0.4, -s*0.4);
+                    sk.vertex(s*0.4, -s*0.4);
+                    sk.vertex(s*0.4, 0);
+                    sk.vertex(-s*0.4, 0);
+                    sk.vertex(-s*0.4, s*0.4);
+                    sk.vertex(s*0.4, s*0.4);
+                    sk.endShape();
+                    sk.pop();
+                    break;
+                case 'A':
+                    sk.beginShape();
+                    sk.vertex(-s*0.4, s*0.4);
+                    sk.vertex(0, -s*0.4);
+                    sk.vertex(s*0.4, s*0.4);
+                    sk.endShape();
+                    sk.line(-s*0.18, 0, s*0.18, 0);
+                    break;
+                case 'N':
+                    sk.line(-s*0.4, s*0.4, -s*0.4, -s*0.4);
+                    sk.line(-s*0.4, -s*0.4, s*0.4, s*0.4);
+                    sk.line(s*0.4, s*0.4, s*0.4, -s*0.4);
+                    break;
+                case 'T':
+                    sk.line(-s*0.4, -s*0.4, s*0.4, -s*0.4);
+                    sk.line(0, -s*0.4, 0, s*0.4);
+                    break;
+                case 'I':
+                    sk.line(0, -s*0.4, 0, s*0.4);
+                    break;
+                case 'G':
+                    sk.beginShape();
+                    sk.vertex(s*0.4, -s*0.4);
+                    sk.vertex(-s*0.4, -s*0.4);
+                    sk.vertex(-s*0.4, s*0.4);
+                    sk.vertex(s*0.4, s*0.4);
+                    sk.vertex(s*0.4, 0);
+                    sk.vertex(0, 0);
+                    sk.endShape();
+                    break;
+                case 'O':
+                    sk.rect(-s*0.4, -s*0.4, s*0.8, s*0.8, 6);
+                    break;
+            }
+        }
+    }, 'p5-banner-container');
+});
+</script>
+</body>
+<canvas id="ca-bg"></canvas>
+<script>
+// Colorful Conway's Game of Life background
+const golCanvas = document.getElementById('gol-bg');
+const golCtx = golCanvas.getContext('2d');
+let gw = window.innerWidth;
+let gh = window.innerHeight;
+golCanvas.width = gw;
+golCanvas.height = gh;
+const gCellSize = 12;
+let gCols = Math.floor(gw / gCellSize);
+let gRows = Math.floor(gh / gCellSize);
+let gGrid = Array.from({length: gRows}, () => Array.from({length: gCols}, () => Math.random() > 0.8 ? 1 : 0));
+
+function getColor(x, y) {
+    // Colorful gradient based on position
+    const hue = (x * 7 + y * 3) % 360;
+    return `hsl(${hue}, 90%, 60%)`;
+}
+
+function drawGOL() {
+    golCtx.clearRect(0, 0, gw, gh);
+    for (let y = 0; y < gRows; y++) {
+        for (let x = 0; x < gCols; x++) {
+            if (gGrid[y][x]) {
+                golCtx.fillStyle = getColor(x, y);
+                golCtx.fillRect(x * gCellSize, y * gCellSize, gCellSize-1, gCellSize-1);
+            }
+        }
+    }
+}
+
+function nextGenGOL() {
+    const newGrid = gGrid.map(arr => [...arr]);
+    for (let y = 0; y < gRows; y++) {
+        for (let x = 0; x < gCols; x++) {
+            let neighbors = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const ny = y + dy;
+                    const nx = x + dx;
+                    if (ny >= 0 && ny < gRows && nx >= 0 && nx < gCols) {
+                        neighbors += gGrid[ny][nx];
+                    }
+                }
+            }
+            if (gGrid[y][x] && (neighbors < 2 || neighbors > 3)) newGrid[y][x] = 0;
+            if (!gGrid[y][x] && neighbors === 3) newGrid[y][x] = 1;
+        }
+    }
+    gGrid = newGrid;
+}
+
+function animateGOL() {
+    drawGOL();
+    nextGenGOL();
+    requestAnimationFrame(animateGOL);
+}
+
+window.addEventListener('resize', () => {
+    gw = window.innerWidth;
+    gh = window.innerHeight;
+    golCanvas.width = gw;
+    golCanvas.height = gh;
+    gCols = Math.floor(gw / gCellSize);
+    gRows = Math.floor(gh / gCellSize);
+    gGrid = Array.from({length: gRows}, () => Array.from({length: gCols}, () => Math.random() > 0.8 ? 1 : 0));
+});
+
+animateGOL();
+</script>
+</html>
