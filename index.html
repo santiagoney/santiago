@@ -5,119 +5,6 @@
   <title>santiago</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-            /* --- Mobile Navigation Improvements --- */
-            @media (max-width: 600px) {
-              nav {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 0.7em;
-                margin-top: 1.2em;
-              }
-              nav a {
-                display: block;
-                width: 90vw;
-                max-width: 320px;
-                margin: 0.3em auto;
-                font-size: 1.2em;
-                padding: 0.9em 0;
-                border-radius: 2em;
-                background: #222;
-                color: yellow;
-                text-align: center;
-                letter-spacing: 0.05em;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-              }
-              nav a:hover {
-                background: #444;
-                color: #ffd700;
-              }
-              header {
-                margin-bottom: 2.5rem;
-              }
-              h1 {
-                font-size: 2.2rem;
-                margin-bottom: 1rem;
-              }
-              .tag {
-                font-size: 0.9rem;
-                padding: 0.15rem 0.4rem;
-              }
-              main {
-                max-width: 99vw;
-                padding: 0.7rem 0.2rem;
-                border-radius: 0.7em;
-              }
-              section {
-                margin-bottom: 2.5rem;
-              }
-              h2 {
-                font-size: 1.2rem;
-                margin-bottom: 0.8rem;
-                padding-bottom: 0.3rem;
-              }
-              p, ul li {
-                font-size: 1em;
-              }
-              ul li {
-                margin-bottom: 0.7rem;
-                padding-left: 1.1rem;
-              }
-              footer {
-                margin-top: 2.5rem;
-                padding-top: 1.2rem;
-              }
-            }
-        @media (max-width: 600px) {
-          body {
-            padding: 0.5rem 0.2rem;
-            font-size: 1em;
-          }
-          header {
-            margin-bottom: 2.5rem;
-          }
-          h1 {
-            font-size: 2.2rem;
-            margin-bottom: 1rem;
-          }
-          .tag {
-            font-size: 0.9rem;
-            padding: 0.15rem 0.4rem;
-          }
-          nav {
-            margin-top: 1rem;
-          }
-          nav a {
-            font-size: 1rem;
-            padding: 0.4rem 0.7rem;
-            margin: 0 0.2rem;
-            border-radius: 2em;
-          }
-          main {
-            max-width: 99vw;
-            padding: 0.7rem 0.2rem;
-            border-radius: 0.7em;
-          }
-          section {
-            margin-bottom: 2.5rem;
-          }
-          h2 {
-            font-size: 1.2rem;
-            margin-bottom: 0.8rem;
-            padding-bottom: 0.3rem;
-          }
-          p, ul li {
-            font-size: 1em;
-          }
-          ul li {
-            margin-bottom: 0.7rem;
-            padding-left: 1.1rem;
-          }
-          footer {
-            margin-top: 2.5rem;
-            padding-top: 1.2rem;
-          }
-        }
     @font-face {
       font-family: 'boxmd';
       src: url('./fonts/boxmd.ttf') format('truetype');
@@ -150,6 +37,15 @@
       line-height: 1.7;
       min-height: 100vh;
       padding: 2rem 1rem;
+    }
+
+    .p5-banner {
+      width: 100%;
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2rem;
     }
 
     header {
@@ -266,6 +162,21 @@
       color: #666;
     }
 
+    .intro-box {
+      width: 100%;
+      max-width: 100%;
+      display: block;
+      margin: 0 auto 2.5rem auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      opacity: 0.85;
+      padding: 2.5rem;
+      text-align: center;
+      font-size: 1.1rem;
+      font-family: 'Courier New', Courier, monospace;
+      letter-spacing: -0.03em;
+    }
+
     footer {
       text-align: center;
       margin-top: 6rem;
@@ -275,51 +186,299 @@
       font-size: 0.95rem;
     }
 
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 5rem;
+    /* Sidebars & fixed button - desktop */
+    .sidebar-right,
+    .sidebar-left {
+      position: fixed;
+      top: 24px;
+      z-index: 1000;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      border-radius: 10px;
+      overflow: hidden;
+      opacity: 0.92;
+    }
+    .sidebar-right {
+      right: 24px;
+      width: 420px;
+      max-width: 60vw;
+    }
+    .sidebar-left {
+      left: 24px;
+      width: 320px;
+      max-width: 40vw;
+    }
+    .btn-galleries {
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      padding: 12px 32px;
+      background: #00bfff;
+      color: #fff;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.13);
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .sidebar-video {
+      display: block;
+    }
+    .slideshow-link {
+      width: 100%;
+      height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      overflow: hidden;
+      margin-top: 8px;
+      border-radius: 8px;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .slideshow-link img {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+      transition: opacity 0.5s;
+      opacity: 1;
+    }
+    .cover-link {
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      margin-top: 8px;
+      position: relative;
+      width: 90%;
+      max-width: 220px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .cover-img {
+      width: 100%;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+      display: block;
+    }
+    .cover-label {
+      position: absolute;
+      left: 50%;
+      bottom: 12px;
+      transform: translateX(-50%);
+      padding: 2px 16px;
+      background: yellow;
+      color: #000;
+      font-weight: bold;
+      border-radius: 4px;
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .sidebar-links {
+      margin-top: 50px;
+    }
+    .sidebar-link {
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      margin-top: 10px;
+    }
+    .sidebar-btn {
+      display: inline-block;
+      padding: 8px 18px;
+      font-weight: bold;
+      border-radius: 4px;
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      border: none;
+    }
+    .sidebar-btn-magenta {
+      background: magenta;
+      color: #fff;
+      padding: 2px 14px;
+    }
+    .sidebar-btn-yellow {
+      background: #ffe600;
+      color: #000;
+    }
+    .sidebar-btn-dark {
+      background: #222;
+      color: #fff;
+    }
+
+    /* Responsive: tablets & mobile */
+    @media (max-width: 900px) {
+      body {
+        display: flex;
+        flex-direction: column;
+        padding: 1rem 0.75rem;
+        font-size: 1em;
       }
-      
+
+      .sidebar-right,
+      .sidebar-left {
+        position: relative;
+        top: auto;
+        left: auto;
+        right: auto;
+        width: 100%;
+        max-width: 100%;
+        margin-bottom: 1rem;
+        opacity: 1;
+      }
+      .sidebar-right {
+        order: 1;
+      }
+      .sidebar-left {
+        order: 2;
+      }
+      header {
+        order: 3;
+        margin-bottom: 2.5rem;
+      }
+      .tag {
+        order: 4;
+      }
+      main {
+        order: 5;
+        max-width: 100%;
+        padding: 1.25rem 1rem;
+        margin: 0;
+      }
+      footer {
+        order: 6;
+        margin-top: 2.5rem;
+        padding-top: 1.5rem;
+      }
+      .btn-galleries {
+        position: relative;
+        order: 7;
+        left: auto;
+        bottom: auto;
+        margin-top: 1rem;
+        align-self: center;
+      }
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 0.75rem 0.5rem;
+      }
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+      }
+      .tag {
+        font-size: 0.9rem;
+        padding: 0.15rem 0.4rem;
+      }
+      nav {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1.2em;
+      }
       nav a {
         display: block;
-        margin: 1rem 0;
-        font-size: 1.4rem;
+        width: 100%;
+        max-width: 280px;
+        margin: 0;
+        font-size: 1rem;
+        padding: 0.75em 1em;
+        border-radius: 2em;
+        background: #222;
+        color: yellow;
+        text-align: center;
+        letter-spacing: 0.05em;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
       }
-      
+      nav a:hover {
+        background: #444;
+        color: #ffd700;
+      }
       main {
-        padding: 0 1rem;
+        padding: 1rem 0.75rem;
+      }
+      section {
+        margin-bottom: 2.5rem;
+      }
+      .intro-box {
+        padding: 1.5rem 1rem !important;
+        font-size: 1rem !important;
+      }
+      h2 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+      }
+      p, ul li {
+        font-size: 1rem;
+      }
+      ul li {
+        margin-bottom: 0.8rem;
+        padding-left: 1.2rem;
+      }
+      .p5-banner {
+        height: 120px;
+      }
+      .sidebar-right .sidebar-video,
+      .sidebar-left .sidebar-video {
+        height: 160px !important;
+      }
+      .sidebar-right .slideshow-link {
+        height: 240px !important;
+      }
+      .sidebar-links {
+        margin-top: 24px;
+      }
+      .sidebar-left {
+        max-width: 360px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .btn-galleries {
+        padding: 10px 24px;
+        font-size: 1rem;
       }
     }
   </style>
 </head>
 <body>
-  <div style="position:fixed;top:24px;right:24px;z-index:1000;width:420px;max-width:60vw;box-shadow:0 4px 16px rgba(0,0,0,0.18);border-radius:10px;overflow:hidden;opacity:0.92;">
-    <iframe width="100%" height="220" src="https://www.youtube.com/embed/F4gGlEW8fAs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="display:block;"></iframe>
-    <a href="digital.html" id="image-slideshow" style="width:100%;height:320px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden;margin-top:8px;border-radius:8px;text-decoration:none;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.10);">
-      <img id="slideshow-img" src="" alt="slideshow" style="max-width:100%;max-height:100%;display:block;transition:opacity 0.5s;opacity:1;" />
+  <div class="sidebar-right">
+    <iframe class="sidebar-video" width="100%" height="220" src="https://www.youtube.com/embed/F4gGlEW8fAs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    <a href="digital.html" id="image-slideshow" class="slideshow-link">
+      <img id="slideshow-img" src="" alt="slideshow" />
     </a>
   </div>
-  <div style="position:fixed;top:24px;left:24px;z-index:1000;width:320px;max-width:40vw;box-shadow:0 4px 16px rgba(0,0,0,0.18);border-radius:10px;overflow:hidden;opacity:0.92;">
-    <iframe width="100%" height="180" src="https://www.youtube.com/embed/JSLK454msNQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="display:block;"></iframe>
-    <a href="https://neeii.bandcamp.com/" target="_blank" style="display:block;text-align:center;text-decoration:none;margin-top:8px;position:relative;width:90%;max-width:220px;margin-left:auto;margin-right:auto;">
-      <img src="coverneeii.png" alt="neeii music cover" style="width:100%;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.13);display:block;">
-      <span style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%);padding:2px 16px;background:yellow;color:#000;font-weight:bold;border-radius:4px;font-size:1.1rem;letter-spacing:0.04em;box-shadow:0 1px 4px rgba(0,0,0,0.10);">music</span>
+  <div class="sidebar-left">
+    <iframe class="sidebar-video" width="100%" height="180" src="https://www.youtube.com/embed/JSLK454msNQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    <a href="https://neeii.bandcamp.com/" target="_blank" class="cover-link">
+      <img src="coverneeii.png" alt="neeii music cover" class="cover-img">
+      <span class="cover-label">music</span>
     </a>
-    <div style="margin-top:50px;">
-      <a href="https://cria-ens.mx/tiempo-lateral/" target="_blank" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">
-        <span style="display:inline-block;padding:2px 14px;background:magenta;color:#fff;font-weight:bold;border-radius:4px;font-size:1rem;letter-spacing:0.04em;">tiempo lateral</span>
+    <div class="sidebar-links">
+      <a href="https://cria-ens.mx/tiempo-lateral/" target="_blank" class="sidebar-link">
+        <span class="sidebar-btn sidebar-btn-magenta">tiempo lateral</span>
       </a>
-      <a href="ai.html" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">
-        <button style="padding:8px 18px;background:#ffe600;color:#000;font-weight:bold;border:none;border-radius:4px;font-size:1rem;letter-spacing:0.04em;cursor:pointer;">AI work</button>
+      <a href="ai.html" class="sidebar-link">
+        <span class="sidebar-btn sidebar-btn-yellow">AI work</span>
       </a>
-      <a href="other.html" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">
-        <button style="padding:8px 18px;background:#222;color:#fff;font-weight:bold;border:none;border-radius:4px;font-size:1rem;letter-spacing:0.04em;cursor:pointer;">other projects</button>
+      <a href="other.html" class="sidebar-link">
+        <span class="sidebar-btn sidebar-btn-dark">other projects</span>
       </a>
     </div>
   </div>
 
 <header>
-  <div id="p5-banner-container" style="width:100%;height:180px;display:flex;align-items:center;justify-content:center;margin-bottom:2rem;"></div>
+  <div id="p5-banner-container" class="p5-banner"></div>
   <nav>
     <a href="index.html">Home</a>
     <a href="digital.html">Digital / NFTs</a>
@@ -332,7 +491,7 @@
 
 <main>
   <section>
-    <div style="width:100%;max-width:100%;display:block;margin:0 auto 2.5rem auto;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);opacity:0.85;padding:2.5rem 0;text-align:center;font-size:1.1rem;font-family:'Courier New', Courier, monospace;letter-spacing:-0.03em;">
+    <div class="intro-box">
       Digital artist and painter researching and thinking about the limits of language and internet culture and the end of the world.
     </div>
   </section>
@@ -371,21 +530,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
   new p5((sk) => {
     let t = 0;
+    const getBannerHeight = () => sk.windowWidth < 600 ? 120 : 180;
     sk.setup = function() {
-      let canvas = sk.createCanvas(sk.windowWidth, 180);
+      let canvas = sk.createCanvas(sk.windowWidth, getBannerHeight());
       canvas.parent('p5-banner-container');
       sk.noFill();
       sk.frameRate(60);
     };
     sk.windowResized = function() {
-      sk.resizeCanvas(sk.windowWidth, 180);
+      sk.resizeCanvas(sk.windowWidth, getBannerHeight());
     };
     sk.draw = function() {
       sk.clear();
       sk.blendMode(sk.MULTIPLY);
-      let x0 = 440, y0 = 120, size = 60, gap = 48;
-      let letters = 'SANTIAGO';
-      let amp = 20;
+      const letters = 'SANTIAGO';
+      const w = sk.windowWidth;
+      const isMobile = w < 600;
+      const size = isMobile ? 28 : 60;
+      const gap = isMobile ? 22 : 48;
+      const totalWidth = letters.length * (size + gap) - gap;
+      const x0 = (w - totalWidth) / 2;
+      const y0 = isMobile ? 85 : 120;
+      const amp = isMobile ? 10 : 20;
       // Blue (back)
       for (let i = 0; i < letters.length; i++) {
         let x = x0 + i * (size + gap);
@@ -410,7 +576,8 @@ document.addEventListener('DOMContentLoaded', function() {
       sk.push();
       sk.translate(x, y);
       sk.stroke(colorArr[0], colorArr[1], colorArr[2]);
-      sk.strokeWeight(12 + 2 * sk.sin(t + x * 0.01));
+      const baseStroke = s < 40 ? 5 : 12;
+      sk.strokeWeight(baseStroke + 2 * sk.sin(t + x * 0.01));
       sk.noFill();
       // Squared, thick geometric letterforms
       switch (ch) {
@@ -471,9 +638,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-  <!-- Bottom Fixed Button -->
-  <a href="galleries.html" style="position:fixed;left:18px;bottom:18px;padding:12px 32px;background:#00bfff;color:#fff;font-weight:bold;border:none;border-radius:6px;font-size:1.1rem;letter-spacing:0.04em;cursor:pointer;z-index:1000;box-shadow:0 2px 12px rgba(0,0,0,0.13);text-decoration:none;display:inline-block;">
-    galleries
-  </a>
+  <a href="galleries.html" class="btn-galleries">galleries</a>
 </body>
 </html>
