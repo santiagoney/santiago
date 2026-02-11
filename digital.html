@@ -133,71 +133,7 @@
     </style>
 </head>
 <body>
-<script>
-// Conway's Game of Life overlay
-const golCanvas = document.getElementById('gol-bg');
-const golCtx = golCanvas.getContext('2d');
-let gw = window.innerWidth;
-let gh = window.innerHeight;
-golCanvas.width = gw;
-golCanvas.height = gh;
-const gCellSize = 12;
-let gCols = Math.floor(gw / gCellSize);
-let gRows = Math.floor(gh / gCellSize);
-let gGrid = Array.from({length: gRows}, () => Array.from({length: gCols}, () => Math.random() > 0.8 ? 1 : 0));
-
-function drawGOL() {
-    golCtx.clearRect(0, 0, gw, gh);
-    for (let y = 0; y < gRows; y++) {
-        for (let x = 0; x < gCols; x++) {
-            if (gGrid[y][x]) {
-                golCtx.fillStyle = 'rgba(255,255,255,0.18)';
-                golCtx.fillRect(x * gCellSize, y * gCellSize, gCellSize-1, gCellSize-1);
-            }
-        }
-    }
-}
-
-function nextGenGOL() {
-    const newGrid = gGrid.map(arr => [...arr]);
-    for (let y = 0; y < gRows; y++) {
-        for (let x = 0; x < gCols; x++) {
-            let neighbors = 0;
-            for (let dy = -1; dy <= 1; dy++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                    if (dx === 0 && dy === 0) continue;
-                    const ny = y + dy;
-                    const nx = x + dx;
-                    if (ny >= 0 && ny < gRows && nx >= 0 && nx < gCols) {
-                        neighbors += gGrid[ny][nx];
-                    }
-                }
-            }
-            if (gGrid[y][x] && (neighbors < 2 || neighbors > 3)) newGrid[y][x] = 0;
-            if (!gGrid[y][x] && neighbors === 3) newGrid[y][x] = 1;
-        }
-    }
-    gGrid = newGrid;
-}
-https://wafflesdraw.tez.page/
-function animateGOL() {
-    drawGOL();
-    nextGenGOL();
-    requestAnimationFrame(animateGOL);
-}
-
-window.addEventListener('resize', () => {
-    gw = window.innerWidth;
-    gh = window.innerHeight;
-    golCanvas.width = gw;
-    golCanvas.height = gh;
-    gCols = Math.floor(gw / gCellSize);
-    gRows = Math.floor(gh / gCellSize);
-    gGrid = Array.from({length: gRows}, () => Array.from({length: gCols}, () => Math.random() > 0.8 ? 1 : 0));
-});
-
-animateGOL();
-</script>
+<canvas id="gol-bg"></canvas>
 
     <!-- Home button -->
     <a href="index.html" class="home-btn">Home</a>
@@ -342,8 +278,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 'p5-banner-container');
 });
 </script>
-</body>
-<canvas id="ca-bg"></canvas>
 <script>
 // Colorful Conway's Game of Life background
 const golCanvas = document.getElementById('gol-bg');
@@ -415,4 +349,5 @@ window.addEventListener('resize', () => {
 
 animateGOL();
 </script>
+</body>
 </html>
