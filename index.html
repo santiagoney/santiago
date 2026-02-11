@@ -1,105 +1,479 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Santiago Ney — Digital Artist & Painter</title>
-    <meta name="description" content="Santiago Ney is a digital artist and painter exploring the limits of language, internet culture, and the end of the world. Discover artworks, interviews, and creative tools." />
-    <meta name="keywords" content="Santiago Ney, digital art, painter, internet culture, language, contemporary art, generative art, interviews, creative tools, NFTs, Tezos, SuperRare, objkt, artist statement" />
-    <meta name="author" content="Santiago Ney" />
-    <link rel="canonical" href="https://santiagoney.xyz/" />
-    <!-- Open Graph / Facebook -->
-    <meta property="og:title" content="Santiago Ney — Digital Artist & Painter" />
-    <meta property="og:description" content="Digital artist and painter researching the limits of language, internet culture, and the end of the world. Explore artworks, interviews, and creative tools." />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://santiagoney.xyz/" />
-    <meta property="og:image" content="https://santiagoney.xyz/art1.png" />
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Santiago Ney — Digital Artist & Painter" />
-    <meta name="twitter:description" content="Digital artist and painter researching the limits of language, internet culture, and the end of the world. Explore artworks, interviews, and creative tools." />
-    <meta name="twitter:image" content="https://santiagoney.xyz/art1.png" />
-    <style>
-        @font-face {
-            font-family: 'United';
-            src: url('fonts/united.ttf') format('truetype');
-            font-weight: normal;
-            font-style: normal;
-        }
-        body {
-            font-family: 'United';
-            background-color: #000000;
-            color: #ff0000;
-            text-align: center;
-            padding: 50px;
-            margin: 0;
-        }
-        h1 {
-            font-size: 3.5em;
-        }
-        p {
-            font-size: 1.2em;
-        }
-        .button {
-            background-color: #00c8ff;
-            color: #030d22;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 5px;
+  <meta charset="UTF-8">
+  <title>santiago</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+            /* --- Mobile Navigation Improvements --- */
+            @media (max-width: 600px) {
+              nav {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.7em;
+                margin-top: 1.2em;
+              }
+              nav a {
+                display: block;
+                width: 90vw;
+                max-width: 320px;
+                margin: 0.3em auto;
+                font-size: 1.2em;
+                padding: 0.9em 0;
+                border-radius: 2em;
+                background: #222;
+                color: yellow;
+                text-align: center;
+                letter-spacing: 0.05em;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+              }
+              nav a:hover {
+                background: #444;
+                color: #ffd700;
+              }
+              header {
+                margin-bottom: 2.5rem;
+              }
+              h1 {
+                font-size: 2.2rem;
+                margin-bottom: 1rem;
+              }
+              .tag {
+                font-size: 0.9rem;
+                padding: 0.15rem 0.4rem;
+              }
+              main {
+                max-width: 99vw;
+                padding: 0.7rem 0.2rem;
+                border-radius: 0.7em;
+              }
+              section {
+                margin-bottom: 2.5rem;
+              }
+              h2 {
+                font-size: 1.2rem;
+                margin-bottom: 0.8rem;
+                padding-bottom: 0.3rem;
+              }
+              p, ul li {
+                font-size: 1em;
+              }
+              ul li {
+                margin-bottom: 0.7rem;
+                padding-left: 1.1rem;
+              }
+              footer {
+                margin-top: 2.5rem;
+                padding-top: 1.2rem;
+              }
+            }
+        @media (max-width: 600px) {
+          body {
+            padding: 0.5rem 0.2rem;
             font-size: 1em;
-            display: inline-block;
-            margin-top: 20px;
+          }
+          header {
+            margin-bottom: 2.5rem;
+          }
+          h1 {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+          }
+          .tag {
+            font-size: 0.9rem;
+            padding: 0.15rem 0.4rem;
+          }
+          nav {
+            margin-top: 1rem;
+          }
+          nav a {
+            font-size: 1rem;
+            padding: 0.4rem 0.7rem;
+            margin: 0 0.2rem;
+            border-radius: 2em;
+          }
+          main {
+            max-width: 99vw;
+            padding: 0.7rem 0.2rem;
+            border-radius: 0.7em;
+          }
+          section {
+            margin-bottom: 2.5rem;
+          }
+          h2 {
+            font-size: 1.2rem;
+            margin-bottom: 0.8rem;
+            padding-bottom: 0.3rem;
+          }
+          p, ul li {
+            font-size: 1em;
+          }
+          ul li {
+            margin-bottom: 0.7rem;
+            padding-left: 1.1rem;
+          }
+          footer {
+            margin-top: 2.5rem;
+            padding-top: 1.2rem;
+          }
         }
-        .button:hover {
-            background-color: #ff0000;
-        }
-        .images {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .images img {
-            width: 150px; 
-            height: auto;
-            margin: 0 10px 20px;
-            border-radius: 5px;
-        }
-        .large-images {
-            margin-top: 50px;
-        }
-        .large-images img {
-            width: 80%; /* Make the images take up 80% of the viewport width */
-            max-width: 1000px; /* Limit their max width */
-            height: auto;
-            margin-bottom: 30px;
-            border-radius: 10px;
-        }
-    </style>
+    @font-face {
+      font-family: 'boxmd';
+      src: url('./fonts/boxmd.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'United';
+      src: url('./fonts/united.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      color: #1a1a1a;
+      line-height: 1.7;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 5rem;
+    }
+
+    h1 {
+      font-size: 6rem;
+      font-weight: 400;
+      letter-spacing: -0.05em;
+      color: yellow;
+      margin-bottom: 1.5rem;
+      text-transform: lowercase;
+      font-family: 'boxmd', 'Courier New', monospace !important;
+      font-display: swap;
+    }
+
+    .tag {
+      font-size: 1rem;
+      color: #000;
+      background-color: yellow;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      display: block;
+      margin: 0 auto 1rem;
+      font-weight: bold;
+      text-align: center;
+      width: fit-content;
+    }
+
+    nav {
+      margin-top: 1.5rem;
+    }
+
+    nav a {
+      color: yellow;
+      text-decoration: none;
+      font-size: 1.2rem;
+      margin: 0 0.5rem;
+      letter-spacing: 0.05em;
+      transition: color 0.3s ease;
+      position: relative;
+      background: rgba(0,0,0,0.5);
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    nav a:hover {
+      color: #000;
+      background: rgba(255,255,255,0.8);
+    }
+
+    nav a::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 1px;
+      bottom: -4px;
+      left: 0;
+      background-color: yellow;
+      transition: width 0.3s ease;
+      display: none;
+    }
+
+    nav a:hover::after {
+      width: 100%;
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    section {
+      margin-bottom: 6rem;
+    }
+
+    h2 {
+      font-size: 2.2rem;
+      font-weight: 400;
+      margin-bottom: 1.8rem;
+      color: #222;
+      letter-spacing: -0.02em;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 0.6rem;
+    }
+
+    p {
+      font-size: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    ul {
+      list-style: none;
+    }
+
+    ul li {
+      font-size: 1.3rem;
+      margin-bottom: 1.2rem;
+      position: relative;
+      padding-left: 1.8rem;
+    }
+
+    ul li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #666;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 6rem;
+      padding-top: 3rem;
+      border-top: 1px solid #eee;
+      color: #777;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 5rem;
+      }
+      
+      nav a {
+        display: block;
+        margin: 1rem 0;
+        font-size: 1.4rem;
+      }
+      
+      main {
+        padding: 0 1rem;
+      }
+    }
+  </style>
 </head>
 <body>
-    <h1>santiago</h1>
-    <div class="images">
-        <a href="https://objkt.com/@ttiimmee" target="_blank"><img src="art1.png" alt="Art 1"></a>
-        <a href="https://objkt.com/@humankernel" target="_blank"><img src="art2.png" alt="Art 2"></a>
-        <a href="https://marketplace.emprops.ai/profile/tz1PwqkrfqAgaJ2iSM3SqxwCBs61UoC2H8gA/creations" target="_blank"><img src="135.png" alt="Art 3"></a>
-        <a href="https://objkt.com/collections/KT1SWtARdBWHs3UR5bwEcdX5iZoJtatJjoVF" target="_blank"><img src="134.png" alt="Art 4"></a>
-        <a href="tool/tool.html" target="_blank"><img src="136.png" alt="Art 5"></a>
-        <a href="https://wafflesdraw.tez.page" target="_blank"><img src="tool2.png" alt="Art 6"></a>
+  <div style="position:fixed;top:24px;right:24px;z-index:1000;width:420px;max-width:60vw;box-shadow:0 4px 16px rgba(0,0,0,0.18);border-radius:10px;overflow:hidden;opacity:0.92;">
+    <iframe width="100%" height="220" src="https://www.youtube.com/embed/F4gGlEW8fAs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="display:block;"></iframe>
+    <a href="digital.html" id="image-slideshow" style="width:100%;height:320px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden;margin-top:8px;border-radius:8px;text-decoration:none;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.10);">
+      <img id="slideshow-img" src="" alt="slideshow" style="max-width:100%;max-height:100%;display:block;transition:opacity 0.5s;opacity:1;" />
+    </a>
+  </div>
+  <div style="position:fixed;top:24px;left:24px;z-index:1000;width:320px;max-width:40vw;box-shadow:0 4px 16px rgba(0,0,0,0.18);border-radius:10px;overflow:hidden;opacity:0.92;">
+    <iframe width="100%" height="180" src="https://www.youtube.com/embed/JSLK454msNQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="display:block;"></iframe>
+    <a href="https://neeii.bandcamp.com/" target="_blank" style="display:block;text-align:center;text-decoration:none;margin-top:8px;position:relative;width:90%;max-width:220px;margin-left:auto;margin-right:auto;">
+      <img src="coverneeii.png" alt="neeii music cover" style="width:100%;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.13);display:block;">
+      <span style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%);padding:2px 16px;background:yellow;color:#000;font-weight:bold;border-radius:4px;font-size:1.1rem;letter-spacing:0.04em;box-shadow:0 1px 4px rgba(0,0,0,0.10);">music</span>
+    </a>
+    <div style="margin-top:50px;">
+      <a href="https://www.youtube.com/watch?v=rDeJ6ehqmSI" target="_blank" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">
+        <span style="display:inline-block;padding:2px 14px;background:magenta;color:#fff;font-weight:bold;border-radius:4px;font-size:1rem;letter-spacing:0.04em;">tiempo lateral</span>
+      </a>
+      <a href="ai.html" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">
+        <button style="padding:8px 18px;background:#ffe600;color:#000;font-weight:bold;border:none;border-radius:4px;font-size:1rem;letter-spacing:0.04em;cursor:pointer;">AI work</button>
+      </a>
+      <a href="other.html" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">
+        <button style="padding:8px 18px;background:#222;color:#fff;font-weight:bold;border:none;border-radius:4px;font-size:1rem;letter-spacing:0.04em;cursor:pointer;">other projects</button>
+      </a>
     </div>
-    <p> Digital artist and painter researching and thinking about the limits of language and internet culture and the end of the world </p>
-    <a href="https://superrare.com/ttiimmee" class="button" target="_blank">superrare</a>
-    <a href="https://twitter.com/ttiimmees" class="button" target="_blank">X</a>
-    <a href="statement.html" class="button" target="_blank">Artist Statement</a>
- <a href="http://santiagoney.xyz/tools/index.html" class="button" target="_blank">drawing tools</a>
- <a href="http://santiagoney.xyz/interviews.html" class="button" target="_blank">interviews</a>   
+  </div>
 
-    <!-- New Section for Large Images -->
-    <div class="large-images">
+<header>
+  <div id="p5-banner-container" style="width:100%;height:180px;display:flex;align-items:center;justify-content:center;margin-bottom:2rem;"></div>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="digital.html">Digital / NFTs</a>
+    <a href="store.html"><em>store</em></a>
+    <a href="ai.html">AI Work</a>
+  </nav>
+</header>
 
-       
+<p class="tag"><a href="ai.html">AI work</a></p>
 
-
-
-
+<main>
+  <section>
+    <div style="width:100%;max-width:100%;display:block;margin:0 auto 2.5rem auto;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);opacity:0.85;padding:2.5rem 0;text-align:center;font-size:1.1rem;font-family:'Courier New', Courier, monospace;letter-spacing:-0.03em;">
+      Digital artist and painter researching and thinking about the limits of language and internet culture and the end of the world.
     </div>
+  </section>
+
+  <section>
+    <ul>
+      <li><a href="digital.html">Digital Art & NFTs</a></li>
+      <li><a href="store.html"><em>store</em></a></li>
+      <li><a href="https://santiagoney.xyz/tools/index.html">Drawing Tools</a></li>
+      <li><a href="interviews.html">Interviews</a></li>
+      <li><a href="statement.html">Artist Statement</a></li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  <p>santiago 2026</p>
+  <p>
+    <a href="https://superrare.com/ttiimmee" target="_blank">SuperRare</a> |
+    <a href="https://objkt.com/@ttiimmee" target="_blank">objkt</a> |
+    <a href="https://twitter.com/ttiimmees" target="_blank">X</a>
+  </p>
+</footer>
+
+<script src="p5.min.js"></script>
+<script>
+// PNG randomizer (shows one random PNG per load)
+const slideshowImages = Array.from({length: 242}, (_, i) => `images/${String(i+1).padStart(2, '0')}.png`);
+const slideshowImg = document.getElementById('slideshow-img');
+if (slideshowImg && slideshowImages.length > 0) {
+  const randomIndex = Math.floor(Math.random() * slideshowImages.length);
+  slideshowImg.src = slideshowImages[randomIndex];
+}
+// P5.js animated banner for "SANTIAGO"
+document.addEventListener('DOMContentLoaded', function() {
+
+  new p5((sk) => {
+    let t = 0;
+    sk.setup = function() {
+      let canvas = sk.createCanvas(sk.windowWidth, 180);
+      canvas.parent('p5-banner-container');
+      sk.noFill();
+      sk.frameRate(60);
+    };
+    sk.windowResized = function() {
+      sk.resizeCanvas(sk.windowWidth, 180);
+    };
+    sk.draw = function() {
+      sk.clear();
+      sk.blendMode(sk.MULTIPLY);
+      let x0 = 440, y0 = 120, size = 60, gap = 48;
+      let letters = 'SANTIAGO';
+      let amp = 20;
+      // Blue (back)
+      for (let i = 0; i < letters.length; i++) {
+        let x = x0 + i * (size + gap);
+        let y = y0 + sk.sin(t + i * 0.3 + 2) * amp;
+        drawLetter(sk, letters[i], x, y, size, t, [0, 100, 255]);
+      }
+      // Red (middle)
+      for (let i = 0; i < letters.length; i++) {
+        let x = x0 + i * (size + gap);
+        let y = y0 + sk.sin(t + i * 0.3 + 1) * amp;
+        drawLetter(sk, letters[i], x, y, size, t, [255, 0, 0]);
+      }
+      // Yellow (front)
+      for (let i = 0; i < letters.length; i++) {
+        let x = x0 + i * (size + gap);
+        let y = y0 + sk.sin(t + i * 0.3) * amp;
+        drawLetter(sk, letters[i], x, y, size, t, [255, 255, 0]);
+      }
+      t += 0.02;
+    };
+    function drawLetter(sk, ch, x, y, s, t, colorArr) {
+      sk.push();
+      sk.translate(x, y);
+      sk.stroke(colorArr[0], colorArr[1], colorArr[2]);
+      sk.strokeWeight(12 + 2 * sk.sin(t + x * 0.01));
+      sk.noFill();
+      // Squared, thick geometric letterforms
+      switch (ch) {
+        case 'S':
+          sk.push();
+          sk.scale(-1, 1); // Flip horizontally
+          sk.beginShape();
+          sk.vertex(-s*0.4, -s*0.4);
+          sk.vertex(s*0.4, -s*0.4);
+          sk.vertex(s*0.4, 0);
+          sk.vertex(-s*0.4, 0);
+          sk.vertex(-s*0.4, s*0.4);
+          sk.vertex(s*0.4, s*0.4);
+          sk.endShape();
+          sk.pop();
+          break;
+        case 'A':
+          sk.beginShape();
+          sk.vertex(-s*0.4, s*0.4);
+          sk.vertex(0, -s*0.4);
+          sk.vertex(s*0.4, s*0.4);
+          sk.endShape();
+          sk.line(-s*0.18, 0, s*0.18, 0);
+          break;
+        case 'N':
+          sk.line(-s*0.4, s*0.4, -s*0.4, -s*0.4);
+          sk.line(-s*0.4, -s*0.4, s*0.4, s*0.4);
+          sk.line(s*0.4, s*0.4, s*0.4, -s*0.4);
+          break;
+        case 'T':
+          sk.line(-s*0.4, -s*0.4, s*0.4, -s*0.4);
+          sk.line(0, -s*0.4, 0, s*0.4);
+          break;
+        case 'I':
+          sk.line(0, -s*0.4, 0, s*0.4);
+          break;
+        case 'G':
+          sk.beginShape();
+          sk.vertex(s*0.4, -s*0.4);
+          sk.vertex(-s*0.4, -s*0.4);
+          sk.vertex(-s*0.4, s*0.4);
+          sk.vertex(s*0.4, s*0.4);
+          sk.vertex(s*0.4, 0);
+          sk.vertex(0, 0);
+          sk.endShape();
+          break;
+        case 'O':
+          sk.rect(-s*0.4, -s*0.4, s*0.8, s*0.8, 6);
+          break;
+      }
+      sk.pop();
+    }
+  }, 'p5-banner-container');
+
+  const images = ['backgrounds/134.png', 'backgrounds/2344.png', 'backgrounds/33wwww01.png', 'backgrounds/34id01.png', 'backgrounds/TIME_ ancient internet  .png', 'backgrounds/YOUANDME343002.png', 'backgrounds/aa32.png', 'backgrounds/art1.png', 'backgrounds/bush2.gif', 'backgrounds/cars56.gif', 'backgrounds/corn.gif', 'backgrounds/ezgif.com-animated-gif-maker.gif', 'backgrounds/facey002.gif', 'backgrounds/hc.gif', 'backgrounds/pfp.gif', 'backgrounds/sweetrt.png', 'backgrounds/teiaberlinaa252_2.png', 'backgrounds/timroth.gif', 'backgrounds/trace.png', 'backgrounds/traced55.png', 'backgrounds/you as a bird.png', 'backgrounds/youcryptoartius.gif'];
+  const randomImage = images[Math.floor(Math.random() * images.length)];
+  document.body.style.backgroundImage = `url('${randomImage}')`;
+});
+</script>
+
+  <!-- Bottom Fixed Button -->
+  <a href="galleries.html" style="position:fixed;left:18px;bottom:18px;padding:12px 32px;background:#00bfff;color:#fff;font-weight:bold;border:none;border-radius:6px;font-size:1.1rem;letter-spacing:0.04em;cursor:pointer;z-index:1000;box-shadow:0 2px 12px rgba(0,0,0,0.13);text-decoration:none;display:inline-block;">
+    galleries
+  </a>
 </body>
 </html>
