@@ -1,24 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>santiago</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Digital artist and painter researching and thinking about the limits of language and internet culture.">
+  <meta name="description"
+    content="Digital artist and painter researching and thinking about the limits of language and internet culture.">
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://santiagoney.xyz/">
   <meta property="og:title" content="santiago — artist">
-  <meta property="og:description" content="Digital artist and painter researching and thinking about the limits of language and internet culture.">
-  <meta property="og:image" content="https://santiagoney.xyz/coverneeii.png">
+  <meta property="og:description"
+    content="Digital artist and painter researching and thinking about the limits of language and internet culture.">
+  <meta property="og:image" content="https://santiagoney.xyz/og.jpg">
   <meta property="og:site_name" content="santiago">
   <meta property="og:locale" content="en_US">
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://santiagoney.xyz/">
   <meta name="twitter:title" content="santiago — artist">
-  <meta name="twitter:description" content="Digital artist and painter researching and thinking about the limits of language and internet culture.">
-  <meta name="twitter:image" content="https://santiagoney.xyz/coverneeii.png">
+  <meta name="twitter:description"
+    content="Digital artist and painter researching and thinking about the limits of language and internet culture.">
+  <meta name="twitter:image" content="https://santiagoney.xyz/og.jpg">
   <style>
     @font-face {
       font-family: 'boxmd';
@@ -26,6 +30,7 @@
       font-weight: normal;
       font-style: normal;
     }
+
     @font-face {
       font-family: 'United';
       src: url('./fonts/united.ttf') format('truetype');
@@ -104,7 +109,7 @@
       letter-spacing: 0.05em;
       transition: color 0.3s ease;
       position: relative;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0, 0, 0, 0.5);
       padding: 0.5rem 1rem;
       border-radius: 4px;
       display: inline-block;
@@ -112,7 +117,7 @@
 
     nav a:hover {
       color: #000;
-      background: rgba(255,255,255,0.8);
+      background: rgba(255, 255, 255, 0.8);
     }
 
     nav a::after {
@@ -134,10 +139,10 @@
     main {
       max-width: 720px;
       margin: 0 auto;
-      background: linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
       padding: 2rem;
       border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
 
     section {
@@ -183,7 +188,7 @@
       display: block;
       margin: 0 auto 2.5rem auto;
       border-radius: 8px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
       opacity: 0.85;
       padding: 2.5rem;
       text-align: center;
@@ -207,21 +212,24 @@
       position: fixed;
       top: 24px;
       z-index: 1000;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
       border-radius: 10px;
       overflow: hidden;
       opacity: 0.92;
     }
+
     .sidebar-right {
       right: 24px;
       width: 420px;
       max-width: 60vw;
     }
+
     .sidebar-left {
       left: 24px;
       width: 320px;
       max-width: 40vw;
     }
+
     .btn-galleries {
       position: fixed;
       left: 18px;
@@ -236,7 +244,7 @@
       letter-spacing: 0.04em;
       cursor: pointer;
       z-index: 1000;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.13);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.13);
       text-decoration: none;
       display: inline-block;
     }
@@ -244,6 +252,7 @@
     .sidebar-video {
       display: block;
     }
+
     .slideshow-link {
       width: 100%;
       height: 320px;
@@ -256,8 +265,9 @@
       border-radius: 8px;
       text-decoration: none;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
+
     .slideshow-link img {
       max-width: 100%;
       max-height: 100%;
@@ -265,6 +275,7 @@
       transition: opacity 0.5s;
       opacity: 1;
     }
+
     .cover-link {
       display: block;
       text-align: center;
@@ -276,12 +287,14 @@
       margin-left: auto;
       margin-right: auto;
     }
+
     .cover-img {
       width: 100%;
       border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.13);
       display: block;
     }
+
     .cover-label {
       position: absolute;
       left: 50%;
@@ -294,17 +307,20 @@
       border-radius: 4px;
       font-size: 1.1rem;
       letter-spacing: 0.04em;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
     }
+
     .sidebar-links {
       margin-top: 50px;
     }
+
     .sidebar-link {
       display: block;
       text-align: center;
       text-decoration: none;
       margin-top: 10px;
     }
+
     .sidebar-btn {
       display: inline-block;
       padding: 8px 18px;
@@ -315,15 +331,18 @@
       cursor: pointer;
       border: none;
     }
+
     .sidebar-btn-magenta {
       background: magenta;
       color: #fff;
       padding: 2px 14px;
     }
+
     .sidebar-btn-yellow {
       background: #ffe600;
       color: #000;
     }
+
     .sidebar-btn-dark {
       background: #222;
       color: #fff;
@@ -349,30 +368,37 @@
         margin-bottom: 1rem;
         opacity: 1;
       }
+
       .sidebar-right {
         order: 1;
       }
+
       .sidebar-left {
         order: 2;
       }
+
       header {
         order: 3;
         margin-bottom: 2.5rem;
       }
+
       .tag {
         order: 4;
       }
+
       main {
         order: 5;
         max-width: 100%;
         padding: 1.25rem 1rem;
         margin: 0;
       }
+
       footer {
         order: 6;
         margin-top: 2.5rem;
         padding-top: 1.5rem;
       }
+
       .btn-galleries {
         position: relative;
         order: 7;
@@ -387,14 +413,17 @@
       body {
         padding: 0.75rem 0.5rem;
       }
+
       h1 {
         font-size: 2.5rem;
         margin-bottom: 1rem;
       }
+
       .tag {
         font-size: 0.9rem;
         padding: 0.15rem 0.4rem;
       }
+
       nav {
         display: flex;
         flex-direction: column;
@@ -402,6 +431,7 @@
         gap: 0.5rem;
         margin-top: 1.2em;
       }
+
       nav a {
         display: block;
         width: 100%;
@@ -414,51 +444,65 @@
         color: yellow;
         text-align: center;
         letter-spacing: 0.05em;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       }
+
       nav a:hover {
         background: #444;
         color: #ffd700;
       }
+
       main {
         padding: 1rem 0.75rem;
       }
+
       section {
         margin-bottom: 2.5rem;
       }
+
       .intro-box {
         padding: 1.5rem 1rem !important;
         font-size: 1rem !important;
       }
+
       h2 {
         font-size: 1.25rem;
         margin-bottom: 1rem;
       }
-      p, ul li {
+
+      p,
+      ul li {
         font-size: 1rem;
       }
+
       ul li {
         margin-bottom: 0.8rem;
         padding-left: 1.2rem;
       }
+
       .p5-banner {
         height: 120px;
       }
+
       .sidebar-right .sidebar-video,
       .sidebar-left .sidebar-video {
         height: 160px !important;
       }
+
       .sidebar-right .slideshow-link {
         height: 240px !important;
       }
+
       .sidebar-links {
         margin-top: 24px;
       }
+
       .sidebar-left {
         max-width: 360px;
         margin-left: auto;
         margin-right: auto;
       }
+
       .btn-galleries {
         padding: 10px 24px;
         font-size: 1rem;
@@ -466,15 +510,22 @@
     }
   </style>
 </head>
+
 <body>
   <div class="sidebar-right">
-    <iframe class="sidebar-video" width="100%" height="220" src="https://www.youtube.com/embed/F4gGlEW8fAs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    <iframe class="sidebar-video" width="100%" height="220" src="https://www.youtube.com/embed/F4gGlEW8fAs"
+      title="YouTube video player" frameborder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowfullscreen></iframe>
     <a href="digital.html" id="image-slideshow" class="slideshow-link">
       <img id="slideshow-img" src="" alt="slideshow" />
     </a>
   </div>
   <div class="sidebar-left">
-    <iframe class="sidebar-video" width="100%" height="180" src="https://www.youtube.com/embed/JSLK454msNQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    <iframe class="sidebar-video" width="100%" height="180" src="https://www.youtube.com/embed/JSLK454msNQ"
+      title="YouTube video player" frameborder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowfullscreen></iframe>
     <a href="https://neeii.bandcamp.com/" target="_blank" class="cover-link">
       <img src="coverneeii.png" alt="neeii music cover" class="cover-img">
       <span class="cover-label">music</span>
@@ -492,167 +543,169 @@
     </div>
   </div>
 
-<header>
-  <div id="p5-banner-container" class="p5-banner"></div>
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="digital.html">Digital / NFTs</a>
-    <a href="store.html"><em>store</em></a>
-    <a href="ai.html">AI Work</a>
-  </nav>
-</header>
+  <header>
+    <div id="p5-banner-container" class="p5-banner"></div>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="digital.html">Digital / NFTs</a>
+      <a href="store.html"><em>store</em></a>
+      <a href="ai.html">AI Work</a>
+    </nav>
+  </header>
 
-<p class="tag"><a href="ai.html">AI work</a></p>
+  <p class="tag"><a href="ai.html">AI work</a></p>
 
-<main>
-  <section>
-    <div class="intro-box">
-      Digital artist and painter researching and thinking about the limits of language and internet culture and the end of the world.
-    </div>
-  </section>
+  <main>
+    <section>
+      <div class="intro-box">
+        Digital artist and painter researching and thinking about the limits of language and internet culture and the
+        end of the world.
+      </div>
+    </section>
 
-  <section>
-    <ul>
-      <li><a href="digital.html">Digital Art & NFTs</a></li>
-      <li><a href="store.html"><em>store</em></a></li>
-      <li><a href="https://santiagoney.xyz/tools/index.html">Drawing Tools</a></li>
-      <li><a href="interviews.html">Interviews</a></li>
-      <li><a href="statement.html">Artist Statement</a></li>
-    </ul>
-  </section>
-</main>
+    <section>
+      <ul>
+        <li><a href="digital.html">Digital Art & NFTs</a></li>
+        <li><a href="store.html"><em>store</em></a></li>
+        <li><a href="https://santiagoney.xyz/tools/index.html">Drawing Tools</a></li>
+        <li><a href="interviews.html">Interviews</a></li>
+        <li><a href="statement.html">Artist Statement</a></li>
+      </ul>
+    </section>
+  </main>
 
-<footer>
-  <p>santiago 2026</p>
-  <p>
-    <a href="https://superrare.com/ttiimmee" target="_blank">SuperRare</a> |
-    <a href="https://objkt.com/@ttiimmee" target="_blank">objkt</a> |
-    <a href="https://twitter.com/ttiimmees" target="_blank">X</a>
-  </p>
-</footer>
+  <footer>
+    <p>santiago 2026</p>
+    <p>
+      <a href="https://superrare.com/ttiimmee" target="_blank">SuperRare</a> |
+      <a href="https://objkt.com/@ttiimmee" target="_blank">objkt</a> |
+      <a href="https://twitter.com/ttiimmees" target="_blank">X</a>
+    </p>
+  </footer>
 
-<script src="p5.min.js"></script>
-<script>
-// PNG randomizer (shows one random PNG per load)
-const slideshowImages = Array.from({length: 242}, (_, i) => `images/${String(i+1).padStart(2, '0')}.png`);
-const slideshowImg = document.getElementById('slideshow-img');
-if (slideshowImg && slideshowImages.length > 0) {
-  const randomIndex = Math.floor(Math.random() * slideshowImages.length);
-  slideshowImg.src = slideshowImages[randomIndex];
-}
-// P5.js animated banner for "SANTIAGO"
-document.addEventListener('DOMContentLoaded', function() {
-
-  new p5((sk) => {
-    let t = 0;
-    const getBannerHeight = () => sk.windowWidth < 600 ? 120 : 180;
-    sk.setup = function() {
-      let canvas = sk.createCanvas(sk.windowWidth, getBannerHeight());
-      canvas.parent('p5-banner-container');
-      sk.noFill();
-      sk.frameRate(60);
-    };
-    sk.windowResized = function() {
-      sk.resizeCanvas(sk.windowWidth, getBannerHeight());
-    };
-    sk.draw = function() {
-      sk.clear();
-      sk.blendMode(sk.MULTIPLY);
-      const letters = 'SANTIAGO';
-      const w = sk.windowWidth;
-      const isMobile = w < 600;
-      const size = isMobile ? 28 : 60;
-      const gap = isMobile ? 22 : 48;
-      const totalWidth = letters.length * (size + gap) - gap;
-      const x0 = (w - totalWidth) / 2;
-      const y0 = isMobile ? 85 : 120;
-      const amp = isMobile ? 10 : 20;
-      // Blue (back)
-      for (let i = 0; i < letters.length; i++) {
-        let x = x0 + i * (size + gap);
-        let y = y0 + sk.sin(t + i * 0.3 + 2) * amp;
-        drawLetter(sk, letters[i], x, y, size, t, [0, 100, 255]);
-      }
-      // Red (middle)
-      for (let i = 0; i < letters.length; i++) {
-        let x = x0 + i * (size + gap);
-        let y = y0 + sk.sin(t + i * 0.3 + 1) * amp;
-        drawLetter(sk, letters[i], x, y, size, t, [255, 0, 0]);
-      }
-      // Yellow (front)
-      for (let i = 0; i < letters.length; i++) {
-        let x = x0 + i * (size + gap);
-        let y = y0 + sk.sin(t + i * 0.3) * amp;
-        drawLetter(sk, letters[i], x, y, size, t, [255, 255, 0]);
-      }
-      t += 0.02;
-    };
-    function drawLetter(sk, ch, x, y, s, t, colorArr) {
-      sk.push();
-      sk.translate(x, y);
-      sk.stroke(colorArr[0], colorArr[1], colorArr[2]);
-      const baseStroke = s < 40 ? 5 : 12;
-      sk.strokeWeight(baseStroke + 2 * sk.sin(t + x * 0.01));
-      sk.noFill();
-      // Squared, thick geometric letterforms
-      switch (ch) {
-        case 'S':
-          sk.push();
-          sk.scale(-1, 1); // Flip horizontally
-          sk.beginShape();
-          sk.vertex(-s*0.4, -s*0.4);
-          sk.vertex(s*0.4, -s*0.4);
-          sk.vertex(s*0.4, 0);
-          sk.vertex(-s*0.4, 0);
-          sk.vertex(-s*0.4, s*0.4);
-          sk.vertex(s*0.4, s*0.4);
-          sk.endShape();
-          sk.pop();
-          break;
-        case 'A':
-          sk.beginShape();
-          sk.vertex(-s*0.4, s*0.4);
-          sk.vertex(0, -s*0.4);
-          sk.vertex(s*0.4, s*0.4);
-          sk.endShape();
-          sk.line(-s*0.18, 0, s*0.18, 0);
-          break;
-        case 'N':
-          sk.line(-s*0.4, s*0.4, -s*0.4, -s*0.4);
-          sk.line(-s*0.4, -s*0.4, s*0.4, s*0.4);
-          sk.line(s*0.4, s*0.4, s*0.4, -s*0.4);
-          break;
-        case 'T':
-          sk.line(-s*0.4, -s*0.4, s*0.4, -s*0.4);
-          sk.line(0, -s*0.4, 0, s*0.4);
-          break;
-        case 'I':
-          sk.line(0, -s*0.4, 0, s*0.4);
-          break;
-        case 'G':
-          sk.beginShape();
-          sk.vertex(s*0.4, -s*0.4);
-          sk.vertex(-s*0.4, -s*0.4);
-          sk.vertex(-s*0.4, s*0.4);
-          sk.vertex(s*0.4, s*0.4);
-          sk.vertex(s*0.4, 0);
-          sk.vertex(0, 0);
-          sk.endShape();
-          break;
-        case 'O':
-          sk.rect(-s*0.4, -s*0.4, s*0.8, s*0.8, 6);
-          break;
-      }
-      sk.pop();
+  <script src="p5.min.js"></script>
+  <script>
+    // PNG randomizer (shows one random PNG per load)
+    const slideshowImages = Array.from({ length: 242 }, (_, i) => `images/${String(i + 1).padStart(2, '0')}.png`);
+    const slideshowImg = document.getElementById('slideshow-img');
+    if (slideshowImg && slideshowImages.length > 0) {
+      const randomIndex = Math.floor(Math.random() * slideshowImages.length);
+      slideshowImg.src = slideshowImages[randomIndex];
     }
-  }, 'p5-banner-container');
+    // P5.js animated banner for "SANTIAGO"
+    document.addEventListener('DOMContentLoaded', function () {
 
-  const images = ['backgrounds/134.png', 'backgrounds/2344.png', 'backgrounds/33wwww01.png', 'backgrounds/34id01.png', 'backgrounds/TIME_ ancient internet  .png', 'backgrounds/YOUANDME343002.png', 'backgrounds/aa32.png', 'backgrounds/art1.png', 'backgrounds/bush2.gif', 'backgrounds/cars56.gif', 'backgrounds/ezgif.com-animated-gif-maker.gif', 'backgrounds/facey002.gif', 'backgrounds/hc.gif', 'backgrounds/pfp.gif', 'backgrounds/sweetrt.png', 'backgrounds/teiaberlinaa252_2.png', 'backgrounds/trace.png', 'backgrounds/traced55.png', 'backgrounds/you as a bird.png', 'backgrounds/youcryptoartius.gif'];
-  const randomImage = images[Math.floor(Math.random() * images.length)];
-  document.body.style.backgroundImage = `url('${randomImage}')`;
-});
-</script>
+      new p5((sk) => {
+        let t = 0;
+        const getBannerHeight = () => sk.windowWidth < 600 ? 120 : 180;
+        sk.setup = function () {
+          let canvas = sk.createCanvas(sk.windowWidth, getBannerHeight());
+          canvas.parent('p5-banner-container');
+          sk.noFill();
+          sk.frameRate(60);
+        };
+        sk.windowResized = function () {
+          sk.resizeCanvas(sk.windowWidth, getBannerHeight());
+        };
+        sk.draw = function () {
+          sk.clear();
+          sk.blendMode(sk.MULTIPLY);
+          const letters = 'SANTIAGO';
+          const w = sk.windowWidth;
+          const isMobile = w < 600;
+          const size = isMobile ? 28 : 60;
+          const gap = isMobile ? 22 : 48;
+          const totalWidth = letters.length * (size + gap) - gap;
+          const x0 = (w - totalWidth) / 2;
+          const y0 = isMobile ? 85 : 120;
+          const amp = isMobile ? 10 : 20;
+          // Blue (back)
+          for (let i = 0; i < letters.length; i++) {
+            let x = x0 + i * (size + gap);
+            let y = y0 + sk.sin(t + i * 0.3 + 2) * amp;
+            drawLetter(sk, letters[i], x, y, size, t, [0, 100, 255]);
+          }
+          // Red (middle)
+          for (let i = 0; i < letters.length; i++) {
+            let x = x0 + i * (size + gap);
+            let y = y0 + sk.sin(t + i * 0.3 + 1) * amp;
+            drawLetter(sk, letters[i], x, y, size, t, [255, 0, 0]);
+          }
+          // Yellow (front)
+          for (let i = 0; i < letters.length; i++) {
+            let x = x0 + i * (size + gap);
+            let y = y0 + sk.sin(t + i * 0.3) * amp;
+            drawLetter(sk, letters[i], x, y, size, t, [255, 255, 0]);
+          }
+          t += 0.02;
+        };
+        function drawLetter(sk, ch, x, y, s, t, colorArr) {
+          sk.push();
+          sk.translate(x, y);
+          sk.stroke(colorArr[0], colorArr[1], colorArr[2]);
+          const baseStroke = s < 40 ? 5 : 12;
+          sk.strokeWeight(baseStroke + 2 * sk.sin(t + x * 0.01));
+          sk.noFill();
+          // Squared, thick geometric letterforms
+          switch (ch) {
+            case 'S':
+              sk.push();
+              sk.scale(-1, 1); // Flip horizontally
+              sk.beginShape();
+              sk.vertex(-s * 0.4, -s * 0.4);
+              sk.vertex(s * 0.4, -s * 0.4);
+              sk.vertex(s * 0.4, 0);
+              sk.vertex(-s * 0.4, 0);
+              sk.vertex(-s * 0.4, s * 0.4);
+              sk.vertex(s * 0.4, s * 0.4);
+              sk.endShape();
+              sk.pop();
+              break;
+            case 'A':
+              sk.beginShape();
+              sk.vertex(-s * 0.4, s * 0.4);
+              sk.vertex(0, -s * 0.4);
+              sk.vertex(s * 0.4, s * 0.4);
+              sk.endShape();
+              sk.line(-s * 0.18, 0, s * 0.18, 0);
+              break;
+            case 'N':
+              sk.line(-s * 0.4, s * 0.4, -s * 0.4, -s * 0.4);
+              sk.line(-s * 0.4, -s * 0.4, s * 0.4, s * 0.4);
+              sk.line(s * 0.4, s * 0.4, s * 0.4, -s * 0.4);
+              break;
+            case 'T':
+              sk.line(-s * 0.4, -s * 0.4, s * 0.4, -s * 0.4);
+              sk.line(0, -s * 0.4, 0, s * 0.4);
+              break;
+            case 'I':
+              sk.line(0, -s * 0.4, 0, s * 0.4);
+              break;
+            case 'G':
+              sk.beginShape();
+              sk.vertex(s * 0.4, -s * 0.4);
+              sk.vertex(-s * 0.4, -s * 0.4);
+              sk.vertex(-s * 0.4, s * 0.4);
+              sk.vertex(s * 0.4, s * 0.4);
+              sk.vertex(s * 0.4, 0);
+              sk.vertex(0, 0);
+              sk.endShape();
+              break;
+            case 'O':
+              sk.rect(-s * 0.4, -s * 0.4, s * 0.8, s * 0.8, 6);
+              break;
+          }
+          sk.pop();
+        }
+      }, 'p5-banner-container');
+
+      const images = ['backgrounds/134.png', 'backgrounds/2344.png', 'backgrounds/33wwww01.png', 'backgrounds/34id01.png', 'backgrounds/TIME_ ancient internet  .png', 'backgrounds/YOUANDME343002.png', 'backgrounds/aa32.png', 'backgrounds/art1.png', 'backgrounds/bush2.gif', 'backgrounds/cars56.gif', 'backgrounds/ezgif.com-animated-gif-maker.gif', 'backgrounds/facey002.gif', 'backgrounds/hc.gif', 'backgrounds/pfp.gif', 'backgrounds/sweetrt.png', 'backgrounds/teiaberlinaa252_2.png', 'backgrounds/trace.png', 'backgrounds/traced55.png', 'backgrounds/you as a bird.png', 'backgrounds/youcryptoartius.gif'];
+      const randomImage = images[Math.floor(Math.random() * images.length)];
+      document.body.style.backgroundImage = `url('${randomImage}')`;
+    });
+  </script>
 
   <a href="galleries.html" class="btn-galleries">galleries</a>
 </body>
+
 </html>
