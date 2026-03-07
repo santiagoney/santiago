@@ -1954,50 +1954,29 @@ function paintAt(x,y,useSecondary=false) {
     composite(); updateThumb(); return;
   }
 
-  // ── Cam brush — snapshot from the working preview canvas ──
-  if (camBrushMode && camReady) {
-    const layer = layers[activeLayerIdx]; if (!layer) return;
-
-    const preview = document.getElementById('cam-preview-canvas');
-    const src = preview && preview.width > 1 ? preview : null;
-    if (!src) { toast('NO PREVIEW YET'); return; }
-
-    // DEBUG: sample center pixel of preview to confirm it has data
-    try {
-      const pc = src.getContext('2d');
-      const px = pc.getImageData(src.width/2|0, src.height/2|0, 1, 1).data;
-      if (px[0]===0 && px[1]===0 && px[2]===0) {
-        toast(`PREVIEW IS BLACK r=${px[0]} g=${px[1]} b=${px[2]}`);
-      } else {
-        toast(`PREVIEW OK r=${px[0]} g=${px[1]} b=${px[2]}`);
-      }
-    } catch(e) { toast('PREVIEW TAINTED: '+e.name); }
-
-    const sz = state.size;
-    const aspect = src.width / src.height;
-    const dw = sz, dh = sz / aspect;
-    const sc = state.scatter;
-    const ox = sc > 0 ? (Math.random()-0.5)*sc*0.4 : 0;
-    const oy = sc > 0 ? (Math.random()-0.5)*sc*0.4 : 0;
-
-    layer.ctx.save();
-    layer.ctx.globalCompositeOperation = 'source-over';
-    layer.ctx.globalAlpha = state.opacity / 100;
-    layer.ctx.translate(x+ox, y+oy);
-    layer.ctx.rotate(state.rotation * Math.PI / 180);
-    layer.ctx.drawImage(src, -dw/2, -dh/2, dw, dh);
-    layer.ctx.restore();
-
-    if (state.mirror) {
+  // ── Cam brush ──
+  if (camBrushMode) {
+    const frame = getCamFrame();
+    if (frame) {
+      const layer=layers[activeLayerIdx]; if(!layer) return;
+      const sz=state.size;
+      const sc=state.scatter,ox=sc>0?(Math.random()-0.5)*sc*0.4:0,oy=sc>0?(Math.random()-0.5)*sc*0.4:0;
       layer.ctx.save();
-      layer.ctx.globalCompositeOperation = 'source-over';
-      layer.ctx.globalAlpha = state.opacity / 100;
-      layer.ctx.translate(cvs.width-(x+ox), y+oy);
-      layer.ctx.rotate(state.rotation * Math.PI / 180);
-      layer.ctx.drawImage(src, -dw/2, -dh/2, dw, dh);
+      layer.ctx.globalAlpha = state.opacity/100;
+      layer.ctx.translate(x+ox, y+oy);
+      layer.ctx.rotate(state.rotation * Math.PI/180);
+      layer.ctx.drawImage(frame, -sz/2, -sz * (frame.height/frame.width)/2, sz, sz * (frame.height/frame.width));
       layer.ctx.restore();
+      if(state.mirror){
+        layer.ctx.save();
+        layer.ctx.globalAlpha=state.opacity/100;
+        layer.ctx.translate(cvs.width-(x+ox),y+oy);
+        layer.ctx.rotate(state.rotation*Math.PI/180);
+        layer.ctx.drawImage(frame,-sz/2,-sz*(frame.height/frame.width)/2,sz,sz*(frame.height/frame.width));
+        layer.ctx.restore();
+      }
+      composite(); updateThumb(); return;
     }
-    composite(); updateThumb(); return;
   }
 
   // ── Proc brush ──
@@ -2561,6 +2540,7 @@ let camReady = false;
 function startCam() {
   if (camElement) return;
 
+  // Detect insecure context (file://) which blocks getUserMedia
   if (location.protocol === 'file:') {
     showCamBlockedModal('file://');
     camBrushMode = false; updateCamBrushUI(); return;
@@ -2571,35 +2551,17 @@ function startCam() {
   }
 
   camElement = document.createElement('video');
-  camElement.autoplay = true;
-  camElement.playsInline = true;
-  camElement.muted = true;
-  // IMPORTANT: display:none stops frame decoding in many browsers.
-  // Position off-screen but keep it "visible" so the browser decodes frames.
-  camElement.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;pointer-events:none;';
+  camElement.autoplay = true; camElement.playsInline = true; camElement.muted = true;
+  camElement.style.display = 'none';
   document.body.appendChild(camElement);
-
   camCanvas = document.createElement('canvas');
+  camCanvas.width = 320; camCanvas.height = 240;
   camCtx = camCanvas.getContext('2d');
 
   navigator.mediaDevices.getUserMedia({ video: true })
     .then(stream => {
       camElement.srcObject = stream;
-
-      camElement.addEventListener('playing', () => {
-        // Poll until we get real dimensions — some browsers report 0 for a few frames
-        const waitForDims = () => {
-          if (camElement.videoWidth > 0 && camElement.videoHeight > 0) {
-            camReady = true;
-            updateCamPreview();
-            toast('📷 CAM READY');
-          } else {
-            requestAnimationFrame(waitForDims);
-          }
-        };
-        waitForDims();
-      }, { once: true });
-
+      camElement.addEventListener("playing", () => { camReady = true; toast("{1F4F7} CAM READY"); }, { once: true });
       camElement.play().catch(() => {});
     })
     .catch(err => {
@@ -2613,37 +2575,6 @@ function startCam() {
         showCamBlockedModal('error');
       }
     });
-}
-
-// Small live preview of the cam feed inside the sidebar button
-let camPreviewTimer = null;
-function updateCamPreview() {
-  const btn = document.getElementById('btn-cam-brush');
-  if (!btn || !camReady) return;
-
-  // Draw a tiny preview onto the button
-  let previewCanvas = document.getElementById('cam-preview-canvas');
-  if (!previewCanvas) {
-    previewCanvas = document.createElement('canvas');
-    previewCanvas.id = 'cam-preview-canvas';
-    previewCanvas.width = 320; previewCanvas.height = 180;
-    previewCanvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:3px;opacity:0.85;pointer-events:none;';
-    btn.style.position = 'relative';
-    btn.style.overflow = 'hidden';
-    btn.appendChild(previewCanvas);
-  }
-
-  const tick = () => {
-    if (!camReady || !camElement || !camBrushMode) {
-      previewCanvas.remove(); return;
-    }
-    const pctx = previewCanvas.getContext('2d');
-    // Draw directly from video element for preview
-    try { pctx.drawImage(camElement, 0, 0, 320, 180); } catch(e) {}
-    camPreviewTimer = requestAnimationFrame(tick);
-  };
-  cancelAnimationFrame(camPreviewTimer);
-  tick();
 }
 
 function showCamBlockedModal(reason) {
@@ -2732,37 +2663,19 @@ function stopCam() {
 
 function getCamFrame() {
   if (!camReady || !camElement) return null;
-  const vw = camElement.videoWidth;
-  const vh = camElement.videoHeight;
-  if (!vw || !vh) return null;
-
-  // Only resize (which clears + invalidates ctx) when dimensions actually changed
-  if (camCanvas.width !== vw || camCanvas.height !== vh) {
-    camCanvas.width  = vw;
-    camCanvas.height = vh;
-    camCtx = camCanvas.getContext('2d'); // re-acquire after resize
-  }
-
-  try {
-    camCtx.drawImage(camElement, 0, 0, vw, vh);
-  } catch(e) {
-    // Video not ready for capture yet
-    return null;
-  }
+  const vw = camElement.videoWidth || 320;
+  const vh = camElement.videoHeight || 240;
+  // Only reset canvas size if it changed — resetting clears the canvas
+  if (camCanvas.width !== vw) camCanvas.width = vw;
+  if (camCanvas.height !== vh) camCanvas.height = vh;
+  camCtx.drawImage(camElement, 0, 0);
   return camCanvas;
 }
 
 function toggleCamBrush() {
   camBrushMode = !camBrushMode;
-  if (camBrushMode) {
-    startCam();
-    toast('📷 CAM BRUSH ON — C to toggle');
-  } else {
-    cancelAnimationFrame(camPreviewTimer);
-    document.getElementById('cam-preview-canvas')?.remove();
-    stopCam();
-    toast('CAM BRUSH OFF');
-  }
+  if (camBrushMode) { startCam(); toast('📷 CAM BRUSH ON — C to toggle'); }
+  else { stopCam(); toast('CAM BRUSH OFF'); }
   updateCamBrushUI();
 }
 

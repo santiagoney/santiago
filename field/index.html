@@ -126,6 +126,67 @@
     margin-bottom: 8px;
   }
 
+  /* estampa brush grid — 7 cols, larger stamps like original p5 sketch */
+  #estampa-brush-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    margin-top: 6px;
+  }
+
+  .estampa-card {
+    aspect-ratio: 1;
+    border: 1.5px solid #3a2e1e;
+    border-radius: 3px;
+    cursor: pointer;
+    background: #0d0a07;
+    position: relative;
+    overflow: visible;
+    transition: border-color 0.12s, transform 0.1s;
+  }
+
+  .estampa-card canvas {
+    width: 100%; height: 100%;
+    display: block;
+    border-radius: 2px;
+  }
+
+  .estampa-card:hover {
+    border-color: #c8a97e;
+    z-index: 10;
+    transform: scale(1.08);
+  }
+
+  .estampa-card.active {
+    border-color: #f0c87e;
+    box-shadow: 0 0 0 1.5px #f0c87e44;
+  }
+
+  /* large popup preview shown on hover */
+  .estampa-preview-popup {
+    display: none;
+    position: fixed;
+    width: 160px;
+    height: 160px;
+    border: 2px solid #c8a97e;
+    border-radius: 6px;
+    background: #0d0a07;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.7);
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+  }
+
+  .estampa-preview-popup canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .estampa-card:hover .estampa-preview-popup {
+    display: block;
+  }
+
   .brush-card {
     aspect-ratio: 1;
     border: 1px solid var(--border2);
@@ -547,7 +608,8 @@
   </div>
   <div id="sidebar-body">
 
-    <!-- BRUSHES -->\n    <div class="section">
+    <!-- BRUSHES -->
+    <div class="section">
       <div class="section-label">Brush</div>
       <div id="brush-grid"></div>
       <div id="img-brush-drop" title="Drop an image here to use it as a brush">
@@ -576,7 +638,7 @@
       <div class="ctrl-row">
         <label>Scatter</label>
         <input type="range" id="sl-scatter" min="0" max="100" value="10">
-        <span class="val" id="v-scatter">30</span>
+        <span class="val" id="v-scatter">10</span>
       </div>
       <div class="ctrl-row">
         <label>Rotation</label>
@@ -586,12 +648,34 @@
       <div class="ctrl-row">
         <label>Spacing</label>
         <input type="range" id="sl-spacing" min="0" max="80" value="2">
-        <span class="val" id="v-spacing">8</span>
+        <span class="val" id="v-spacing">2</span>
       </div>
       <div class="ctrl-row">
         <label>Jitter</label>
         <input type="range" id="sl-jitter" min="0" max="100" value="0">
         <span class="val" id="v-jitter">0</span>
+      </div>
+    </div>
+
+    <!-- ── CHAOS BRUSH CONTROLS ── -->
+    <div class="section" id="section-chaos" style="display:none;">
+      <div class="section-label" style="color:#f4a261;">&#9889; Chaos</div>
+      <div class="ctrl-row" style="margin-bottom:4px;">
+        <label style="min-width:48px;">Mode</label>
+        <select id="chaos-mode" style="flex:1;font-size:9px;">
+          <option value="mix">Mix all</option>
+          <option value="rects">Rects + hatch</option>
+          <option value="tris">Triangles</option>
+          <option value="dots">Polka dots</option>
+          <option value="lines">Lines</option>
+          <option value="scribble">Scribbles</option>
+          <option value="mono">Mono color</option>
+        </select>
+      </div>
+      <div class="ctrl-row">
+        <label style="min-width:48px;">Vivid</label>
+        <input type="range" id="sl-chaos-vivid" min="0" max="100" value="70" style="flex:1;">
+        <span class="val" id="v-chaos-vivid">70</span>
       </div>
     </div>
 
@@ -659,6 +743,60 @@
 
       <!-- proc brush grid -->
       <div id="proc-brush-grid"></div>
+    </div>
+
+    <!-- ── ESTAMPA BRUSHES ── -->
+    <div class="section" id="section-estampa">
+      <div class="section-label" style="color:#c8a97e;opacity:1;">Estampa</div>
+
+      <!-- palette display -->
+      <div id="estampa-palette-strip" style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;min-height:14px;"></div>
+
+      <!-- palette picker -->
+      <div class="ctrl-row" style="margin-bottom:4px;">
+        <label>Palette</label>
+        <select id="estampa-palette" style="flex:1;font-size:9px;border-color:#3a2e1e;color:#c8a97e;">
+          <option value="earth">Earthy (original)</option>
+          <option value="vibrant">Vibrant</option>
+          <option value="cool">Cool</option>
+          <option value="warm">Warm</option>
+          <option value="mono">Monochrome</option>
+          <option value="current">Use current color</option>
+        </select>
+      </div>
+
+      <!-- dim range -->
+      <div class="ctrl-row">
+        <label>Cell min</label>
+        <input type="range" id="sl-estampa-dmin" min="2" max="40" value="4">
+        <span class="val" id="v-estampa-dmin">4</span>
+      </div>
+      <div class="ctrl-row">
+        <label>Cell max</label>
+        <input type="range" id="sl-estampa-dmax" min="4" max="80" value="30">
+        <span class="val" id="v-estampa-dmax">30</span>
+      </div>
+
+      <!-- count -->
+      <div class="ctrl-row">
+        <label>Count</label>
+        <input type="range" id="sl-estampa-count" min="4" max="48" value="24">
+        <span class="val" id="v-estampa-count">24</span>
+      </div>
+
+      <!-- color count -->
+      <div class="ctrl-row">
+        <label>Colors</label>
+        <input type="range" id="sl-estampa-colors" min="1" max="10" value="4">
+        <span class="val" id="v-estampa-colors">4</span>
+      </div>
+
+      <div class="btn-row" style="margin-top:4px;">
+        <button class="btn" id="btn-estampa-gen" style="flex:1;border-color:#3a2e1e;color:#c8a97e;">⟳ Generate</button>
+        <button class="btn on" id="btn-estampa-lightness" style="border-color:#3a2e1e;color:#c8a97e;" title="Lightness cycling">◑ L</button>
+      </div>
+
+      <div id="estampa-brush-grid"></div>
     </div>
 
     <!-- COLOR -->
@@ -744,9 +882,14 @@
     <div class="section">
       <div class="section-label">Tool</div>
       <div class="btn-row">
-        <button class="btn on" id="btn-tool-draw" title="Draw (D)">✏ Draw</button>
-        <button class="btn" id="btn-tool-select" title="Select (Q)">⬚ Select</button>
+        <button class="btn on" id="btn-tool-draw" title="Draw (A)">✏ Draw</button>
+        <button class="btn" id="btn-tool-select" title="Rect Select (Q)">⬚ Rect</button>
         <button class="btn" id="btn-tool-move" title="Move (W)">✥ Move</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="btn-tool-lasso" title="Lasso Select (L)">⌇ Lasso</button>
+        <button class="btn" id="btn-tool-ellipse" title="Ellipse Select (O)">◯ Ellipse</button>
+        <button class="btn" id="btn-tool-scale" title="Scale Selection (T)">⤢ Scale</button>
       </div>
     </div>
 
@@ -794,7 +937,7 @@
         <button class="btn" id="btn-import-png">↑ Import PNG</button>
       </div>
       <div class="btn-row" style="margin-bottom:8px;">
-        <button class="btn" id="btn-paste-clipboard" style="flex:1;" title="Paste image from clipboard (Ctrl+Shift+V)">⎘ Paste Image</button>
+        <button class="btn" id="btn-paste-clipboard" style="flex:1;" title="Paste image from clipboard (Ctrl+V)">⎘ Paste Image</button>
       </div>
       <input type="file" id="file-import" accept="image/png,image/jpeg,image/webp" style="display:none;">
       <div class="ctrl-row" style="margin-bottom:10px;">
@@ -817,10 +960,6 @@
       <div class="btn-row">
         <button class="btn" id="btn-clear">Clear</button>
         <button class="btn" id="btn-save">Save PNG</button>
-      </div>
-      <div class="btn-row">
-        <button class="btn" id="btn-import-png" style="flex:1;">↑ Import PNG</button>
-        <button class="btn" id="btn-paste-clipboard" style="flex:1;">⎘ Paste</button>
       </div>
       <div class="btn-row">
         <button class="btn" id="btn-canvas-size" style="flex:1;">⬜ Canvas Size</button>
@@ -855,9 +994,12 @@
     <div class="section" style="opacity:0.5;">
       <div class="section-label">Keys</div>
       <div style="line-height:2;font-size:9px;color:#555;letter-spacing:0.05em;">
-        D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;draw tool<br>
-        Q&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;select tool<br>
+        A&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;draw tool<br>
+        Q&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rect select<br>
+        L&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;lasso select<br>
+        O&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ellipse select<br>
         W&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;move tool<br>
+        T&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;scale tool<br>
         Space&nbsp;&nbsp;sel → brush<br>
         Esc&nbsp;&nbsp;&nbsp;&nbsp;deselect<br>
         Enter&nbsp;&nbsp;commit paste<br>
@@ -867,14 +1009,16 @@
         [ / ]&nbsp;&nbsp;size –/+<br>
         Z / X&nbsp;&nbsp;opacity –/+<br>
         R / E&nbsp;&nbsp;rotation ±<br>
+        G&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;grow brush (while painting)<br>
+        D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shrink brush (while painting)<br>
         Ctrl+Z&nbsp;&nbsp;undo<br>
         Ctrl+Y&nbsp;&nbsp;redo<br>
         S&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;save<br>
         M&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mirror<br>
         H&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hue cycle<br>
         P&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;generate proc<br>
+        N&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;generate estampa<br>
         Ctrl+I&nbsp;&nbsp;import PNG<br>
-        Ctrl+Shift+V&nbsp;paste image<br>
       </div>
     </div>
 
@@ -1175,13 +1319,128 @@ const BRUSHES = [
   { name:'orbit', draw(lc,x,y,sz,col,p){const rings=Math.max(1,Math.floor(p.density/6));for(let ri=0;ri<rings;ri++){const r=sz*(0.1+ri*0.12)*(p.scatter/100+0.5),count=Math.max(3,Math.round(p.density/rings)),offset=Math.random()*Math.PI*2;for(let i=0;i<count;i++){const a=offset+(i/count)*Math.PI*2,s=sz*0.04*(Math.random()*0.6+0.4);lc.beginPath();lc.arc(x+Math.cos(a)*r,y+Math.sin(a)*r,s,0,Math.PI*2);lc.fillStyle=col;lc.fill();}}},
     preview(pc,w,h){pc.fillStyle='#000';pc.fillRect(0,0,w,h);for(let ri=0;ri<3;ri++){const r=(ri+1)*h*0.12,cnt=6+ri*4;for(let i=0;i<cnt;i++){const a=(i/cnt)*Math.PI*2;pc.beginPath();pc.arc(w/2+Math.cos(a)*r,h/2+Math.sin(a)*r,1.5,0,Math.PI*2);pc.fillStyle=`rgba(255,255,255,${0.8-ri*0.15})`;pc.fill();}}}
   },
+  { name:'chaos',
+    // ── helper: jagged rect ──
+    _jagRect(lc,x,y,w,h,jag){
+      const s=8;lc.beginPath();
+      for(let i=0;i<=s;i++){const t=i/s;lc.lineTo(x+t*w+(Math.random()-0.5)*jag,y+(Math.random()-0.5)*jag);}
+      for(let i=0;i<=s;i++){const t=i/s;lc.lineTo(x+w+(Math.random()-0.5)*jag,y+t*h+(Math.random()-0.5)*jag);}
+      for(let i=s;i>=0;i--){const t=i/s;lc.lineTo(x+t*w+(Math.random()-0.5)*jag,y+h+(Math.random()-0.5)*jag);}
+      for(let i=s;i>=0;i--){const t=i/s;lc.lineTo(x+(Math.random()-0.5)*jag,y+t*h+(Math.random()-0.5)*jag);}
+      lc.closePath();
+    },
+    // ── helper: jagged triangle ──
+    _jagTri(lc,x,y,r,jag){
+      const s=4;lc.beginPath();
+      for(let i=0;i<3;i++){
+        const a1=Math.PI*2/3*i-Math.PI/2,a2=Math.PI*2/3*(i+1)-Math.PI/2;
+        const x1=x+Math.cos(a1)*r,y1=y+Math.sin(a1)*r,x2=x+Math.cos(a2)*r,y2=y+Math.sin(a2)*r;
+        if(i===0)lc.moveTo(x1,y1);else lc.lineTo(x1,y1);
+        for(let j=1;j<s;j++){const t=j/s;lc.lineTo(x1+(x2-x1)*t+(Math.random()-0.5)*jag,y1+(y2-y1)*t+(Math.random()-0.5)*jag);}
+      }
+      lc.closePath();
+    },
+    // ── helper: hatch a current path region ──
+    _hatch(lc,x,y,w,h,gap,col){
+      lc.save();lc.clip();
+      lc.strokeStyle=col;lc.lineWidth=0.8;lc.setLineDash([]);
+      for(let ly=y;ly<y+h;ly+=gap)lc.beginPath(),lc.moveTo(x,ly),lc.lineTo(x+w,ly+(Math.random()-0.5)*3),lc.stroke();
+      lc.restore();
+    },
+    // ── helper: scribble cluster ──
+    _scribble(lc,x,y,r,col){
+      lc.strokeStyle=col;lc.lineWidth=0.8;
+      for(let i=0;i<4;i++){
+        lc.beginPath();
+        for(let j=0;j<5;j++)lc.lineTo(x+(Math.random()-0.5)*r*2,y+(Math.random()-0.5)*r*2);
+        lc.stroke();
+      }
+    },
+    draw(lc,x,y,sz,col,p){
+      const mode=window._chaosBrushMode||'mix';
+      const vivid=(window._chaosVivid??70)/100;
+      const jag=sz*0.06*(p.scatter/100+0.3);
+      const sc=sz*(p.scatter/100+0.2);
+      const n=Math.max(1,Math.round(p.density*0.5));
+      const r=()=>Math.random();
+      // build a vivid multi-color palette; blend amount controlled by vivid slider
+      const hexCols=['#ff3b30','#ffcc00','#4cd964','#5ac8fa','#ff2d55','#c77dff','#ffd93d','#ff6b9d','#fb8500','#00b4d8'];
+      const tints=[col,...hexCols.slice(0,5)];
+      const pick=()=>{
+        if(mode==='mono') return col;
+        return r()<(1-vivid)?col:tints[1+Math.floor(r()*(tints.length-1))];
+      };
+
+      for(let i=0;i<n;i++){
+        const ox=(r()-0.5)*sc*1.4,oy=(r()-0.5)*sc*1.4;
+        const cx=x+ox,cy=y+oy;
+        const which=mode==='rects'?0:mode==='tris'?1:mode==='dots'?2:mode==='scribble'?3:Math.floor(r()*4);
+        const c=pick();
+        lc.save();
+        if(which===0){
+          // jagged hatched rect
+          const rw=sz*(r()*0.5+0.25),rh=sz*(r()*0.3+0.15);
+          lc.translate(cx,cy);lc.rotate((r()-0.5)*Math.PI*0.5);
+          lc.fillStyle=c;
+          this._jagRect(lc,-rw/2,-rh/2,rw,rh,jag);lc.fill();
+          this._hatch(lc,-rw/2,-rh/2,rw,rh,sz*0.06,`rgba(0,0,0,0.4)`);
+        } else if(which===1){
+          // jagged triangle
+          lc.fillStyle=c;
+          this._jagTri(lc,cx,cy,sz*(r()*0.25+0.15),jag);lc.fill();
+        } else if(which===2){
+          // polka dot
+          const rad=sz*(r()*0.12+0.04);
+          lc.beginPath();lc.arc(cx,cy,rad,0,Math.PI*2);lc.fillStyle=c;lc.fill();
+        } else {
+          // scribble
+          this._scribble(lc,cx,cy,sz*0.2,c);
+        }
+        lc.restore();
+      }
+      // diagonal chaos lines
+      if(mode==='mix'||mode==='lines'){
+        lc.save();lc.lineWidth=sz*0.025*(p.scatter/100+0.5);
+        for(let i=0;i<Math.max(1,Math.round(n*0.3));i++){
+          const lx1=x+(r()-0.5)*sc,ly1=y+(r()-0.5)*sc;
+          const lx2=lx1+(r()-0.5)*sz*0.8,ly2=ly1+(r()-0.5)*sz*0.8;
+          lc.strokeStyle=pick();lc.beginPath();lc.moveTo(lx1,ly1);lc.lineTo(lx2,ly2);lc.stroke();
+        }
+        lc.restore();
+      }
+    },
+    preview(pc,w,h){
+      pc.fillStyle='#111';pc.fillRect(0,0,w,h);
+      const cols=['#ff3b30','#ffcc00','#4cd964','#5ac8fa','#ff2d55','#c77dff','#ffd93d'];
+      const r=()=>Math.random(),pick=()=>cols[Math.floor(r()*cols.length)];
+      // rects
+      for(let i=0;i<5;i++){
+        const rw=r()*14+6,rh=r()*10+4;
+        const rx=r()*w,ry=r()*h;
+        pc.save();pc.translate(rx,ry);pc.rotate((r()-0.5)*1.2);
+        pc.fillStyle=pick();pc.beginPath();
+        for(let j=0;j<=6;j++)pc.lineTo(j/6*rw+(r()-0.5)*2,-rh/2+(r()-0.5)*2);
+        for(let j=0;j<=6;j++)pc.lineTo(rw+(r()-0.5)*2,j/6*rh-rh/2+(r()-0.5)*2);
+        for(let j=6;j>=0;j--)pc.lineTo(j/6*rw+(r()-0.5)*2,rh/2+(r()-0.5)*2);
+        for(let j=6;j>=0;j--)pc.lineTo((r()-0.5)*2,j/6*rh-rh/2+(r()-0.5)*2);
+        pc.closePath();pc.fill();
+        pc.save();pc.clip();pc.strokeStyle='rgba(0,0,0,0.5)';pc.lineWidth=0.7;
+        for(let ly=-rh/2;ly<rh/2;ly+=3)pc.beginPath(),pc.moveTo(0,ly),pc.lineTo(rw,ly),pc.stroke();
+        pc.restore();pc.restore();
+      }
+      // dots
+      for(let i=0;i<10;i++){pc.beginPath();pc.arc(r()*w,r()*h,r()*3+1,0,Math.PI*2);pc.fillStyle=pick();pc.fill();}
+      // lines
+      pc.lineWidth=1.2;
+      for(let i=0;i<6;i++){pc.strokeStyle=pick();pc.beginPath();pc.moveTo(r()*w,r()*h);pc.lineTo(r()*w,r()*h);pc.stroke();}
+    }
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
 // ══ PROCEDURAL BRUSH SYSTEM ════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════
 
-// Procedural palette — curated vibrant sets
 const PROC_PALETTE_SETS = [
   ['#ff3b30','#ff9500','#ffcc00','#4cd964','#5ac8fa','#007aff'],
   ['#ff2d55','#5856d6','#a2845e','#34aadc','#4cd964','#ff9500'],
@@ -1195,23 +1454,12 @@ const PROC_PALETTE_SETS = [
   ['#ffb703','#fb8500','#023047','#219ebc','#8ecae6','#126782'],
 ];
 
-// Procedural brush state
-let procBrushes = [];          // array of { canvas, name, colors }
-let procBrushIndex = -1;       // -1 = not using proc brush
-let procCurrentPalette = [];   // currently active colors
+let procBrushes = [];
+let procBrushIndex = -1;
+let procCurrentPalette = [];
 let procLightnessCycling = true;
 let procLightnessAngle = 0;
 
-// Lightness cycle — applied per-stroke when drawing with a proc brush
-function getLightnessFactor() {
-  if (!procLightnessCycling || procBrushIndex < 0) return 1;
-  const amp = parseInt(document.getElementById('sl-proc-lamp').value) / 100;
-  const speed = parseInt(document.getElementById('sl-proc-lspeed').value);
-  procLightnessAngle = (procLightnessAngle + speed * 0.01) % (Math.PI * 2);
-  return 1 + Math.sin(procLightnessAngle) * amp;
-}
-
-// Color helpers
 function hexToRgbArr(hex) {
   return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
 }
@@ -1238,74 +1486,46 @@ function hslArrToRgb(h,s,l) {
   return [Math.round(r*255),Math.round(g*255),Math.round(b*255)];
 }
 
-// Pick a random palette from the sets + current brush color blended in
 function generateProcPalette(nColors) {
   const baseSet = PROC_PALETTE_SETS[Math.floor(Math.random()*PROC_PALETTE_SETS.length)];
   const result = [];
   for (let i=0; i<nColors; i++) {
     result.push(baseSet[Math.floor(Math.random()*baseSet.length)]);
   }
-  // occasionally blend in the current draw color
   if (Math.random() < 0.4) result[Math.floor(Math.random()*result.length)] = state.color;
   return result;
 }
 
-// Draw one procedural shape onto a canvas context
 function drawProcShape(ctx2, shapeType, x, y, dim, fillColor) {
   ctx2.fillStyle = fillColor;
   ctx2.strokeStyle = fillColor;
   ctx2.lineWidth = Math.max(1, dim/8);
   ctx2.beginPath();
   switch(shapeType) {
-    case 0: // square
-      ctx2.rect(x, y, dim, dim);
-      ctx2.fill(); break;
-    case 1: // circle
-      ctx2.arc(x+dim/2, y+dim/2, dim/2, 0, Math.PI*2);
-      ctx2.fill(); break;
-    case 2: // triangle
-      ctx2.moveTo(x, y+dim); ctx2.lineTo(x+dim/2, y); ctx2.lineTo(x+dim, y+dim);
-      ctx2.closePath(); ctx2.fill(); break;
-    case 3: // rect (wide)
-      ctx2.rect(x, y, dim, dim/3);
-      ctx2.fill(); break;
-    case 4: // diamond
-      ctx2.moveTo(x+dim/2,y); ctx2.lineTo(x+dim,y+dim/2);
-      ctx2.lineTo(x+dim/2,y+dim); ctx2.lineTo(x,y+dim/2);
-      ctx2.closePath(); ctx2.fill(); break;
-    case 5: // cross
-      ctx2.rect(x+dim/3, y, dim/3, dim); ctx2.fill();
-      ctx2.beginPath(); ctx2.rect(x, y+dim/3, dim, dim/3); ctx2.fill(); break;
-    case 6: // hexagon
-      for(let a=0;a<Math.PI*2;a+=Math.PI/3) ctx2.lineTo(x+dim/2+Math.cos(a)*dim/2.5, y+dim/2+Math.sin(a)*dim/2.5);
-      ctx2.closePath(); ctx2.fill(); break;
-    case 7: // scattered dots
-      ctx2.closePath();
-      for(let k=0;k<5;k++){ctx2.beginPath();ctx2.arc(x+Math.random()*dim,y+Math.random()*dim,dim/7,0,Math.PI*2);ctx2.fill();}
-      break;
-    case 8: // lines
-      ctx2.closePath();
-      ctx2.noFill && ctx2.noFill();
-      for(let k=0;k<3;k++){ctx2.beginPath();ctx2.moveTo(x,y+k*dim/3);ctx2.lineTo(x+dim,y+k*dim/3);ctx2.stroke();}
-      break;
-    case 9: // star
+    case 0: ctx2.rect(x, y, dim, dim); ctx2.fill(); break;
+    case 1: ctx2.arc(x+dim/2, y+dim/2, dim/2, 0, Math.PI*2); ctx2.fill(); break;
+    case 2: ctx2.moveTo(x, y+dim); ctx2.lineTo(x+dim/2, y); ctx2.lineTo(x+dim, y+dim); ctx2.closePath(); ctx2.fill(); break;
+    case 3: ctx2.rect(x, y, dim, dim/3); ctx2.fill(); break;
+    case 4: ctx2.moveTo(x+dim/2,y); ctx2.lineTo(x+dim,y+dim/2); ctx2.lineTo(x+dim/2,y+dim); ctx2.lineTo(x,y+dim/2); ctx2.closePath(); ctx2.fill(); break;
+    case 5: ctx2.rect(x+dim/3, y, dim/3, dim); ctx2.fill(); ctx2.beginPath(); ctx2.rect(x, y+dim/3, dim, dim/3); ctx2.fill(); break;
+    case 6: for(let a=0;a<Math.PI*2;a+=Math.PI/3) ctx2.lineTo(x+dim/2+Math.cos(a)*dim/2.5, y+dim/2+Math.sin(a)*dim/2.5); ctx2.closePath(); ctx2.fill(); break;
+    case 7: ctx2.closePath(); for(let k=0;k<5;k++){ctx2.beginPath();ctx2.arc(x+Math.random()*dim,y+Math.random()*dim,dim/7,0,Math.PI*2);ctx2.fill();} break;
+    case 8: ctx2.closePath(); for(let k=0;k<3;k++){ctx2.beginPath();ctx2.moveTo(x,y+k*dim/3);ctx2.lineTo(x+dim,y+k*dim/3);ctx2.stroke();} break;
+    case 9:
       for(let a=0;a<Math.PI*2;a+=Math.PI/4){
         const r=(a%(Math.PI/2)===0)?dim/2.5:dim/5;
-        a===0?ctx2.moveTo(x+dim/2+Math.cos(a)*r,y+dim/2+Math.sin(a)*r)
-             :ctx2.lineTo(x+dim/2+Math.cos(a)*r,y+dim/2+Math.sin(a)*r);
+        a===0?ctx2.moveTo(x+dim/2+Math.cos(a)*r,y+dim/2+Math.sin(a)*r):ctx2.lineTo(x+dim/2+Math.cos(a)*r,y+dim/2+Math.sin(a)*r);
       }
       ctx2.closePath(); ctx2.fill(); break;
   }
 }
 
-// Pick shape index based on preference
 function pickShapeType(pref) {
   const map = { circle:1, triangle:2, star:9, square:0, cross:5, diamond:4 };
   if (pref === 'random' || !map[pref]) return Math.floor(Math.random()*10);
   return Math.random() < 0.65 ? map[pref] : Math.floor(Math.random()*10);
 }
 
-// Generate N procedural brush canvases
 function generateProcBrushes() {
   const nColors  = parseInt(document.getElementById('sl-proc-colors').value);
   const nCells   = parseInt(document.getElementById('sl-proc-cells').value);
@@ -1324,7 +1544,6 @@ function generateProcBrushes() {
     const bctx = c.getContext('2d');
     bctx.clearRect(0, 0, SZ, SZ);
 
-    // vary grid density per brush
     const cells = Math.max(2, nCells + Math.floor(Math.random()*3) - 1);
     const dim   = SZ / cells;
 
@@ -1344,19 +1563,6 @@ function generateProcBrushes() {
   toast(`PROC — ${nBrushes} brushes generated`);
 }
 
-// Apply lightness cycling to a color hex string
-function applyLightnessCycle(hex) {
-  const [r,g,b] = hexToRgbArr(hex);
-  const [h,s,l] = rgbToHslArr(r,g,b);
-  const amp   = parseInt(document.getElementById('sl-proc-lamp').value);
-  const speed = parseInt(document.getElementById('sl-proc-lspeed').value);
-  procLightnessAngle = (procLightnessAngle + speed * 0.015) % (Math.PI * 2);
-  const newL = Math.max(5, Math.min(95, l + amp * Math.sin(procLightnessAngle)));
-  const [nr,ng,nb] = hslArrToRgb(h, s, newL);
-  return rgbArrToHex(nr, ng, nb);
-}
-
-// Paint with a procedural brush (stamp-based)
 function paintProcAt(x, y) {
   if (procBrushIndex < 0 || !procBrushes[procBrushIndex]) return;
   const layer = layers[activeLayerIdx];
@@ -1366,7 +1572,6 @@ function paintProcAt(x, y) {
   const ox    = sc > 0 ? (Math.random()-0.5)*sc*0.4 : 0;
   const oy    = sc > 0 ? (Math.random()-0.5)*sc*0.4 : 0;
 
-  // If lightness cycling, re-tint the brush stamp on a temp canvas
   let srcCanvas = cb.canvas;
   if (procLightnessCycling) {
     const tmp = document.createElement('canvas');
@@ -1375,7 +1580,6 @@ function paintProcAt(x, y) {
     tc.drawImage(cb.canvas, 0, 0);
     const id  = tc.getImageData(0, 0, tmp.width, tmp.height);
     const px  = id.data;
-    // amp slider is 5–60, normalize to a lightness shift of ±amp/2 (so max ±30)
     const amp   = parseInt(document.getElementById('sl-proc-lamp').value) / 2;
     const speed = parseInt(document.getElementById('sl-proc-lspeed').value);
     procLightnessAngle = (procLightnessAngle + speed * 0.012) % (Math.PI * 2);
@@ -1390,7 +1594,6 @@ function paintProcAt(x, y) {
     srcCanvas = tmp;
   }
 
-  // If hue cycle also active, overlay the rotating hue on top
   if (state.hueCycle) {
     const tmp2 = document.createElement('canvas');
     tmp2.width = srcCanvas.width; tmp2.height = srcCanvas.height;
@@ -1421,7 +1624,6 @@ function paintProcAt(x, y) {
   updateThumb();
 }
 
-// Render the palette color strip
 function renderProcPaletteStrip() {
   const strip = document.getElementById('proc-palette-strip');
   strip.innerHTML = '';
@@ -1439,7 +1641,6 @@ function renderProcPaletteStrip() {
   });
 }
 
-// Build/refresh the proc brush grid UI
 function updateProcBrushGrid() {
   const grid = document.getElementById('proc-brush-grid');
   grid.innerHTML = '';
@@ -1458,14 +1659,13 @@ function updateProcBrushGrid() {
       document.querySelectorAll('.brush-card').forEach(c => c.classList.remove('active'));
       card.classList.add('active');
       procBrushIndex = i;
-      customBrushIndex = -1; // deactivate custom brush
+      customBrushIndex = -1;
       setTool('draw');
     });
     grid.appendChild(card);
   });
 }
 
-// Lightness toggle button
 document.getElementById('btn-proc-lightness').addEventListener('click', function() {
   procLightnessCycling = !procLightnessCycling;
   this.classList.toggle('on', procLightnessCycling);
@@ -1473,16 +1673,290 @@ document.getElementById('btn-proc-lightness').addEventListener('click', function
   toast(procLightnessCycling ? 'LIGHTNESS ON' : 'LIGHTNESS OFF');
 });
 
-// Show controls by default (button starts .on)
 document.getElementById('proc-lightness-controls').style.display = 'block';
-
-// Generate button
 document.getElementById('btn-proc-gen').addEventListener('click', generateProcBrushes);
 
-// Proc slider bindings
 ['sl-proc-cells','sl-proc-colors','sl-proc-count','sl-proc-lspeed','sl-proc-lamp'].forEach(id => {
   const sl = document.getElementById(id);
-  const valId = 'v-' + id.slice(3); // e.g. v-proc-cells
+  const valId = 'v-' + id.slice(3);
+  sl.addEventListener('input', () => { document.getElementById(valId).textContent = sl.value; });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// ══ ESTAMPA BRUSH SYSTEM (from p5 sketch)  ══════════════════════
+// Generates stamp brushes as grids of colored squares — each with
+// its own random cell size (dim) and color subset, faithful to the
+// original doEstampas() / trabaja() logic.
+// ═══════════════════════════════════════════════════════════════════
+
+const ESTAMPA_PALETTES = {
+  earth: [
+    [200,150,0],[150,30,30],[80,40,100],
+    [100,120,150],[200,180,150],[0,0,0],
+    [120,80,40],[160,130,80],[60,50,40],[190,160,120],
+  ],
+  vibrant: [
+    [255,59,48],[255,149,0],[255,204,0],[76,217,100],
+    [90,200,250],[0,122,255],[88,86,214],[255,45,85],
+    [199,119,255],[255,107,157],
+  ],
+  cool: [
+    [0,180,216],[0,150,199],[0,119,182],[72,202,228],
+    [144,224,239],[202,240,248],[3,4,94],[2,62,138],
+    [100,150,200],[60,100,140],
+  ],
+  warm: [
+    [255,183,3],[251,133,0],[220,80,20],[200,40,20],
+    [255,220,100],[240,160,60],[180,60,30],[255,240,180],
+    [210,120,50],[150,50,20],
+  ],
+  mono: [
+    [255,255,255],[220,220,220],[180,180,180],[140,140,140],
+    [100,100,100],[60,60,60],[30,30,30],[0,0,0],
+    [200,200,200],[80,80,80],
+  ],
+};
+
+let estampaBrushes    = [];
+let estampaBrushIndex = -1;
+let estampaLightnessCycling = true;
+let estampaLightnessAngle   = 0;
+let estampaCurrentColors    = []; // hex strings for palette strip
+
+function rgbArrToHex2(r,g,b){ return '#'+[r,g,b].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join(''); }
+
+function getEstampaPaletteColors() {
+  const key = document.getElementById('estampa-palette').value;
+  if (key === 'current') {
+    // Build shades/tints around current color
+    const [r,g,b] = hexToRgbArr(state.color);
+    const [h,s,l] = rgbToHslArr(r,g,b);
+    const out = [];
+    for (let i=0; i<8; i++) {
+      const nl = Math.max(5, Math.min(95, l + (i-3.5)*12));
+      out.push(hslArrToRgb(h, s, nl));
+    }
+    out.push([0,0,0]);
+    return out; // array of [r,g,b]
+  }
+  return ESTAMPA_PALETTES[key] || ESTAMPA_PALETTES.earth;
+}
+
+function generateEstampaBrushes() {
+  const dmin   = parseInt(document.getElementById('sl-estampa-dmin').value);
+  const dmax   = Math.max(dmin+2, parseInt(document.getElementById('sl-estampa-dmax').value));
+  const count  = parseInt(document.getElementById('sl-estampa-count').value);
+  const nCol   = parseInt(document.getElementById('sl-estampa-colors').value);
+  const SZ     = 120;
+
+  const basePalette = getEstampaPaletteColors(); // array of [r,g,b]
+
+  // Pick a shared color subset (like generateNewImage / selectedColors in p5)
+  function pickColorSubset() {
+    const n = Math.max(1, Math.round(1 + Math.random() * (nCol - 1)));
+    const sub = [];
+    for (let i = 0; i < n; i++) {
+      sub.push(basePalette[Math.floor(Math.random() * basePalette.length)]);
+    }
+    return sub;
+  }
+
+  // Store hex versions for palette strip
+  estampaCurrentColors = [...new Set(basePalette.map(([r,g,b]) => rgbArrToHex2(r,g,b)))];
+  renderEstampaPaletteStrip();
+
+  estampaBrushes = [];
+  estampaBrushIndex = -1; // reset selection on new generation
+
+  for (let e = 0; e < count; e++) {
+    // Each stamp gets its own color subset (trabaja calls generateNewImage first)
+    const selectedColors = pickColorSubset();
+
+    // Each stamp gets its own random dim (cell size)
+    const dim = Math.max(dmin, Math.min(dmax, dmin + Math.floor(Math.random() * (dmax - dmin + 1))));
+
+    const c = document.createElement('canvas');
+    c.width = SZ; c.height = SZ;
+    const bc = c.getContext('2d');
+    bc.clearRect(0, 0, SZ, SZ);
+
+    const cols = Math.ceil(SZ / dim);
+    const rows = Math.ceil(SZ / dim);
+
+    // trabaja(): for each cell pick a random color from selectedColors and fill a square
+    // The original uses myG.square(i*dim, j*dim, dim, dim/3) — rounded rect with radius dim/3
+    const radius = dim / 3;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const [r,g,b] = selectedColors[Math.floor(Math.random() * selectedColors.length)];
+        bc.fillStyle = `rgb(${r},${g},${b})`;
+        // Rounded square like p5's square(x, y, dim, dim/3)
+        bc.beginPath();
+        const px = col * dim, py = row * dim;
+        bc.roundRect(px, py, dim, dim, radius);
+        bc.fill();
+      }
+    }
+
+    estampaBrushes.push({ canvas: c, name: `e${e+1}`, dim });
+  }
+
+  updateEstampaBrushGrid();
+  toast(`ESTAMPA — ${count} stamps generated`);
+}
+
+function renderEstampaPaletteStrip() {
+  const strip = document.getElementById('estampa-palette-strip');
+  strip.innerHTML = '';
+  estampaCurrentColors.forEach(col => {
+    const sw = document.createElement('div');
+    sw.className = 'proc-pal-swatch'; // reuse same style
+    sw.style.background = col;
+    sw.title = col;
+    sw.addEventListener('click', () => {
+      const [r,g,b] = hexToRgbArr(col);
+      [hsv.h, hsv.s, hsv.v] = rgbToHsv(r,g,b);
+      applyHsv();
+    });
+    strip.appendChild(sw);
+  });
+}
+
+// Singleton popup element for estampa hover preview
+const _estampaPopup = document.createElement('div');
+_estampaPopup.className = 'estampa-preview-popup';
+const _estampaPopupCvs = document.createElement('canvas');
+_estampaPopupCvs.width = 160; _estampaPopupCvs.height = 160;
+_estampaPopup.appendChild(_estampaPopupCvs);
+document.body.appendChild(_estampaPopup);
+
+function updateEstampaBrushGrid() {
+  const grid = document.getElementById('estampa-brush-grid');
+  grid.innerHTML = '';
+
+  estampaBrushes.forEach((pb, i) => {
+    const card = document.createElement('div');
+    card.className = 'estampa-card' + (estampaBrushIndex === i ? ' active' : '');
+
+    // Thumbnail canvas
+    const pc = document.createElement('canvas');
+    pc.width = 60; pc.height = 60;
+    const pctx = pc.getContext('2d');
+    pctx.fillStyle = '#0d0a07';
+    pctx.fillRect(0, 0, 60, 60);
+    pctx.drawImage(pb.canvas, 0, 0, 60, 60);
+    card.appendChild(pc);
+
+    // Hover: show popup with full 160×160 preview, positioned to the right of sidebar
+    card.addEventListener('mouseenter', e => {
+      const popCtx = _estampaPopupCvs.getContext('2d');
+      popCtx.fillStyle = '#0d0a07';
+      popCtx.fillRect(0, 0, 160, 160);
+      popCtx.drawImage(pb.canvas, 0, 0, 160, 160);
+      // Position popup to the right of the sidebar panel
+      const rect = card.getBoundingClientRect();
+      _estampaPopup.style.left = (rect.right + 8) + 'px';
+      _estampaPopup.style.top  = Math.max(4, rect.top - 60) + 'px';
+      _estampaPopup.style.display = 'block';
+    });
+    card.addEventListener('mouseleave', () => {
+      _estampaPopup.style.display = 'none';
+    });
+
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.estampa-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      estampaBrushIndex = i;
+      procBrushIndex    = -1;
+      customBrushIndex  = -1;
+      // deactivate all regular brush-cards too
+      document.querySelectorAll('.brush-card').forEach(c => c.classList.remove('active'));
+      setTool('draw');
+      syncChaosPanel();
+      _estampaPopup.style.display = 'none';
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+function paintEstampaAt(x, y) {
+  if (estampaBrushIndex < 0 || !estampaBrushes[estampaBrushIndex]) return;
+  const layer = layers[activeLayerIdx];
+  const cb    = estampaBrushes[estampaBrushIndex];
+  const sz    = state.size;
+  const sc    = state.scatter;
+  const ox    = sc > 0 ? (Math.random()-0.5)*sc*0.4 : 0;
+  const oy    = sc > 0 ? (Math.random()-0.5)*sc*0.4 : 0;
+
+  let srcCanvas = cb.canvas;
+
+  // Lightness cycling (same as proc brush)
+  if (estampaLightnessCycling) {
+    const tmp = document.createElement('canvas');
+    tmp.width = cb.canvas.width; tmp.height = cb.canvas.height;
+    const tc  = tmp.getContext('2d');
+    tc.drawImage(cb.canvas, 0, 0);
+    const id  = tc.getImageData(0, 0, tmp.width, tmp.height);
+    const px  = id.data;
+    const amp   = 15;
+    const speed = 8;
+    estampaLightnessAngle = (estampaLightnessAngle + speed * 0.012) % (Math.PI * 2);
+    const shift = amp * Math.sin(estampaLightnessAngle);
+    for (let i = 0; i < px.length; i+=4) {
+      if (px[i+3] === 0) continue;
+      const [h,s,l] = rgbToHslArr(px[i], px[i+1], px[i+2]);
+      const [nr,ng,nb] = hslArrToRgb(h, s, Math.max(3, Math.min(97, l + shift)));
+      px[i]=nr; px[i+1]=ng; px[i+2]=nb;
+    }
+    tc.putImageData(id, 0, 0);
+    srcCanvas = tmp;
+  }
+
+  // Hue cycle tint
+  if (state.hueCycle) {
+    const tmp2 = document.createElement('canvas');
+    tmp2.width = srcCanvas.width; tmp2.height = srcCanvas.height;
+    const tc2 = tmp2.getContext('2d');
+    tc2.drawImage(srcCanvas, 0, 0);
+    tc2.globalCompositeOperation = 'hue';
+    tc2.fillStyle = getDrawColor();
+    tc2.fillRect(0, 0, tmp2.width, tmp2.height);
+    srcCanvas = tmp2;
+  }
+
+  layer.ctx.save();
+  layer.ctx.globalAlpha = state.opacity / 100;
+  layer.ctx.translate(x+ox, y+oy);
+  layer.ctx.rotate(state.rotation * Math.PI / 180);
+  layer.ctx.drawImage(srcCanvas, -sz/2, -sz/2, sz, sz);
+  layer.ctx.restore();
+
+  if (state.mirror) {
+    layer.ctx.save();
+    layer.ctx.globalAlpha = state.opacity / 100;
+    layer.ctx.translate(cvs.width-(x+ox), y+oy);
+    layer.ctx.rotate(state.rotation * Math.PI / 180);
+    layer.ctx.drawImage(srcCanvas, -sz/2, -sz/2, sz, sz);
+    layer.ctx.restore();
+  }
+
+  composite();
+  updateThumb();
+}
+
+// Wire estampa controls
+document.getElementById('btn-estampa-gen').addEventListener('click', generateEstampaBrushes);
+
+document.getElementById('btn-estampa-lightness').addEventListener('click', function() {
+  estampaLightnessCycling = !estampaLightnessCycling;
+  this.classList.toggle('on', estampaLightnessCycling);
+  toast(estampaLightnessCycling ? 'ESTAMPA LIGHTNESS ON' : 'ESTAMPA LIGHTNESS OFF');
+});
+
+['sl-estampa-dmin','sl-estampa-dmax','sl-estampa-count','sl-estampa-colors'].forEach(id => {
+  const sl = document.getElementById(id);
+  const valId = 'v-' + id.slice(3);
   sl.addEventListener('input', () => { document.getElementById(valId).textContent = sl.value; });
 });
 
@@ -1501,7 +1975,6 @@ const PALETTE = [
 // CANVAS RESIZE
 // ═══════════════════════════════════════════════════════════════════
 function applyCanvasSize(w, h) {
-  // Preserve current composite into a temp canvas
   const tmp = document.createElement('canvas');
   tmp.width = cvs.width; tmp.height = cvs.height;
   const tc = tmp.getContext('2d');
@@ -1512,7 +1985,6 @@ function applyCanvasSize(w, h) {
     tc.drawImage(l.canvas, 0, 0); tc.restore();
   });
 
-  // Resize all layers
   layers.forEach(l => {
     const lt = document.createElement('canvas');
     lt.width = w; lt.height = h;
@@ -1551,25 +2023,9 @@ document.getElementById('btn-resize-canvas').addEventListener('click', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// IMPORT PNG
+// IMPORT IMAGE — unified handler
 // ═══════════════════════════════════════════════════════════════════
-function importImageFile(file) {
-  if (!file || !file.type.startsWith('image/')) { toast('NOT AN IMAGE'); return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = new Image();
-    img.onload = () => {
-      // Ask: fit to canvas or resize canvas to image?
-      // We open a mini modal to choose
-      showImportModal(img);
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
 function showImportModal(img) {
-  // Remove existing if any
   document.getElementById('modal-import')?.remove();
 
   const modal = document.createElement('div');
@@ -1590,6 +2046,7 @@ function showImportModal(img) {
     </div>`;
   document.body.appendChild(modal);
 
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.getElementById('imp-cancel').onclick = () => modal.remove();
 
   document.getElementById('imp-fit').onclick = () => {
@@ -1603,7 +2060,6 @@ function showImportModal(img) {
   document.getElementById('imp-resize').onclick = () => {
     captureUndo();
     applyCanvasSize(img.width, img.height);
-    // Draw onto background layer
     layers[0].ctx.drawImage(img, 0, 0);
     composite(); updateThumb(); modal.remove();
     toast(`IMPORTED — canvas ${img.width}×${img.height}`);
@@ -1621,67 +2077,201 @@ function showImportModal(img) {
   };
 }
 
+function importImageFromFile(file) {
+  if (!file || !file.type.startsWith('image/')) { toast('NOT AN IMAGE'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => showImportModal(img);
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 document.getElementById('btn-import-png').addEventListener('click', () => {
-  document.getElementById('file-import').click();
+  document.getElementById('file-import-png').click();
 });
 
 document.getElementById('file-import').addEventListener('change', function() {
-  if (this.files[0]) { importImageFile(this.files[0]); this.value = ''; }
+  if (this.files[0]) { importImageFromFile(this.files[0]); this.value = ''; }
 });
 
-// Drag & drop onto canvas
-// canvas drag-drop handled below
+document.getElementById('file-import-png').addEventListener('change', function() {
+  if (this.files && this.files[0]) {
+    importImageFromFile(this.files[0]);
+    this.value = '';
+  }
+});
+
+// ── Canvas drag & drop ──
+document.getElementById('canvas-wrap').addEventListener('dragover', e => {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+});
+document.getElementById('canvas-wrap').addEventListener('drop', e => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file) importImageFromFile(file);
+});
 
 // ═══════════════════════════════════════════════════════════════════
-// PASTE FROM SYSTEM CLIPBOARD
+// PASTE FROM CLIPBOARD — unified, handles both internal & external
 // ═══════════════════════════════════════════════════════════════════
+
+// Place an Image object as a moveable float paste at center of canvas
+function placeImageAsFloat(img) {
+  commitFloatPaste(); // commit any existing float
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+  // Draw image into an ImageData
+  const tmp = document.createElement('canvas');
+  tmp.width = iw; tmp.height = ih;
+  tmp.getContext('2d').drawImage(img, 0, 0);
+  const id = tmp.getContext('2d').getImageData(0, 0, iw, ih);
+  const cx = Math.round((cvs.width  - iw) / 2);
+  const cy = Math.round((cvs.height - ih) / 2);
+  floatPaste = { imageData: id, x: cx, y: cy, w: iw, h: ih };
+  sel = null;
+  setTool('move');
+  syncOverlayPointerEvents();
+  startAnts();
+  toast('PASTED — drag · resize handles · Enter to commit');
+}
+
 async function pasteFromClipboard() {
-  try {
-    const items = await navigator.clipboard.read();
-    for (const item of items) {
-      const imgType = item.types.find(t => t.startsWith('image/'));
-      if (imgType) {
-        const blob = await item.getType(imgType);
-        const url  = URL.createObjectURL(blob);
-        const img  = new Image();
-        img.onload = () => { URL.revokeObjectURL(url); showImportModal(img); };
-        img.src = url;
-        return;
+  // Try to read an image from the OS clipboard (e.g. a screenshot)
+  // This is only needed for the button — Ctrl+V is handled by the native paste event
+  if (navigator.clipboard && navigator.clipboard.read) {
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const imageType = item.types.find(t => t.startsWith('image/'));
+        if (imageType) {
+          const blob = await item.getType(imageType);
+          const url  = URL.createObjectURL(blob);
+          const img  = new Image();
+          img.onload = () => { URL.revokeObjectURL(url); placeImageAsFloat(img); };
+          img.onerror = () => URL.revokeObjectURL(url);
+          img.src = url;
+          return;
+        }
       }
+      // System clipboard has no image — try internal canvas clipboard
+      if (clipboard) { doPaste(); return; }
+      toast('NO IMAGE IN CLIPBOARD');
+    } catch (err) {
+      // Permission denied — fall back to internal clipboard
+      if (clipboard) { doPaste(); return; }
+      if (err.name === 'NotAllowedError') toast('ALLOW CLIPBOARD ACCESS IN BROWSER SETTINGS');
+      else toast('CLIPBOARD READ FAILED — TRY Ctrl+V');
     }
-    toast('NO IMAGE IN CLIPBOARD');
-  } catch(err) {
-    // Fallback: try older clipboardData API via a paste event
-    toast('CLICK CANVAS & PRESS Ctrl+Shift+V');
+  } else {
+    // No Clipboard API — use internal canvas clipboard only
+    if (clipboard) { doPaste(); }
+    else { toast('USE Ctrl+V TO PASTE AN IMAGE'); }
   }
 }
 
 document.getElementById('btn-paste-clipboard').addEventListener('click', pasteFromClipboard);
 
-// Also intercept native paste events (works when canvas is focused or globally)
+// Native paste event — fires on Ctrl+V when page has focus
 document.addEventListener('paste', e => {
-  // Don't intercept when typing in inputs
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-  const items = e.clipboardData?.items;
-  if (!items) return;
-  for (const item of items) {
-    if (item.type.startsWith('image/')) {
-      const blob = item.getAsFile();
-      if (blob) {
+  // Don't intercept paste in text inputs
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.isContentEditable) return;
+  e.preventDefault();
+
+  // 1. Check for an image in the system clipboardData (external image paste)
+  const items = e.clipboardData && e.clipboardData.items;
+  if (items) {
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        const blob = item.getAsFile();
+        if (!blob) continue;
         const url = URL.createObjectURL(blob);
         const img = new Image();
-        img.onload = () => { URL.revokeObjectURL(url); showImportModal(img); };
+        img.onload = () => { URL.revokeObjectURL(url); placeImageAsFloat(img); };
+        img.onerror = () => URL.revokeObjectURL(url);
         img.src = url;
-        e.preventDefault();
-        return;
+        return; // handled
       }
     }
   }
+
+  // 2. No external image — fall back to internal canvas clipboard (from Copy/Cut)
+  if (clipboard) {
+    doPaste();
+  } else {
+    toast('NOTHING TO PASTE');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// IMAGE-AS-BRUSH DROP ZONE
+// ═══════════════════════════════════════════════════════════════════
+function loadFileAsBrush(file) {
+  if (!file || !file.type.startsWith('image/')) { toast('NOT AN IMAGE'); return; }
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(url);
+    const stamp = document.createElement('canvas');
+    const maxDim = 120;
+    const aspect = img.width / img.height;
+    stamp.width  = aspect >= 1 ? maxDim : Math.round(maxDim * aspect);
+    stamp.height = aspect >= 1 ? Math.round(maxDim / aspect) : maxDim;
+    stamp.getContext('2d').drawImage(img, 0, 0, stamp.width, stamp.height);
+    const name = file.name.replace(/\.[^.]+$/, '').slice(0, 8);
+    customBrushes.push({ canvas: stamp, name, original: null });
+    customBrushIndex = customBrushes.length - 1;
+    procBrushIndex = -1; estampaBrushIndex = -1;
+    const slSize = document.getElementById('sl-size');
+    const defaultSize = Math.min(150, parseInt(slSize.max));
+    state.size = defaultSize;
+    slSize.value = defaultSize;
+    document.getElementById('v-size').textContent = defaultSize;
+    updateBrushGridCustom();
+    setTool('draw');
+    toast(`🖌 BRUSH "${name}"`);
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); toast('BRUSH LOAD FAILED'); };
+  img.src = url;
+}
+
+const imgBrushDrop = document.getElementById('img-brush-drop');
+const fileBrushPicker = document.createElement('input');
+fileBrushPicker.type = 'file';
+fileBrushPicker.accept = 'image/png,image/jpeg,image/webp,image/gif';
+fileBrushPicker.style.cssText = 'position:fixed;left:-9999px;opacity:0;';
+document.body.appendChild(fileBrushPicker);
+
+imgBrushDrop.addEventListener('click', () => fileBrushPicker.click());
+fileBrushPicker.addEventListener('change', function() {
+  if (this.files && this.files[0]) { loadFileAsBrush(this.files[0]); this.value = ''; }
+});
+
+imgBrushDrop.addEventListener('dragenter', e => { e.preventDefault(); e.stopPropagation(); imgBrushDrop.classList.add('drag-over'); });
+imgBrushDrop.addEventListener('dragover',  e => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'copy'; imgBrushDrop.classList.add('drag-over'); });
+imgBrushDrop.addEventListener('dragleave', e => { e.preventDefault(); e.stopPropagation(); imgBrushDrop.classList.remove('drag-over'); });
+imgBrushDrop.addEventListener('drop', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  imgBrushDrop.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) loadFileAsBrush(file);
 });
 
 // ═══════════════════════════════════════════════════════════════════
 // INIT BUILT-IN BRUSH GRID
 // ═══════════════════════════════════════════════════════════════════
+// chaos brush global state
+window._chaosBrushMode = 'mix';
+window._chaosVivid = 70;
+
+function syncChaosPanel() {
+  const isChaos = procBrushIndex < 0 && customBrushIndex < 0 && BRUSHES[state.brushIndex] && BRUSHES[state.brushIndex].name === 'chaos';
+  document.getElementById('section-chaos').style.display = isChaos ? 'block' : 'none';
+}
+
 function initBrushGrid() {
   const grid = document.getElementById('brush-grid');
   grid.innerHTML = '';
@@ -1696,11 +2286,21 @@ function initBrushGrid() {
     card.addEventListener('click',()=>{
       document.querySelectorAll('.brush-card').forEach(c=>c.classList.remove('active'));
       card.classList.add('active');
-      state.brushIndex=i; customBrushIndex=-1; procBrushIndex=-1;
+      state.brushIndex=i; customBrushIndex=-1; procBrushIndex=-1; estampaBrushIndex=-1;
+      syncChaosPanel();
     });
     grid.appendChild(card);
   });
 }
+
+// wire chaos controls
+document.getElementById('chaos-mode').addEventListener('change', function() {
+  window._chaosBrushMode = this.value;
+});
+document.getElementById('sl-chaos-vivid').addEventListener('input', function() {
+  window._chaosVivid = parseInt(this.value);
+  document.getElementById('v-chaos-vivid').textContent = this.value;
+});
 
 // ═══════════════════════════════════════════════════════════════════
 // COLOR PICKER (hue ring + SV square)
@@ -1813,9 +2413,6 @@ function applyDuotone() {
   updateBrushGridCustom();
 }
 
-function retintCustomBrushWithColor() { applyDuotone(); }
-function retintCustomBrush() { applyDuotone(); }
-
 function applyHsv() {
   const [r,g,b]=hsvToRgb(hsv.h,hsv.s,hsv.v);
   const hex=rgbToHex(r,g,b);
@@ -1922,7 +2519,6 @@ function hexToRgba(hex,alpha) {
 
 function getDrawColor() {
   if (state.hueCycle) {
-    // Rotate hue of current color, preserving its saturation & lightness
     const [r,g,b] = hexToRgb(state.color);
     const [,s,l]  = rgbToHsl(r,g,b);
     const h = state.hueAngle % 360;
@@ -1943,7 +2539,6 @@ function paintAt(x,y,useSecondary=false) {
     lctx.strokeStyle = col;
     lctx.lineWidth = Math.max(1, state.size * 0.04);
     lctx.fillStyle = col;
-    // scatter
     const sc=state.scatter,ox=sc>0?(Math.random()-0.5)*sc*0.4:0,oy=sc>0?(Math.random()-0.5)*sc*0.4:0;
     lctx.beginPath();
     lctx.arc(x+ox, y+oy, state.size/2, 0, Math.PI*2);
@@ -1954,63 +2549,55 @@ function paintAt(x,y,useSecondary=false) {
     composite(); updateThumb(); return;
   }
 
-  // ── Cam brush — snapshot from the working preview canvas ──
-  if (camBrushMode && camReady) {
-    const layer = layers[activeLayerIdx]; if (!layer) return;
-
-    const preview = document.getElementById('cam-preview-canvas');
-    const src = preview && preview.width > 1 ? preview : null;
-    if (!src) { toast('NO PREVIEW YET'); return; }
-
-    // DEBUG: sample center pixel of preview to confirm it has data
-    try {
-      const pc = src.getContext('2d');
-      const px = pc.getImageData(src.width/2|0, src.height/2|0, 1, 1).data;
-      if (px[0]===0 && px[1]===0 && px[2]===0) {
-        toast(`PREVIEW IS BLACK r=${px[0]} g=${px[1]} b=${px[2]}`);
-      } else {
-        toast(`PREVIEW OK r=${px[0]} g=${px[1]} b=${px[2]}`);
-      }
-    } catch(e) { toast('PREVIEW TAINTED: '+e.name); }
-
-    const sz = state.size;
-    const aspect = src.width / src.height;
-    const dw = sz, dh = sz / aspect;
-    const sc = state.scatter;
-    const ox = sc > 0 ? (Math.random()-0.5)*sc*0.4 : 0;
-    const oy = sc > 0 ? (Math.random()-0.5)*sc*0.4 : 0;
-
-    layer.ctx.save();
-    layer.ctx.globalCompositeOperation = 'source-over';
-    layer.ctx.globalAlpha = state.opacity / 100;
-    layer.ctx.translate(x+ox, y+oy);
-    layer.ctx.rotate(state.rotation * Math.PI / 180);
-    layer.ctx.drawImage(src, -dw/2, -dh/2, dw, dh);
-    layer.ctx.restore();
-
-    if (state.mirror) {
+  // ── Cam brush ──
+  if (camBrushMode) {
+    const frame = getCamFrame();
+    if (frame) {
+      const layer=layers[activeLayerIdx]; if(!layer) return;
+      const sz=state.size;
+      const sc=state.scatter,ox=sc>0?(Math.random()-0.5)*sc*0.4:0,oy=sc>0?(Math.random()-0.5)*sc*0.4:0;
       layer.ctx.save();
-      layer.ctx.globalCompositeOperation = 'source-over';
-      layer.ctx.globalAlpha = state.opacity / 100;
-      layer.ctx.translate(cvs.width-(x+ox), y+oy);
-      layer.ctx.rotate(state.rotation * Math.PI / 180);
-      layer.ctx.drawImage(src, -dw/2, -dh/2, dw, dh);
+      layer.ctx.globalAlpha = state.opacity/100;
+      layer.ctx.translate(x+ox, y+oy);
+      layer.ctx.rotate(state.rotation * Math.PI/180);
+      layer.ctx.drawImage(frame, -sz/2, -sz * (frame.height/frame.width)/2, sz, sz * (frame.height/frame.width));
       layer.ctx.restore();
+      if(state.mirror){
+        layer.ctx.save();
+        layer.ctx.globalAlpha=state.opacity/100;
+        layer.ctx.translate(cvs.width-(x+ox),y+oy);
+        layer.ctx.rotate(state.rotation*Math.PI/180);
+        layer.ctx.drawImage(frame,-sz/2,-sz*(frame.height/frame.width)/2,sz,sz*(frame.height/frame.width));
+        layer.ctx.restore();
+      }
+      composite(); updateThumb(); return;
     }
-    composite(); updateThumb(); return;
   }
 
   // ── Proc brush ──
   if (procBrushIndex >= 0) { paintProcAt(x, y); return; }
 
+  // ── Estampa brush ──
+  if (estampaBrushIndex >= 0) { paintEstampaAt(x, y); return; }
+
   const layer=layers[activeLayerIdx]; if(!layer) return;
 
   // ── Custom brush ──
   if(customBrushIndex>=0&&customBrushes[customBrushIndex]){
-    const cb=customBrushes[customBrushIndex],aspect=cb.canvas.width/cb.canvas.height;
-    const drawW=state.size,drawH=Math.round(state.size/aspect);
+    const cb=customBrushes[customBrushIndex];
+    // If the brush was made from a selection, use its exact pixel dims scaled by size ratio
+    let drawW, drawH;
+    if(cb.srcW && cb.srcH){
+      const naturalSize = Math.max(cb.srcW, cb.srcH);
+      const scale = state.size / naturalSize;
+      drawW = Math.round(cb.srcW * scale);
+      drawH = Math.round(cb.srcH * scale);
+    } else {
+      const aspect = cb.canvas.width / cb.canvas.height;
+      drawW = state.size;
+      drawH = Math.round(state.size / aspect);
+    }
     const sc=state.scatter,ox=sc>0?(Math.random()-0.5)*sc*0.5:0,oy=sc>0?(Math.random()-0.5)*sc*0.5:0;
-    // Apply hue tint if hue cycle is active
     let stampCanvas=cb.canvas;
     if(state.hueCycle){
       const tmp=document.createElement('canvas');tmp.width=drawW;tmp.height=drawH;
@@ -2042,61 +2629,80 @@ function updateThumb(){clearTimeout(thumbTimer);thumbTimer=setTimeout(()=>syncLa
 // TOOL MODE
 // ═══════════════════════════════════════════════════════════════════
 let toolMode='draw', spacebarSelect=false;
-const toolBtns={draw:document.getElementById('btn-tool-draw'),select:document.getElementById('btn-tool-select'),move:document.getElementById('btn-tool-move')};
+const toolBtns={
+  draw:   document.getElementById('btn-tool-draw'),
+  select: document.getElementById('btn-tool-select'),
+  move:   document.getElementById('btn-tool-move'),
+  lasso:  document.getElementById('btn-tool-lasso'),
+  ellipse:document.getElementById('btn-tool-ellipse'),
+  scale:  document.getElementById('btn-tool-scale'),
+};
 
 function setTool(mode) {
   toolMode=mode;
-  Object.entries(toolBtns).forEach(([k,b])=>b.classList.toggle('on',k===mode));
-  cvs.style.cursor=mode==='draw'?'crosshair':mode==='select'?'cell':'move';
+  Object.entries(toolBtns).forEach(([k,b])=>{ if(b) b.classList.toggle('on',k===mode); });
+  const cursorMap = {draw:'crosshair',select:'cell',move:'move',lasso:'crosshair',ellipse:'crosshair',scale:'default'};
+  cvs.style.cursor = cursorMap[mode] || 'default';
   if(mode==='draw') clearFloatPaste();
 }
 
-toolBtns.draw.addEventListener('click',()=>setTool('draw'));
-toolBtns.select.addEventListener('click',()=>setTool('select'));
-toolBtns.move.addEventListener('click',()=>setTool('move'));
+toolBtns.draw.addEventListener('click',   ()=>setTool('draw'));
+toolBtns.select.addEventListener('click', ()=>setTool('select'));
+toolBtns.move.addEventListener('click',   ()=>setTool('move'));
+toolBtns.lasso.addEventListener('click',  ()=>setTool('lasso'));
+toolBtns.ellipse.addEventListener('click',()=>setTool('ellipse'));
+toolBtns.scale.addEventListener('click',  ()=>setTool('scale'));
 
 // ═══════════════════════════════════════════════════════════════════
-// SELECTION
+// SELECTION — rect / lasso / ellipse + scale transform
 // ═══════════════════════════════════════════════════════════════════
 const overlayCvs=document.getElementById('overlay-canvas');
 const overlayCtx=overlayCvs.getContext('2d');
-let sel=null,selDragStart=null,clipboard=null,floatPaste=null,floatDragStart=null;
-let antOffset=0,antRaf=null;
+
+// sel: {x,y,w,h} bounding box. For lasso/ellipse also stores .path (array of {x,y}) and .type
+let sel=null, selDragStart=null, clipboard=null, floatPaste=null, floatDragStart=null;
+let lassoPoints=null;  // live lasso path during draw
+let ellipseStart=null; // {x,y} during ellipse drag
+let antOffset=0, antRaf=null;
 
 function startAnts(){if(antRaf)return;function tick(){antOffset=(antOffset+0.5)%12;drawOverlay();antRaf=requestAnimationFrame(tick);}antRaf=requestAnimationFrame(tick);}
 function stopAnts(){if(antRaf){cancelAnimationFrame(antRaf);antRaf=null;}overlayCtx.clearRect(0,0,overlayCvs.width,overlayCvs.height);}
 
 let customBrushes=[],customBrushIndex=-1;
 
+// ── helpers ──
+function clampPt(x,y){return[Math.max(0,Math.min(cvs.width,x)),Math.max(0,Math.min(cvs.height,y))];}
+
 function selectionToBrush(){
   if(!sel||sel.w<2||sel.h<2){toast('MAKE A SELECTION FIRST');return;}
   const layer=layers[activeLayerIdx];
-  const id=layer.ctx.getImageData(sel.x,sel.y,sel.w,sel.h);
+  // Use the mask if present (lasso/ellipse)
+  const id=getSelImageData();
+  if(!id){toast('EMPTY SELECTION');return;}
   const bc=document.createElement('canvas');bc.width=sel.w;bc.height=sel.h;
   bc.getContext('2d').putImageData(id,0,0);
   const name=`sel${customBrushes.length+1}`;
-  customBrushes.push({canvas:bc,name,original:null});
+  customBrushes.push({canvas:bc, name, original:null, srcW:sel.w, srcH:sel.h});
   customBrushIndex=customBrushes.length-1;
-  procBrushIndex=-1; // deactivate proc brush
-  state.size=Math.min(sel.w,300);
-  const slSize=document.getElementById('sl-size');
-  if(slSize){slSize.value=state.size;}
-  document.getElementById('v-size').textContent=state.size;
+  procBrushIndex=-1; estampaBrushIndex=-1;
+  // Set size to exactly the selection's pixel dimensions — no capping
+  const naturalSize = Math.max(sel.w, sel.h);
+  state.size = naturalSize;
+  const slSize = document.getElementById('sl-size');
+  if(slSize){ slSize.max = Math.max(parseInt(slSize.max), naturalSize); slSize.value = naturalSize; }
+  document.getElementById('v-size').textContent = naturalSize;
   updateBrushGridCustom();setTool('draw');deselect();
   toast(`⎵ BRUSH "${name}"`);
 }
 
 function updateBrushGridCustom(){
   const grid=document.getElementById('brush-grid');
-  // Remove old custom cards
   grid.querySelectorAll('.brush-card-custom').forEach(c=>c.remove());
-  // Clear active state on all cards before re-adding
   grid.querySelectorAll('.brush-card').forEach(c=>c.classList.remove('active'));
-
   customBrushes.forEach((cb,i)=>{
     const card=document.createElement('div');
     card.className='brush-card brush-card-custom';
-    card.dataset.customIdx=i; // store index as data attribute
+    card.dataset.customIdx=i;
     const pc=document.createElement('canvas');pc.width=60;pc.height=60;
     const pctx=pc.getContext('2d');pctx.fillStyle='#0d0d0d';pctx.fillRect(0,0,60,60);
     const aspect=cb.canvas.width/cb.canvas.height;let pw=56,ph=56;
@@ -2107,74 +2713,219 @@ function updateBrushGridCustom(){
     card.addEventListener('click',()=>{
       document.querySelectorAll('.brush-card').forEach(c=>c.classList.remove('active'));
       card.classList.add('active');
-      customBrushIndex=i;
-      procBrushIndex=-1;
-      setTool('draw');
+      customBrushIndex=i; procBrushIndex=-1; estampaBrushIndex=-1; setTool('draw');
     });
     grid.appendChild(card);
   });
-
-  // Mark the correct card as active using data-custom-idx
   if(customBrushIndex>=0){
     const target=grid.querySelector(`.brush-card-custom[data-custom-idx="${customBrushIndex}"]`);
     if(target) target.classList.add('active');
   } else if(procBrushIndex<0){
-    // fallback: highlight the active built-in brush
     const builtins=[...grid.querySelectorAll('.brush-card:not(.brush-card-custom)')];
     if(builtins[state.brushIndex]) builtins[state.brushIndex].classList.add('active');
   }
 }
 
-const HANDLE_SIZE=8;
-function getHandles(fp){const{x,y,w,h}=fp;return[{id:'TL',cx:x,cy:y},{id:'TC',cx:x+w/2,cy:y},{id:'TR',cx:x+w,cy:y},{id:'ML',cx:x,cy:y+h/2},{id:'MR',cx:x+w,cy:y+h/2},{id:'BL',cx:x,cy:y+h},{id:'BC',cx:x+w/2,cy:y+h},{id:'BR',cx:x+w,cy:y+h}];}
-function hitHandle(fp,px2,py2){const hs=HANDLE_SIZE/2+3;return getHandles(fp).find(h=>Math.abs(h.cx-px2)<=hs&&Math.abs(h.cy-py2)<=hs)||null;}
+// ── Scale handles ──
+const HANDLE_SIZE=9;
+function getHandles(r){const{x,y,w,h}=r;return[
+  {id:'TL',cx:x,cy:y},{id:'TC',cx:x+w/2,cy:y},{id:'TR',cx:x+w,cy:y},
+  {id:'ML',cx:x,cy:y+h/2},{id:'MR',cx:x+w,cy:y+h/2},
+  {id:'BL',cx:x,cy:y+h},{id:'BC',cx:x+w/2,cy:y+h},{id:'BR',cx:x+w,cy:y+h},
+];}
+function hitHandle(r,px2,py2){const hs=HANDLE_SIZE/2+4;return getHandles(r).find(h=>Math.abs(h.cx-px2)<=hs&&Math.abs(h.cy-py2)<=hs)||null;}
+const HANDLE_CURSORS={TL:'nwse-resize',TR:'nesw-resize',BL:'nesw-resize',BR:'nwse-resize',TC:'ns-resize',BC:'ns-resize',ML:'ew-resize',MR:'ew-resize'};
 
-function drawOverlay(){
-  overlayCtx.clearRect(0,0,overlayCvs.width,overlayCvs.height);
-  if(floatPaste){
-    const{x,y,w,h,imageData}=floatPaste;
-    const tmp=document.createElement('canvas');tmp.width=imageData.width;tmp.height=imageData.height;tmp.getContext('2d').putImageData(imageData,0,0);
-    overlayCtx.save();overlayCtx.globalAlpha=0.88;overlayCtx.drawImage(tmp,x,y,w,h);overlayCtx.restore();
-    overlayCtx.save();overlayCtx.lineWidth=1;overlayCtx.setLineDash([6,6]);overlayCtx.strokeStyle='#fff';overlayCtx.lineDashOffset=-antOffset;overlayCtx.strokeRect(x+0.5,y+0.5,w,h);overlayCtx.strokeStyle='#000';overlayCtx.lineDashOffset=-antOffset+6;overlayCtx.strokeRect(x+0.5,y+0.5,w,h);overlayCtx.restore();
-    overlayCtx.save();overlayCtx.setLineDash([]);
-    getHandles(floatPaste).forEach(hnd=>{overlayCtx.fillStyle='#fff';overlayCtx.strokeStyle='#222';overlayCtx.lineWidth=1.5;overlayCtx.beginPath();overlayCtx.rect(hnd.cx-HANDLE_SIZE/2,hnd.cy-HANDLE_SIZE/2,HANDLE_SIZE,HANDLE_SIZE);overlayCtx.fill();overlayCtx.stroke();});
-    overlayCtx.fillStyle='rgba(0,0,0,0.6)';overlayCtx.fillRect(x,y-18,72,16);overlayCtx.fillStyle='#fff';overlayCtx.font='9px IBM Plex Mono, monospace';overlayCtx.fillText(`${Math.round(w)} × ${Math.round(h)}`,x+4,y-5);
-    overlayCtx.restore();return;
-  }
-  if(!sel)return;const{x,y,w,h}=sel;if(w===0||h===0)return;
-  overlayCtx.save();overlayCtx.fillStyle='rgba(100,160,255,0.08)';overlayCtx.fillRect(x,y,w,h);overlayCtx.restore();
-  overlayCtx.save();overlayCtx.lineWidth=1;overlayCtx.setLineDash([6,6]);overlayCtx.strokeStyle='#fff';overlayCtx.lineDashOffset=-antOffset;overlayCtx.strokeRect(x+0.5,y+0.5,w,h);overlayCtx.strokeStyle='#000';overlayCtx.lineDashOffset=-antOffset+6;overlayCtx.strokeRect(x+0.5,y+0.5,w,h);overlayCtx.restore();
-  overlayCtx.save();overlayCtx.setLineDash([]);[[x,y],[x+w/2,y],[x+w,y],[x,y+h/2],[x+w,y+h/2],[x,y+h],[x+w/2,y+h],[x+w,y+h]].forEach(([hx,hy])=>{overlayCtx.fillStyle='#fff';overlayCtx.fillRect(hx-3,hy-3,6,6);overlayCtx.strokeStyle='#000';overlayCtx.lineWidth=1;overlayCtx.strokeRect(hx-3,hy-3,6,6);});
-  if(w>40&&h>20){overlayCtx.fillStyle='rgba(0,0,0,0.55)';overlayCtx.fillRect(x+4,y+4,64,14);overlayCtx.fillStyle='#aaa';overlayCtx.font='9px IBM Plex Mono, monospace';overlayCtx.fillText(`${w} × ${h}`,x+8,y+14);}
+function drawHandles(r){
+  overlayCtx.save();overlayCtx.setLineDash([]);
+  getHandles(r).forEach(h=>{
+    overlayCtx.fillStyle='#fff'; overlayCtx.strokeStyle='#333'; overlayCtx.lineWidth=1.5;
+    overlayCtx.beginPath();
+    overlayCtx.rect(h.cx-HANDLE_SIZE/2,h.cy-HANDLE_SIZE/2,HANDLE_SIZE,HANDLE_SIZE);
+    overlayCtx.fill();overlayCtx.stroke();
+  });
   overlayCtx.restore();
 }
 
+// ── Draw marching ants on a rect ──
+function drawAntsRect(x,y,w,h){
+  overlayCtx.save();
+  overlayCtx.lineWidth=1;
+  overlayCtx.setLineDash([6,6]);
+  overlayCtx.strokeStyle='#fff'; overlayCtx.lineDashOffset=-antOffset;
+  overlayCtx.strokeRect(x+0.5,y+0.5,w,h);
+  overlayCtx.strokeStyle='#000'; overlayCtx.lineDashOffset=-antOffset+6;
+  overlayCtx.strokeRect(x+0.5,y+0.5,w,h);
+  overlayCtx.restore();
+}
+
+// ── Draw marching ants on a path (lasso) ──
+function drawAntsPath(pts){
+  if(!pts||pts.length<2)return;
+  overlayCtx.save();
+  overlayCtx.lineWidth=1;
+  overlayCtx.setLineDash([6,6]);
+  overlayCtx.beginPath();
+  pts.forEach((p,i)=>i===0?overlayCtx.moveTo(p.x,p.y):overlayCtx.lineTo(p.x,p.y));
+  overlayCtx.closePath();
+  overlayCtx.strokeStyle='#fff'; overlayCtx.lineDashOffset=-antOffset; overlayCtx.stroke();
+  overlayCtx.strokeStyle='#000'; overlayCtx.lineDashOffset=-antOffset+6; overlayCtx.stroke();
+  overlayCtx.restore();
+}
+
+// ── Draw marching ants on an ellipse ──
+function drawAntsEllipse(x,y,w,h){
+  const rx=w/2,ry=h/2,cx=x+rx,cy=y+ry;
+  overlayCtx.save();
+  overlayCtx.lineWidth=1;
+  overlayCtx.setLineDash([6,6]);
+  overlayCtx.beginPath(); overlayCtx.ellipse(cx,cy,Math.abs(rx),Math.abs(ry),0,0,Math.PI*2);
+  overlayCtx.strokeStyle='#fff'; overlayCtx.lineDashOffset=-antOffset; overlayCtx.stroke();
+  overlayCtx.strokeStyle='#000'; overlayCtx.lineDashOffset=-antOffset+6; overlayCtx.stroke();
+  overlayCtx.restore();
+}
+
+function drawOverlay(){
+  overlayCtx.clearRect(0,0,overlayCvs.width,overlayCvs.height);
+
+  // ── Float paste ──
+  if(floatPaste){
+    const{x,y,w,h,imageData}=floatPaste;
+    const tmp=document.createElement('canvas');tmp.width=imageData.width;tmp.height=imageData.height;
+    tmp.getContext('2d').putImageData(imageData,0,0);
+    overlayCtx.save();overlayCtx.globalAlpha=0.92;overlayCtx.drawImage(tmp,x,y,w,h);overlayCtx.restore();
+    drawAntsRect(x,y,w,h);
+    drawHandles(floatPaste);
+    // size label
+    overlayCtx.fillStyle='rgba(0,0,0,0.7)';overlayCtx.fillRect(x,y-18,80,16);
+    overlayCtx.fillStyle='#fff';overlayCtx.font='9px IBM Plex Mono,monospace';
+    overlayCtx.fillText(`${Math.round(w)} × ${Math.round(h)}`,x+4,y-5);
+    return;
+  }
+
+  // ── Live lasso draw ──
+  if(lassoPoints&&lassoPoints.length>1){
+    drawAntsPath(lassoPoints);
+    return;
+  }
+
+  // ── Live ellipse draw ──
+  if(ellipseStart&&sel){
+    overlayCtx.save();overlayCtx.fillStyle='rgba(100,160,255,0.08)';
+    overlayCtx.beginPath();
+    const rx=sel.w/2,ry=sel.h/2;
+    overlayCtx.ellipse(sel.x+rx,sel.y+ry,Math.max(1,Math.abs(rx)),Math.max(1,Math.abs(ry)),0,0,Math.PI*2);
+    overlayCtx.fill();overlayCtx.restore();
+    drawAntsEllipse(sel.x,sel.y,sel.w,sel.h);
+    return;
+  }
+
+  // ── Committed selection ──
+  if(!sel)return;
+  const{x,y,w,h}=sel;if(w===0||h===0)return;
+
+  overlayCtx.save();overlayCtx.fillStyle='rgba(100,160,255,0.07)';
+  if(sel.path){
+    overlayCtx.beginPath();
+    sel.path.forEach((p,i)=>i===0?overlayCtx.moveTo(p.x,p.y):overlayCtx.lineTo(p.x,p.y));
+    overlayCtx.closePath();overlayCtx.fill();
+  } else if(sel.ellipse){
+    overlayCtx.beginPath();overlayCtx.ellipse(x+w/2,y+h/2,Math.abs(w/2),Math.abs(h/2),0,0,Math.PI*2);overlayCtx.fill();
+  } else {
+    overlayCtx.fillRect(x,y,w,h);
+  }
+  overlayCtx.restore();
+
+  // Ants
+  if(sel.path) drawAntsPath(sel.path);
+  else if(sel.ellipse) drawAntsEllipse(x,y,w,h);
+  else drawAntsRect(x,y,w,h);
+
+  // Handles (scale tool or always visible)
+  if(toolMode==='scale'||toolMode==='move') drawHandles(sel);
+
+  // Size label
+  if(w>40&&h>20){
+    overlayCtx.fillStyle='rgba(0,0,0,0.55)';overlayCtx.fillRect(x+4,y+4,64,14);
+    overlayCtx.fillStyle='#aaa';overlayCtx.font='9px IBM Plex Mono,monospace';
+    overlayCtx.fillText(`${Math.round(w)} × ${Math.round(h)}`,x+8,y+14);
+  }
+}
+
 function normalizeRect(x1,y1,x2,y2){return{x:Math.round(Math.min(x1,x2)),y:Math.round(Math.min(y1,y2)),w:Math.round(Math.abs(x2-x1)),h:Math.round(Math.abs(y2-y1))};}
-function deselect(){sel=null;clearFloatPaste();stopAnts();}
+function deselect(){sel=null;lassoPoints=null;ellipseStart=null;clearFloatPaste();stopAnts();}
 function clearFloatPaste(){floatPaste=null;syncOverlayPointerEvents();overlayCtx.clearRect(0,0,overlayCvs.width,overlayCvs.height);}
 
 function commitFloatPaste(){
   if(!floatPaste)return;captureUndo();
   const layer=layers[activeLayerIdx];const{imageData,x,y,w,h}=floatPaste;
-  const tmp=document.createElement('canvas');tmp.width=imageData.width;tmp.height=imageData.height;tmp.getContext('2d').putImageData(imageData,0,0);
+  const tmp=document.createElement('canvas');tmp.width=imageData.width;tmp.height=imageData.height;
+  tmp.getContext('2d').putImageData(imageData,0,0);
   layer.ctx.save();layer.ctx.drawImage(tmp,x,y,w,h);layer.ctx.restore();
   composite();updateThumb();floatPaste=null;sel=null;syncOverlayPointerEvents();stopAnts();
 }
 
-function getSelImageData(){if(!sel||sel.w===0||sel.h===0)return null;return layers[activeLayerIdx].ctx.getImageData(sel.x,sel.y,sel.w,sel.h);}
+// Extract image data respecting lasso / ellipse masks
+function getSelImageData(){
+  if(!sel||sel.w===0||sel.h===0)return null;
+  const layer=layers[activeLayerIdx];
+  const raw=layer.ctx.getImageData(sel.x,sel.y,sel.w,sel.h);
+  if(!sel.path&&!sel.ellipse) return raw;
+
+  // Apply mask
+  const out=new ImageData(new Uint8ClampedArray(raw.data),raw.width,raw.height);
+  const mc=document.createElement('canvas');mc.width=sel.w;mc.height=sel.h;
+  const mctx=mc.getContext('2d');
+  mctx.clearRect(0,0,sel.w,sel.h);
+  if(sel.path){
+    mctx.beginPath();
+    sel.path.forEach((p,i)=>i===0?mctx.moveTo(p.x-sel.x,p.y-sel.y):mctx.lineTo(p.x-sel.x,p.y-sel.y));
+    mctx.closePath();
+  } else {
+    mctx.beginPath();mctx.ellipse(sel.w/2,sel.h/2,sel.w/2,sel.h/2,0,0,Math.PI*2);
+  }
+  mctx.fillStyle='#fff';mctx.fill();
+  const maskData=mctx.getImageData(0,0,sel.w,sel.h).data;
+  const px=out.data;
+  for(let i=0;i<px.length;i+=4) if(maskData[i+3]===0){px[i+3]=0;}
+  return out;
+}
 
 function doCopy(){const d=getSelImageData();if(!d){toast('NO SELECTION');return;}clipboard=d;toast('COPIED');}
-function doCut(){const d=getSelImageData();if(!d){toast('NO SELECTION');return;}clipboard=d;captureUndo();layers[activeLayerIdx].ctx.clearRect(sel.x,sel.y,sel.w,sel.h);composite();updateThumb();toast('CUT');}
+function doCut(){
+  const d=getSelImageData();if(!d){toast('NO SELECTION');return;}
+  clipboard=d;captureUndo();
+  const layer=layers[activeLayerIdx];
+  if(sel.path||sel.ellipse){
+    // Erase only masked pixels
+    const mc=document.createElement('canvas');mc.width=sel.w;mc.height=sel.h;
+    const mctx=mc.getContext('2d');
+    if(sel.path){mctx.beginPath();sel.path.forEach((p,i)=>i===0?mctx.moveTo(p.x-sel.x,p.y-sel.y):mctx.lineTo(p.x-sel.x,p.y-sel.y));mctx.closePath();}
+    else{mctx.beginPath();mctx.ellipse(sel.w/2,sel.h/2,sel.w/2,sel.h/2,0,0,Math.PI*2);}
+    mctx.fillStyle='#fff';mctx.fill();
+    layer.ctx.save();layer.ctx.globalCompositeOperation='destination-out';
+    layer.ctx.drawImage(mc,sel.x,sel.y);layer.ctx.restore();
+  } else {
+    layer.ctx.clearRect(sel.x,sel.y,sel.w,sel.h);
+  }
+  composite();updateThumb();toast('CUT');
+}
+
 function doPaste(){
-  if(!clipboard){toast('NOTHING TO PASTE');return;}commitFloatPaste();
-  const cx=sel?sel.x:Math.round((cvs.width-clipboard.width)/2),cy=sel?sel.y:Math.round((cvs.height-clipboard.height)/2);
+  if(!clipboard){toast('NOTHING TO PASTE');return;}
+  commitFloatPaste();
+  const cx=sel?sel.x:Math.round((cvs.width-clipboard.width)/2);
+  const cy=sel?sel.y:Math.round((cvs.height-clipboard.height)/2);
   floatPaste={imageData:clipboard,x:cx,y:cy,w:clipboard.width,h:clipboard.height};
-  sel=null;setTool('move');syncOverlayPointerEvents();startAnts();toast('PASTE — Enter to commit');
+  sel=null;setTool('move');syncOverlayPointerEvents();startAnts();
+  toast('PASTE — drag/scale · Enter to commit');
 }
 function doPasteAsLayer(){
   if(!clipboard){toast('NOTHING TO PASTE');return;}captureUndo();
-  const newL=makeLayer('pasted');const cx=Math.round((cvs.width-clipboard.width)/2),cy=Math.round((cvs.height-clipboard.height)/2);
-  newL.ctx.putImageData(clipboard,cx,cy);layers.push(newL);activeLayerIdx=layers.length-1;syncLayerUI();composite();toast('PASTED AS LAYER');
+  const newL=makeLayer('pasted');
+  const cx=Math.round((cvs.width-clipboard.width)/2),cy=Math.round((cvs.height-clipboard.height)/2);
+  newL.ctx.putImageData(clipboard,cx,cy);
+  layers.push(newL);activeLayerIdx=layers.length-1;syncLayerUI();composite();toast('PASTED AS LAYER');
 }
 
 document.getElementById('btn-copy').addEventListener('click',doCopy);
@@ -2184,66 +2935,182 @@ document.getElementById('btn-deselect').addEventListener('click',deselect);
 document.getElementById('btn-paste-layer').addEventListener('click',doPasteAsLayer);
 document.getElementById('btn-sel-to-brush').addEventListener('click',selectionToBrush);
 
-// ── Pointer (overlay float) ──
-let scaleDragStart=null;
+// ── Overlay pointer events (float paste handles + scale tool on sel) ──
+let scaleDragStart=null, selMoveDragStart=null;
 function isInsideFloat(px2,py2){if(!floatPaste)return false;const{x,y,w,h}=floatPaste;return px2>=x&&px2<=x+w&&py2>=y&&py2<=y+h;}
-function handleCursorForFloat(px2,py2){if(!floatPaste)return;const hnd=hitHandle(floatPaste,px2,py2);const cursors={TL:'nwse-resize',TR:'nesw-resize',BL:'nesw-resize',BR:'nwse-resize',TC:'ns-resize',BC:'ns-resize',ML:'ew-resize',MR:'ew-resize'};if(hnd){overlayCvs.style.cursor=cursors[hnd.id]||'move';}else if(isInsideFloat(px2,py2)){overlayCvs.style.cursor='move';}else{overlayCvs.style.cursor='default';}}
+function isInsideSel(px2,py2){if(!sel)return false;const{x,y,w,h}=sel;return px2>=x&&px2<=x+w&&py2>=y&&py2<=y+h;}
+
+function syncOverlayPointerEvents(){
+  overlayCvs.style.pointerEvents=(floatPaste||toolMode==='scale'||toolMode==='move')?'auto':'none';
+}
 overlayCvs.style.pointerEvents='none';
-function syncOverlayPointerEvents(){overlayCvs.style.pointerEvents=floatPaste?'auto':'none';}
 
 overlayCvs.addEventListener('pointermove',e=>{
   const[px2,py2]=evtPos(e);
-  if(floatPaste&&e.buttons===0)handleCursorForFloat(px2,py2);
-  if(scaleDragStart&&e.buttons===1){
-    const dx=px2-scaleDragStart.mx,dy=py2-scaleDragStart.my;
-    const{ox,oy,ow,oh,id}=scaleDragStart;let nx=ox,ny=oy,nw=ow,nh=oh;
-    if(id.includes('R'))nw=Math.max(4,ow+dx);if(id.includes('L')){nw=Math.max(4,ow-dx);nx=ox+ow-nw;}
-    if(id.includes('B'))nh=Math.max(4,oh+dy);if(id.includes('T')){nh=Math.max(4,oh-dy);ny=oy+oh-nh;}
-    floatPaste.x=Math.round(nx);floatPaste.y=Math.round(ny);floatPaste.w=Math.round(nw);floatPaste.h=Math.round(nh);drawOverlay();return;
+  // Cursor hints
+  if(floatPaste&&e.buttons===0){
+    const hnd=hitHandle(floatPaste,px2,py2);
+    overlayCvs.style.cursor=hnd?HANDLE_CURSORS[hnd.id]:isInsideFloat(px2,py2)?'move':'default';
+  } else if(!floatPaste&&sel&&e.buttons===0&&(toolMode==='scale'||toolMode==='move')){
+    const hnd=hitHandle(sel,px2,py2);
+    overlayCvs.style.cursor=hnd?HANDLE_CURSORS[hnd.id]:isInsideSel(px2,py2)?'move':'default';
   }
-  if(floatDragStart&&e.buttons===1){floatPaste.x=Math.round(floatDragStart.ox+(px2-floatDragStart.mx));floatPaste.y=Math.round(floatDragStart.oy+(py2-floatDragStart.my));drawOverlay();}
+  if(e.buttons!==1)return;
+  // Drag float paste
+  if(scaleDragStart&&floatPaste){
+    applyScaleDrag(px2,py2,floatPaste,scaleDragStart);
+    floatPaste.x=scaleDragStart._r.x;floatPaste.y=scaleDragStart._r.y;
+    floatPaste.w=scaleDragStart._r.w;floatPaste.h=scaleDragStart._r.h;
+    drawOverlay();return;
+  }
+  if(floatDragStart&&floatPaste){
+    floatPaste.x=Math.round(floatDragStart.ox+(px2-floatDragStart.mx));
+    floatPaste.y=Math.round(floatDragStart.oy+(py2-floatDragStart.my));
+    drawOverlay();return;
+  }
+  // Scale / move a committed selection
+  if(scaleDragStart&&sel){
+    applyScaleDrag(px2,py2,sel,scaleDragStart);
+    sel.x=scaleDragStart._r.x;sel.y=scaleDragStart._r.y;
+    sel.w=scaleDragStart._r.w;sel.h=scaleDragStart._r.h;
+    drawOverlay();return;
+  }
+  if(selMoveDragStart&&sel){
+    sel.x=Math.round(selMoveDragStart.ox+(px2-selMoveDragStart.mx));
+    sel.y=Math.round(selMoveDragStart.oy+(py2-selMoveDragStart.my));
+    if(sel.path){
+      const dx=sel.x-selMoveDragStart.ox, dy=sel.y-selMoveDragStart.oy;
+      sel.path=selMoveDragStart.path.map(p=>({x:p.x+dx,y:p.y+dy}));
+    }
+    drawOverlay();return;
+  }
 });
+
+function applyScaleDrag(px2,py2,r,sd){
+  const dx=px2-sd.mx,dy=py2-sd.my;
+  let{ox,oy,ow,oh}=sd;let nx=ox,ny=oy,nw=ow,nh=oh;
+  if(sd.id.includes('R'))nw=Math.max(4,ow+dx);
+  if(sd.id.includes('L')){nw=Math.max(4,ow-dx);nx=ox+ow-nw;}
+  if(sd.id.includes('B'))nh=Math.max(4,oh+dy);
+  if(sd.id.includes('T')){nh=Math.max(4,oh-dy);ny=oy+oh-nh;}
+  sd._r={x:Math.round(nx),y:Math.round(ny),w:Math.round(nw),h:Math.round(nh)};
+}
+
 overlayCvs.addEventListener('pointerdown',e=>{
-  if(e.button!==0)return;overlayCvs.setPointerCapture(e.pointerId);const[px2,py2]=evtPos(e);
-  if(floatPaste){const hnd=hitHandle(floatPaste,px2,py2);if(hnd){scaleDragStart={mx:px2,my:py2,ox:floatPaste.x,oy:floatPaste.y,ow:floatPaste.w,oh:floatPaste.h,id:hnd.id};return;}if(isInsideFloat(px2,py2)){floatDragStart={mx:px2,my:py2,ox:floatPaste.x,oy:floatPaste.y};return;}commitFloatPaste();}
+  if(e.button!==0)return;
+  overlayCvs.setPointerCapture(e.pointerId);
+  const[px2,py2]=evtPos(e);
+
+  if(floatPaste){
+    const hnd=hitHandle(floatPaste,px2,py2);
+    if(hnd){scaleDragStart={mx:px2,my:py2,ox:floatPaste.x,oy:floatPaste.y,ow:floatPaste.w,oh:floatPaste.h,id:hnd.id,_r:{...floatPaste}};return;}
+    if(isInsideFloat(px2,py2)){floatDragStart={mx:px2,my:py2,ox:floatPaste.x,oy:floatPaste.y};return;}
+    commitFloatPaste();return;
+  }
+  if(sel&&(toolMode==='scale'||toolMode==='move')){
+    const hnd=hitHandle(sel,px2,py2);
+    if(hnd){scaleDragStart={mx:px2,my:py2,ox:sel.x,oy:sel.y,ow:sel.w,oh:sel.h,id:hnd.id,_r:{...sel}};return;}
+    if(isInsideSel(px2,py2)){
+      selMoveDragStart={mx:px2,my:py2,ox:sel.x,oy:sel.y,path:sel.path?sel.path.map(p=>({...p})):null};
+      return;
+    }
+    deselect();
+  }
 });
-overlayCvs.addEventListener('pointerup',()=>{scaleDragStart=null;floatDragStart=null;});
+overlayCvs.addEventListener('pointerup',()=>{scaleDragStart=null;floatDragStart=null;selMoveDragStart=null;});
 
 // ── Main canvas pointer ──
-let growKeyHeld = false;
-let shrinkKeyHeld = false;
-let drawingSecondary=false;
+let growKeyHeld=false,shrinkKeyHeld=false,drawingSecondary=false;
 cvs.addEventListener('contextmenu',e=>e.preventDefault());
+
 cvs.addEventListener('pointerdown',e=>{
-  if(e.button!==0&&e.button!==2)return;cvs.setPointerCapture(e.pointerId);
+  if(e.button!==0&&e.button!==2)return;
+  cvs.setPointerCapture(e.pointerId);
   const[px2,py2]=evtPos(e);const isRight=e.button===2;
-  if(toolMode==='draw'){state.drawing=true;drawingSecondary=isRight;state.lastX=px2;state.lastY=py2;state.distAccum=0;captureUndo();paintAt(px2,py2,isRight);}
-  else if(toolMode==='select'){if(floatPaste){commitFloatPaste();return;}selDragStart={x:px2,y:py2};sel={x:px2,y:py2,w:0,h:0};startAnts();}
-  else if(toolMode==='move'){if(floatPaste&&!isInsideFloat(px2,py2))commitFloatPaste();}
+
+  if(toolMode==='draw'){
+    state.drawing=true;drawingSecondary=isRight;state.lastX=px2;state.lastY=py2;state.distAccum=0;
+    captureUndo();paintAt(px2,py2,isRight);
+  }
+  else if(toolMode==='select'){
+    if(floatPaste){commitFloatPaste();return;}
+    deselect();
+    selDragStart={x:px2,y:py2};sel={x:px2,y:py2,w:0,h:0};startAnts();
+  }
+  else if(toolMode==='lasso'){
+    if(floatPaste){commitFloatPaste();return;}
+    deselect();
+    lassoPoints=[{x:px2,y:py2}];startAnts();
+  }
+  else if(toolMode==='ellipse'){
+    if(floatPaste){commitFloatPaste();return;}
+    deselect();
+    ellipseStart={x:px2,y:py2};sel={x:px2,y:py2,w:0,h:0,ellipse:true};startAnts();
+  }
+  else if(toolMode==='move'){
+    if(floatPaste&&!isInsideFloat(px2,py2))commitFloatPaste();
+  }
+  else if(toolMode==='scale'){
+    // handled by overlay
+  }
 });
+
 cvs.addEventListener('pointermove',e=>{
   const[px2,py2]=evtPos(e);
   if(toolMode==='draw'&&state.drawing){
-    // G held = grow size, D held = decrease (only while painting)
-    if(growKeyHeld){ const nv=Math.min(300,state.size+1.5); state.size=nv; document.getElementById('sl-size').value=nv; document.getElementById('v-size').textContent=Math.round(nv); }
-    if(shrinkKeyHeld){ const nv=Math.max(4,state.size-1.5); state.size=nv; document.getElementById('sl-size').value=nv; document.getElementById('v-size').textContent=Math.round(nv); }
+    if(growKeyHeld){const nv=Math.min(300,state.size+1.5);state.size=nv;document.getElementById('sl-size').value=nv;document.getElementById('v-size').textContent=Math.round(nv);}
+    if(shrinkKeyHeld){const nv=Math.max(4,state.size-1.5);state.size=nv;document.getElementById('sl-size').value=nv;document.getElementById('v-size').textContent=Math.round(nv);}
     const dx=px2-state.lastX,dy=py2-state.lastY,dist=Math.sqrt(dx*dx+dy*dy);
     if(dist===0)return;
     const spacing=Math.max(0.5,state.spacing);state.distAccum+=dist;
     while(state.distAccum>=spacing){state.distAccum-=spacing;const t=1-state.distAccum/dist;const ix=state.lastX+dx*t,iy=state.lastY+dy*t;if(state.hueCycle)state.hueAngle=(state.hueAngle+state.hueSpeed*0.1)%360;paintAt(ix,iy,drawingSecondary);}
     state.lastX=px2;state.lastY=py2;
-  } else if(toolMode==='select'&&selDragStart&&e.buttons===1){
+  }
+  else if(toolMode==='select'&&selDragStart&&e.buttons===1){
     sel=normalizeRect(selDragStart.x,selDragStart.y,px2,py2);
-    sel.x=Math.max(0,sel.x);sel.y=Math.max(0,sel.y);sel.w=Math.min(cvs.width-sel.x,sel.w);sel.h=Math.min(cvs.height-sel.y,sel.h);
+    sel.x=Math.max(0,sel.x);sel.y=Math.max(0,sel.y);
+    sel.w=Math.min(cvs.width-sel.x,sel.w);sel.h=Math.min(cvs.height-sel.y,sel.h);
+    drawOverlay();
+  }
+  else if(toolMode==='lasso'&&lassoPoints&&e.buttons===1){
+    lassoPoints.push({x:Math.max(0,Math.min(cvs.width,px2)),y:Math.max(0,Math.min(cvs.height,py2))});
+    drawOverlay();
+  }
+  else if(toolMode==='ellipse'&&ellipseStart&&e.buttons===1){
+    sel=normalizeRect(ellipseStart.x,ellipseStart.y,px2,py2);
+    sel.ellipse=true;
     drawOverlay();
   }
 });
+
 cvs.addEventListener('pointerup',e=>{
   floatDragStart=null;
   if(toolMode==='draw'){state.drawing=false;drawingSecondary=false;}
-  if(toolMode==='select'){selDragStart=null;if(spacebarSelect&&sel&&sel.w>1&&sel.h>1){selectionToBrush();spacebarSelect=false;}}
+  else if(toolMode==='select'){
+    selDragStart=null;
+    if(spacebarSelect&&sel&&sel.w>1&&sel.h>1){selectionToBrush();spacebarSelect=false;}
+    else if(sel&&sel.w<2&&sel.h<2)deselect();
+    syncOverlayPointerEvents();
+  }
+  else if(toolMode==='lasso'){
+    if(lassoPoints&&lassoPoints.length>4){
+      // Close lasso → compute bounding box
+      const xs=lassoPoints.map(p=>p.x),ys=lassoPoints.map(p=>p.y);
+      const bx=Math.max(0,Math.floor(Math.min(...xs))),by=Math.max(0,Math.floor(Math.min(...ys)));
+      const bw=Math.min(cvs.width-bx,Math.ceil(Math.max(...xs))-bx);
+      const bh=Math.min(cvs.height-by,Math.ceil(Math.max(...ys))-by);
+      sel={x:bx,y:by,w:bw,h:bh,path:lassoPoints};
+      if(spacebarSelect&&sel.w>1&&sel.h>1){selectionToBrush();spacebarSelect=false;}
+    }
+    lassoPoints=null;
+    syncOverlayPointerEvents();
+  }
+  else if(toolMode==='ellipse'){
+    ellipseStart=null;
+    if(!sel||sel.w<2||sel.h<2)deselect();
+    syncOverlayPointerEvents();
+  }
 });
-cvs.addEventListener('pointerleave',()=>{if(toolMode==='draw'){state.drawing=false;drawingSecondary=false;}});
 
 // ═══════════════════════════════════════════════════════════════════
 // SLIDERS
@@ -2340,7 +3207,17 @@ document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
   const sl=id=>document.getElementById(id);
   const upd=(id,valId,key,delta,min,max)=>{const nv=Math.max(min,Math.min(max,state[key]+delta));state[key]=nv;sl(id).value=nv;sl(valId).textContent=nv;};
-  if(e.ctrlKey||e.metaKey){switch(e.key){case'z':e.preventDefault();undo();return;case'y':e.preventDefault();redo();return;case'c':e.preventDefault();doCopy();return;case'x':e.preventDefault();doCut();return;case'v':e.preventDefault();pasteFromSystemClipboard();return;case'+':case'=':e.preventDefault();zoomIn();return;case'-':e.preventDefault();zoomOut();return;case'0':e.preventDefault();setZoom(1);return;}}
+  if(e.ctrlKey||e.metaKey){switch(e.key){
+    case'z':e.preventDefault();undo();return;
+    case'y':e.preventDefault();redo();return;
+    case'c':e.preventDefault();doCopy();return;
+    case'x':e.preventDefault();doCut();return;
+    // Ctrl+V is handled by the native 'paste' event listener — don't intercept here
+    case'+':case'=':e.preventDefault();zoomIn();return;
+    case'-':e.preventDefault();zoomOut();return;
+    case'0':e.preventDefault();setZoom(1);return;
+    case'i':case'I':e.preventDefault();document.getElementById('file-import-png').click();return;
+  }}
   switch(e.key){
     case'[':upd('sl-size','v-size','size',-4,4,300);break;
     case']':upd('sl-size','v-size','size',4,4,300);break;
@@ -2349,30 +3226,42 @@ document.addEventListener('keydown',e=>{
     case'X':swapColors();break;
     case'r':case'R':upd('sl-rotation','v-rotation','rotation',5,0,360);break;
     case'e':case'E':upd('sl-rotation','v-rotation','rotation',-5,0,360);break;
-    case's':case'S':document.getElementById('btn-save').click();break;
+    case's':case'S':if(!e.shiftKey){document.getElementById('btn-save').click();}else{toggleCircleMode();}break;
     case'm':case'M':document.getElementById('btn-sym').click();break;
     case'h':case'H':document.getElementById('btn-hue-cycle').click();break;
     case'p':case'P':generateProcBrushes();break;
-    case'd':case'D':setTool('draw');break;
+    case'n':case'N':if(!e.ctrlKey&&!e.metaKey){generateEstampaBrushes();}break;
+    case'a':case'A':setTool('draw');break;
     case'q':case'Q':setTool('select');break;
     case'w':case'W':setTool('move');break;
+    case'l':case'L':setTool('lasso');break;
+    case'o':case'O':setTool('ellipse');break;
+    case't':case'T':setTool('scale');break;
     case'c':case'C':if(!e.ctrlKey&&!e.metaKey)toggleCamBrush();break;
-    case'S':toggleCircleMode();break; // Shift+S (uppercase S)
+    case'g':case'G':growKeyHeld=true;break;
+    case'd':case'D':shrinkKeyHeld=true;break;
     case'Escape':deselect();setTool('draw');spacebarSelect=false;break;
     case'Enter':commitFloatPaste();break;
   }
 });
 
+document.addEventListener('keyup',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+  switch(e.key){
+    case'g':case'G':growKeyHeld=false;break;
+    case'd':case'D':shrinkKeyHeld=false;break;
+  }
+});
+
+cvs.addEventListener('pointerleave',()=>{if(toolMode==='draw'){state.drawing=false;drawingSecondary=false;}});
+
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
-  if(e.key===' '&&!e.repeat){e.preventDefault();if(toolMode==='select'&&sel&&sel.w>1&&sel.h>1){selectionToBrush();}else if(toolMode!=='select'){spacebarSelect=true;setTool('select');}}
-  if(e.key==='g'||e.key==='G') growKeyHeld=true;
-  if(e.key==='d'||e.key==='D') shrinkKeyHeld=true;
+  const selActive=toolMode==='select'||toolMode==='lasso'||toolMode==='ellipse';
+  if(e.key===' '&&!e.repeat){e.preventDefault();if(selActive&&sel&&sel.w>1&&sel.h>1){selectionToBrush();}else if(!selActive){spacebarSelect=true;setTool('select');}}
 });
 document.addEventListener('keyup',e=>{
   if(e.key===' '){e.preventDefault();if(spacebarSelect){if(!sel||sel.w<=1||sel.h<=1){spacebarSelect=false;setTool('draw');deselect();}}}
-  if(e.key==='g'||e.key==='G') growKeyHeld=false;
-  if(e.key==='d'||e.key==='D') shrinkKeyHeld=false;
 });
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2403,7 +3292,7 @@ document.getElementById('hsl-h').addEventListener('input',function(){document.ge
 document.getElementById('hsl-s').addEventListener('input',function(){document.getElementById('hsl-s-val').textContent=this.value;updateHSLPreview();});
 document.getElementById('hsl-l').addEventListener('input',function(){document.getElementById('hsl-l-val').textContent=this.value;updateHSLPreview();});
 
-// Curves (same as original)
+// Curves
 const CRV_W=240,CRV_H=240,CRV_PAD=18;
 const crvCanvas=document.getElementById('curves-canvas'),crvCtx=crvCanvas.getContext('2d');
 let crvChannel='rgb';
@@ -2452,7 +3341,7 @@ document.getElementById('curves-cancel').addEventListener('click',closeCurves);
 document.getElementById('curves-apply').addEventListener('click',applyCurves);
 
 // ═══════════════════════════════════════════════════════════════════
-// CANVAS SIZE
+// CANVAS SIZE MODAL
 // ═══════════════════════════════════════════════════════════════════
 const CANVAS_PRESETS = [
   { label:'800×600',   w:800,  h:600  },
@@ -2491,7 +3380,7 @@ function updateCanvasSizeWarn() {
   const warn = document.getElementById('canvas-size-warn');
   const mpx = ((w * h) / 1e6).toFixed(1);
   if (w > 4000 || h > 4000) {
-    warn.textContent = `⚠ ${mpx}MP — canvas grande, puede ser lento`;
+    warn.textContent = `⚠ ${mpx}MP — large canvas, may be slow`;
     warn.style.color = '#d4a017';
   } else {
     warn.textContent = `${w} × ${h} px — ${mpx} MP`;
@@ -2506,7 +3395,7 @@ function openCanvasSizeModal() {
   document.getElementById('modal-canvas-size').style.display = 'flex';
 }
 
-function applyCanvasSize() {
+function applyCanvasSizeModal() {
   const w = Math.max(100, Math.min(8000, parseInt(document.getElementById('canvas-w-input').value) || cvs.width));
   const h = Math.max(100, Math.min(8000, parseInt(document.getElementById('canvas-h-input').value) || cvs.height));
   captureUndo();
@@ -2530,24 +3419,7 @@ document.getElementById('btn-canvas-size').addEventListener('click', openCanvasS
 document.getElementById('canvas-size-cancel').addEventListener('click', () => {
   document.getElementById('modal-canvas-size').style.display = 'none';
 });
-document.getElementById('canvas-size-apply').addEventListener('click', applyCanvasSize);
-
-// ═══════════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════════
-initBrushGrid();
-initPalette();
-initBgPresets();
-initCanvasSizeModal();
-drawColorWheel();
-applyHsv();
-applySecondaryHsv();
-resizeCanvas();
-
-// Auto-generate first batch of proc brushes
-generateProcBrushes();
-
-window.addEventListener('resize',()=>{resizeCanvas();syncLayerUI();composite();});
+document.getElementById('canvas-size-apply').addEventListener('click', applyCanvasSizeModal);
 
 // ═══════════════════════════════════════════════════════════════════
 // CAM BRUSH
@@ -2571,36 +3443,17 @@ function startCam() {
   }
 
   camElement = document.createElement('video');
-  camElement.autoplay = true;
-  camElement.playsInline = true;
-  camElement.muted = true;
-  // IMPORTANT: display:none stops frame decoding in many browsers.
-  // Position off-screen but keep it "visible" so the browser decodes frames.
-  camElement.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;pointer-events:none;';
+  camElement.autoplay = true; camElement.playsInline = true; camElement.muted = true;
+  camElement.style.display = 'none';
   document.body.appendChild(camElement);
-
   camCanvas = document.createElement('canvas');
+  camCanvas.width = 320; camCanvas.height = 240;
   camCtx = camCanvas.getContext('2d');
 
   navigator.mediaDevices.getUserMedia({ video: true })
     .then(stream => {
       camElement.srcObject = stream;
-
-      camElement.addEventListener('playing', () => {
-        // Poll until we get real dimensions — some browsers report 0 for a few frames
-        const waitForDims = () => {
-          if (camElement.videoWidth > 0 && camElement.videoHeight > 0) {
-            camReady = true;
-            updateCamPreview();
-            toast('📷 CAM READY');
-          } else {
-            requestAnimationFrame(waitForDims);
-          }
-        };
-        waitForDims();
-      }, { once: true });
-
-      camElement.play().catch(() => {});
+      camElement.onloadedmetadata = () => { camReady = true; toast('📷 CAM READY'); };
     })
     .catch(err => {
       if (camElement) { camElement.remove(); camElement = null; }
@@ -2615,37 +3468,6 @@ function startCam() {
     });
 }
 
-// Small live preview of the cam feed inside the sidebar button
-let camPreviewTimer = null;
-function updateCamPreview() {
-  const btn = document.getElementById('btn-cam-brush');
-  if (!btn || !camReady) return;
-
-  // Draw a tiny preview onto the button
-  let previewCanvas = document.getElementById('cam-preview-canvas');
-  if (!previewCanvas) {
-    previewCanvas = document.createElement('canvas');
-    previewCanvas.id = 'cam-preview-canvas';
-    previewCanvas.width = 320; previewCanvas.height = 180;
-    previewCanvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:3px;opacity:0.85;pointer-events:none;';
-    btn.style.position = 'relative';
-    btn.style.overflow = 'hidden';
-    btn.appendChild(previewCanvas);
-  }
-
-  const tick = () => {
-    if (!camReady || !camElement || !camBrushMode) {
-      previewCanvas.remove(); return;
-    }
-    const pctx = previewCanvas.getContext('2d');
-    // Draw directly from video element for preview
-    try { pctx.drawImage(camElement, 0, 0, 320, 180); } catch(e) {}
-    camPreviewTimer = requestAnimationFrame(tick);
-  };
-  cancelAnimationFrame(camPreviewTimer);
-  tick();
-}
-
 function showCamBlockedModal(reason) {
   document.getElementById('modal-cam-blocked')?.remove();
   const modal = document.createElement('div');
@@ -2656,17 +3478,15 @@ function showCamBlockedModal(reason) {
   if (reason === 'file://') {
     msg = 'Camera unavailable on file://';
     detail = `Browsers block camera access when opening HTML files directly from disk.<br><br>
-      <b>Fix:</b> Serve the file locally instead:<br>
+      <b>Fix:</b> Serve the file locally:<br>
       <code style="display:block;margin:8px 0;padding:6px;background:#0a0a0a;border-radius:3px;font-size:9px;">
         python3 -m http.server 8080<br>
         → open http://localhost:8080
       </code>
-      Or use <b>VS Code Live Server</b>, <b>npx serve</b>, etc.<br><br>
-      <span style="color:#888;">Alternatively, drag a video file onto the canvas and use it as a brush stamp instead.</span>`;
+      Or use <b>VS Code Live Server</b>, <b>npx serve</b>, etc.`;
   } else if (reason === 'denied') {
     msg = 'Camera permission denied';
-    detail = `You clicked "Block" or the browser remembered a previous denial.<br><br>
-      <b>To fix:</b> Click the 🔒 or 📷 icon in your browser's address bar and allow camera access, then reload the page.`;
+    detail = `Click the 🔒 or 📷 icon in your browser's address bar and allow camera access, then reload.`;
   } else {
     msg = 'Camera not available';
     detail = `Could not access camera. Make sure no other app is using it.`;
@@ -2687,7 +3507,6 @@ function showCamBlockedModal(reason) {
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
 
-// ── Video file as cam brush fallback ──
 let videoFileBrushEl = null;
 function openVideoFileBrush() {
   const inp = document.createElement('input');
@@ -2710,7 +3529,6 @@ function openVideoFileBrush() {
     document.body.appendChild(videoFileBrushEl);
     videoFileBrushEl.play().catch(()=>{});
     videoFileBrushEl.onloadedmetadata = () => {
-      // hijack cam system to use this video
       if (camElement) { camElement.remove(); }
       camElement = videoFileBrushEl;
       camCanvas = document.createElement('canvas');
@@ -2732,37 +3550,16 @@ function stopCam() {
 
 function getCamFrame() {
   if (!camReady || !camElement) return null;
-  const vw = camElement.videoWidth;
-  const vh = camElement.videoHeight;
-  if (!vw || !vh) return null;
-
-  // Only resize (which clears + invalidates ctx) when dimensions actually changed
-  if (camCanvas.width !== vw || camCanvas.height !== vh) {
-    camCanvas.width  = vw;
-    camCanvas.height = vh;
-    camCtx = camCanvas.getContext('2d'); // re-acquire after resize
-  }
-
-  try {
-    camCtx.drawImage(camElement, 0, 0, vw, vh);
-  } catch(e) {
-    // Video not ready for capture yet
-    return null;
-  }
+  camCanvas.width = camElement.videoWidth || 320;
+  camCanvas.height = camElement.videoHeight || 240;
+  camCtx.drawImage(camElement, 0, 0);
   return camCanvas;
 }
 
 function toggleCamBrush() {
   camBrushMode = !camBrushMode;
-  if (camBrushMode) {
-    startCam();
-    toast('📷 CAM BRUSH ON — C to toggle');
-  } else {
-    cancelAnimationFrame(camPreviewTimer);
-    document.getElementById('cam-preview-canvas')?.remove();
-    stopCam();
-    toast('CAM BRUSH OFF');
-  }
+  if (camBrushMode) { startCam(); toast('📷 CAM BRUSH ON — C to toggle'); }
+  else { stopCam(); toast('CAM BRUSH OFF'); }
   updateCamBrushUI();
 }
 
@@ -2780,208 +3577,29 @@ let circleMode = false;
 function toggleCircleMode() {
   circleMode = !circleMode;
   document.getElementById('btn-circle-mode').classList.toggle('on', circleMode);
-  toast(circleMode ? '◯ CIRCLE MODE ON — Shift+S toggle' : 'CIRCLE MODE OFF');
+  toast(circleMode ? '◯ CIRCLE MODE ON' : 'CIRCLE MODE OFF');
 }
 
 document.getElementById('btn-circle-mode').addEventListener('click', toggleCircleMode);
 
 // ═══════════════════════════════════════════════════════════════════
-// IMPORT PNG
+// INIT
 // ═══════════════════════════════════════════════════════════════════
-function loadImageOntoCanvas(img, asNewLayer) {
-  captureUndo();
-  if (asNewLayer) {
-    const newL = makeLayer('imported');
-    // Scale to fit canvas preserving aspect ratio
-    const scale = Math.min(cvs.width / img.width, cvs.height / img.height, 1);
-    const dw = Math.round(img.width * scale);
-    const dh = Math.round(img.height * scale);
-    const dx = Math.round((cvs.width - dw) / 2);
-    const dy = Math.round((cvs.height - dh) / 2);
-    newL.ctx.drawImage(img, dx, dy, dw, dh);
-    layers.push(newL);
-    activeLayerIdx = layers.length - 1;
-  } else {
-    // Place on active layer, centered
-    const layer = layers[activeLayerIdx];
-    const scale = Math.min(cvs.width / img.width, cvs.height / img.height, 1);
-    const dw = Math.round(img.width * scale);
-    const dh = Math.round(img.height * scale);
-    const dx = Math.round((cvs.width - dw) / 2);
-    const dy = Math.round((cvs.height - dh) / 2);
-    layer.ctx.drawImage(img, dx, dy, dw, dh);
-  }
-  syncLayerUI();
-  composite();
-}
+initBrushGrid();
+initPalette();
+initBgPresets();
+initCanvasSizeModal();
+drawColorWheel();
+applyHsv();
+applySecondaryHsv();
+resizeCanvas();
 
-function importImageFromFile(file) {
-  if (!file || !file.type.startsWith('image/')) { toast('NOT AN IMAGE'); return; }
-  const url = URL.createObjectURL(file);
-  const img = new Image();
-  img.onload = () => {
-    URL.revokeObjectURL(url);
-    // Ask: new layer or active layer?
-    const asNew = confirm(`Import "${file.name}" (${img.width}×${img.height}px)\n\nOK = New layer\nCancel = Active layer`);
-    loadImageOntoCanvas(img, asNew);
-    toast(`IMPORTED ${img.width}×${img.height}`);
-  };
-  img.onerror = () => { URL.revokeObjectURL(url); toast('IMPORT FAILED'); };
-  img.src = url;
-}
+generateProcBrushes();
+generateEstampaBrushes();
 
-// ── Image-as-brush drop zone ──
-function loadFileAsBrush(file) {
-  if (!file || !file.type.startsWith('image/')) { toast('NOT AN IMAGE'); return; }
-  const url = URL.createObjectURL(file);
-  const img = new Image();
-  img.onload = () => {
-    URL.revokeObjectURL(url);
-    // Draw onto a normalized 120×120 stamp canvas
-    const stamp = document.createElement('canvas');
-    const maxDim = 120;
-    const aspect = img.width / img.height;
-    stamp.width  = aspect >= 1 ? maxDim : Math.round(maxDim * aspect);
-    stamp.height = aspect >= 1 ? Math.round(maxDim / aspect) : maxDim;
-    stamp.getContext('2d').drawImage(img, 0, 0, stamp.width, stamp.height);
-    const name = file.name.replace(/\.[^.]+$/, '').slice(0, 8);
-    customBrushes.push({ canvas: stamp, name, original: null });
-    customBrushIndex = customBrushes.length - 1;
-    procBrushIndex = -1;
-    // Default to a visible size — 150px or whatever the slider max allows
-    const slSize = document.getElementById('sl-size');
-    const defaultSize = Math.min(150, parseInt(slSize.max));
-    state.size = defaultSize;
-    slSize.value = defaultSize;
-    document.getElementById('v-size').textContent = defaultSize;
-    updateBrushGridCustom();
-    setTool('draw');
-    toast(`🖌 BRUSH "${name}"`);
-  };
-  img.onerror = () => { URL.revokeObjectURL(url); toast('BRUSH LOAD FAILED'); };
-  img.src = url;
-}
+window.addEventListener('resize',()=>{resizeCanvas();syncLayerUI();composite();});
 
-const imgBrushDrop = document.getElementById('img-brush-drop');
-const fileBrushPicker = document.createElement('input');
-fileBrushPicker.type = 'file';
-fileBrushPicker.accept = 'image/png,image/jpeg,image/webp,image/gif';
-fileBrushPicker.style.cssText = 'position:fixed;left:-9999px;opacity:0;';
-document.body.appendChild(fileBrushPicker);
-
-imgBrushDrop.addEventListener('click', () => fileBrushPicker.click());
-fileBrushPicker.addEventListener('change', function() {
-  if (this.files && this.files[0]) { loadFileAsBrush(this.files[0]); this.value = ''; }
-});
-
-imgBrushDrop.addEventListener('dragenter', e => { e.preventDefault(); e.stopPropagation(); imgBrushDrop.classList.add('drag-over'); });
-imgBrushDrop.addEventListener('dragover',  e => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'copy'; imgBrushDrop.classList.add('drag-over'); });
-imgBrushDrop.addEventListener('dragleave', e => { e.preventDefault(); e.stopPropagation(); imgBrushDrop.classList.remove('drag-over'); });
-imgBrushDrop.addEventListener('drop', e => {
-  e.preventDefault();
-  e.stopPropagation();
-  imgBrushDrop.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) loadFileAsBrush(file);
-});
-
-document.getElementById('btn-import-png').addEventListener('click', () => {
-  document.getElementById('file-import-png').click();
-});
-
-document.getElementById('file-import-png').addEventListener('change', function() {
-  if (this.files && this.files[0]) {
-    importImageFromFile(this.files[0]);
-    this.value = ''; // reset so same file can be re-imported
-  }
-});
-
-// Drag & drop onto canvas
-document.getElementById('canvas-wrap').addEventListener('dragover', e => {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'copy';
-});
-document.getElementById('canvas-wrap').addEventListener('drop', e => {
-  e.preventDefault();
-  const file = e.dataTransfer.files[0];
-  if (file) importImageFromFile(file);
-});
-
-// ═══════════════════════════════════════════════════════════════════
-// PASTE FROM SYSTEM CLIPBOARD (Ctrl+V from external apps)
-// ═══════════════════════════════════════════════════════════════════
-async function pasteFromSystemClipboard() {
-  try {
-    // Try modern Clipboard API first
-    if (navigator.clipboard && navigator.clipboard.read) {
-      const items = await navigator.clipboard.read();
-      for (const item of items) {
-        const imageType = item.types.find(t => t.startsWith('image/'));
-        if (imageType) {
-          const blob = await item.getType(imageType);
-          const url = URL.createObjectURL(blob);
-          const img = new Image();
-          img.onload = () => {
-            URL.revokeObjectURL(url);
-            const asNew = confirm(`Paste image (${img.width}×${img.height}px)\n\nOK = New layer\nCancel = Active layer`);
-            loadImageOntoCanvas(img, asNew);
-            toast(`PASTED ${img.width}×${img.height}`);
-          };
-          img.src = url;
-          return;
-        }
-      }
-      toast('NO IMAGE IN CLIPBOARD');
-    } else {
-      toast('CLIPBOARD API NOT AVAILABLE\nTry Ctrl+V on canvas');
-    }
-  } catch(e) {
-    // Fallback message if permission denied
-    if (e.name === 'NotAllowedError') {
-      toast('ALLOW CLIPBOARD PERMISSION');
-    } else {
-      toast('PASTE FAILED');
-    }
-    console.warn('Clipboard paste error:', e);
-  }
-}
-
-document.getElementById('btn-paste-clipboard').addEventListener('click', pasteFromSystemClipboard);
-
-// Also intercept native paste event (Ctrl+V) — handles both internal and external images
-document.addEventListener('paste', async e => {
-  // If typing in an input, don't intercept
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-
-  const items = e.clipboardData && e.clipboardData.items;
-  if (!items) return;
-
-  for (const item of items) {
-    if (item.type.startsWith('image/')) {
-      e.preventDefault();
-      const blob = item.getAsFile();
-      const url = URL.createObjectURL(blob);
-      const img = new Image();
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        // If there's an internal clipboard paste pending, handle differently
-        // External paste always goes as float paste for positioning
-        const asNew = confirm(`Paste image (${img.width}×${img.height}px)\n\nOK = New layer\nCancel = Active layer`);
-        loadImageOntoCanvas(img, asNew);
-        toast(`PASTED ${img.width}×${img.height}`);
-      };
-      img.src = url;
-      return;
-    }
-  }
-
-  // If no image found, fall through to existing internal paste (doPaste)
-  if (e.clipboardData && !e.clipboardData.items.length) return;
-  const hasImage = [...items].some(i => i.type.startsWith('image/'));
-  if (!hasImage && clipboard) doPaste();
-});
-
-toast('FIELD READY — P: new proc brushes');
+toast('FIELD READY — Ctrl+V paste · P proc · N estampa · G grow · D shrink');
 </script>
 </body>
 </html>
