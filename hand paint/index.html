@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>hand paint</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital@0;1&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d0d0d; --surface: #141414; --border: #2a2a2a;
+    --accent: #ff3a6e; --text: #e0e0e0; --muted: #555;
+  }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Space Mono', monospace;
+    height: 100vh; display: flex; flex-direction: column;
+    overflow: hidden; user-select: none;
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 16px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0; gap: 10px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+  .controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .control-group { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); }
+  .control-group label { text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+  input[type=range] { -webkit-appearance: none; width: 65px; height: 2px; background: var(--border); outline: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+
+  #colorBtn {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid #444; cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s; flex-shrink: 0;
+  }
+  #colorBtn:hover { transform: scale(1.15); border-color: #888; }
+
+  .btn { font-family: 'Space Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; background: none; color: var(--muted); border: 1px solid var(--border); padding: 4px 9px; cursor: pointer; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
+  .btn:hover { color: var(--text); border-color: var(--text); }
+  .btn.danger:hover { color: var(--accent); border-color: var(--accent); }
+  .btn.on { color: var(--accent); border-color: var(--accent); }
+
+  .workspace { flex: 1; display: flex; position: relative; overflow: hidden; }
+  #bgCanvas, #canvas, #overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #overlay { pointer-events: none; }
+
+  #webcam { position: absolute; bottom: 14px; right: 14px; width: 160px; height: 120px; border: 1px solid var(--border); border-radius: 4px; object-fit: cover; transform: scaleX(-1); opacity: 0.6; transition: opacity 0.2s; z-index: 10; }
+  #webcam:hover { opacity: 1; }
+
+  /* dual HUD — left hand / right hand */
+  #hudRight {
+    position: absolute; bottom: 140px; right: 14px;
+    z-index: 10; text-align: right;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; line-height: 1.9;
+  }
+  #hudLeft {
+    position: absolute; bottom: 140px; left: 14px;
+    z-index: 10; text-align: left;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; line-height: 1.9;
+  }
+  .hud-gesture { font-size: 12px; letter-spacing: 0.1em; transition: color 0.2s; }
+  .hud-detail  { color: var(--muted); }
+  .hud-label   { font-size: 9px; color: #333; letter-spacing: 0.14em; }
+
+  .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); margin-right: 4px; vertical-align: middle; transition: background 0.3s; }
+  .dot.active  { background: #3dff7a; }
+  .dot.drawing { background: var(--accent); }
+  .dot.spinning { background: #ffe156; }
+
+  .hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; pointer-events: none; opacity: 1; transition: opacity 0.6s; }
+  .hint h2 { font-size: 20px; color: #222; letter-spacing: 0.05em; margin-bottom: 10px; }
+  .hint p  { font-size: 10px; color: #2a2a2a; letter-spacing: 0.07em; text-transform: uppercase; line-height: 2.2; }
+  .hint.hidden { opacity: 0; }
+
+  /* legend */
+  #legend { position: absolute; top: 14px; left: 14px; z-index: 10; background: rgba(13,13,13,0.88); border: 1px solid var(--border); border-radius: 4px; padding: 10px 13px; font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; line-height: 2.2; color: var(--muted); backdrop-filter: blur(4px); }
+  #legend strong { color: var(--text); }
+  .legend-title { font-size: 9px; letter-spacing: 0.15em; margin-bottom: 2px; display: block; }
+  .legend-title.r { color: var(--accent); }
+  .legend-title.l { color: #ffe156; }
+  .legend-sep { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+
+  /* size ring overlay rendered on canvas — no extra HTML needed */
+
+  /* color picker panel */
+  #pickerPanel {
+    position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+    z-index: 100; background: #181818; border: 1px solid #333; border-radius: 6px;
+    padding: 14px; display: none; flex-direction: column; gap: 10px; width: 240px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+  }
+  #pickerPanel.open { display: flex; }
+  #hueSatCanvas { width: 100%; height: 160px; border-radius: 4px; cursor: crosshair; display: block; }
+  #hueStrip     { width: 100%; height: 14px; border-radius: 3px; cursor: crosshair; display: block; }
+  .picker-row   { display: flex; align-items: center; gap: 10px; }
+  #pickerPreview { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #444; flex-shrink: 0; }
+  #hexInput { font-family: 'Space Mono', monospace; font-size: 11px; background: #111; border: 1px solid #333; color: var(--text); padding: 4px 8px; border-radius: 3px; flex: 1; outline: none; letter-spacing: 0.08em; }
+  #hexInput:focus { border-color: #555; }
+  .swatches-row { display: flex; gap: 5px; flex-wrap: wrap; }
+  .pswatch { width: 16px; height: 16px; border-radius: 50%; cursor: pointer; border: 1.5px solid transparent; transition: transform 0.12s, border-color 0.12s; flex-shrink: 0; }
+  .pswatch:hover { transform: scale(1.25); }
+  .pswatch.active { border-color: #fff; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>hand paint</h1>
+  <div class="controls">
+    <div class="control-group">
+      <label>opacity</label>
+      <input type="range" id="brushOpacity" min="5" max="100" value="80">
+    </div>
+    <div class="control-group">
+      <label>color</label>
+      <div id="colorBtn" title="open color picker"></div>
+    </div>
+    <button class="btn" id="camToggle">cam overlay</button>
+    <div class="control-group" id="camOpacityGroup" style="display:none">
+      <label>fade</label>
+      <input type="range" id="camOpacity" min="5" max="60" value="20">
+    </div>
+    <button class="btn" id="saveBtn">save</button>
+    <button class="btn danger" id="clearBtn">clear</button>
+  </div>
+</header>
+
+<div class="workspace">
+  <canvas id="bgCanvas"></canvas>
+  <canvas id="canvas"></canvas>
+  <canvas id="overlay"></canvas>
+  <video id="webcam" autoplay muted playsinline></video>
+
+  <div id="hudRight">
+    <div class="hud-label">right hand · draws</div>
+    <div><span class="dot" id="rDot"></span><span id="rStatus">—</span></div>
+    <div class="hud-gesture" id="rGesture" style="color:var(--accent)">—</div>
+    <div class="hud-detail" id="rBrush">—</div>
+  </div>
+
+  <div id="hudLeft">
+    <div class="hud-label">left hand · color</div>
+    <div><span class="dot" id="lDot"></span><span id="lStatus">—</span></div>
+    <div class="hud-gesture" id="lGesture" style="color:#ffe156">—</div>
+    <div class="hud-detail" id="lDetail">—</div>
+  </div>
+
+  <div id="legend">
+    <span class="legend-title r">✦ right — draw</span>
+    <div><strong>☝ 1 finger</strong> — pen</div>
+    <div><strong>✌ 2 fingers</strong> — calligraphy</div>
+    <div><strong>🤟 3 fingers</strong> — spray</div>
+    <div><strong>🖐 open</strong> — eraser</div>
+    <div><strong>👌 pinch</strong> — set size</div>
+    <div><strong>✊ fist</strong> — lift</div>
+    <hr class="legend-sep">
+    <span class="legend-title l">✦ left — color</span>
+    <div><strong>🖐 open</strong> — spin hue</div>
+    <div><strong>✊ fist</strong> — freeze color</div>
+  </div>
+
+  <div class="hint" id="hint">
+    <h2>show your hands</h2>
+    <p>
+      right hand → draw &nbsp;|&nbsp; left hand → color<br>
+      pinch right to set size &nbsp;|&nbsp; open left to spin hue<br>
+      fist left to freeze the color
+    </p>
+  </div>
+
+  <div id="pickerPanel">
+    <canvas id="hueSatCanvas" width="212" height="160"></canvas>
+    <canvas id="hueStrip"     width="212" height="14"></canvas>
+    <div class="picker-row">
+      <div id="pickerPreview"></div>
+      <input type="text" id="hexInput" maxlength="7" value="#ff3a6e">
+    </div>
+    <div class="swatches-row" id="pickerSwatches"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script>
+// ══════════════════════════════════════════════
+//  COLOR PICKER
+// ══════════════════════════════════════════════
+const PRESETS = ['#ff3a6e','#ff8c42','#ffe156','#3dff7a','#00d4ff','#7b5cff','#ff99cc','#ffffff','#aaaaaa','#0d0d0d'];
+let currentColor = PRESETS[0];
+let pickerHue = 350;
+let brushOpacity = 0.80;
+
+const colorBtn      = document.getElementById('colorBtn');
+const pickerPanel   = document.getElementById('pickerPanel');
+const pickerPreview = document.getElementById('pickerPreview');
+const hexInput      = document.getElementById('hexInput');
+const hueSatCv      = document.getElementById('hueSatCanvas');
+const hueStripCv    = document.getElementById('hueStrip');
+const hsCtx         = hueSatCv.getContext('2d');
+const hueCtx        = hueStripCv.getContext('2d');
+
+let hsCursor  = { x: 212, y: 0 };
+let hueCursor = 0;
+
+function hsvToHex(h, s, v) {
+  const i=Math.floor(h/60)%6, f=h/60-Math.floor(h/60);
+  const p=v*(1-s), q=v*(1-f*s), t=v*(1-(1-f)*s);
+  let r,g,b;
+  if(i===0){r=v;g=t;b=p}else if(i===1){r=q;g=v;b=p}
+  else if(i===2){r=p;g=v;b=t}else if(i===3){r=p;g=q;b=v}
+  else if(i===4){r=t;g=p;b=v}else{r=v;g=p;b=q}
+  const h2=x=>Math.round(x*255).toString(16).padStart(2,'0');
+  return '#'+h2(r)+h2(g)+h2(b);
+}
+function hexToHsv(hex) {
+  let r=parseInt(hex.slice(1,3),16)/255, g=parseInt(hex.slice(3,5),16)/255, b=parseInt(hex.slice(5,7),16)/255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+  let h=0, s=max===0?0:d/max, v=max;
+  if(d!==0){
+    if(max===r)h=((g-b)/d)%6; else if(max===g)h=(b-r)/d+2; else h=(r-g)/d+4;
+    h=Math.round(h*60); if(h<0)h+=360;
+  }
+  return {h,s,v};
+}
+function drawHueSat() {
+  const W=hueSatCv.width, H=hueSatCv.height;
+  const gS=hsCtx.createLinearGradient(0,0,W,0);
+  gS.addColorStop(0,'#fff'); gS.addColorStop(1,`hsl(${pickerHue},100%,50%)`);
+  hsCtx.fillStyle=gS; hsCtx.fillRect(0,0,W,H);
+  const gV=hsCtx.createLinearGradient(0,0,0,H);
+  gV.addColorStop(0,'rgba(0,0,0,0)'); gV.addColorStop(1,'rgba(0,0,0,1)');
+  hsCtx.fillStyle=gV; hsCtx.fillRect(0,0,W,H);
+  hsCtx.strokeStyle='#fff'; hsCtx.lineWidth=1.5;
+  hsCtx.beginPath(); hsCtx.arc(hsCursor.x,hsCursor.y,6,0,Math.PI*2); hsCtx.stroke();
+  hsCtx.strokeStyle='rgba(0,0,0,0.5)'; hsCtx.lineWidth=1;
+  hsCtx.beginPath(); hsCtx.arc(hsCursor.x,hsCursor.y,7,0,Math.PI*2); hsCtx.stroke();
+}
+function drawHueStrip() {
+  const W=hueStripCv.width, H=hueStripCv.height;
+  const g=hueCtx.createLinearGradient(0,0,W,0);
+  for(let i=0;i<=360;i+=10) g.addColorStop(i/360,`hsl(${i},100%,50%)`);
+  hueCtx.fillStyle=g; hueCtx.fillRect(0,0,W,H);
+  hueCtx.strokeStyle='#fff'; hueCtx.lineWidth=2;
+  hueCtx.beginPath(); hueCtx.moveTo(hueCursor,0); hueCtx.lineTo(hueCursor,H); hueCtx.stroke();
+}
+function pickFromHueSat(ex,ey){
+  const rect=hueSatCv.getBoundingClientRect();
+  const W=hueSatCv.width, H=hueSatCv.height;
+  const x=Math.min(W,Math.max(0,(ex-rect.left)*(W/rect.width)));
+  const y=Math.min(H,Math.max(0,(ey-rect.top)*(H/rect.height)));
+  hsCursor={x,y};
+  currentColor=hsvToHex(pickerHue, x/W, 1-y/H);
+  syncPickerUI(); drawHueSat();
+}
+function pickFromHueStrip(ex){
+  const rect=hueStripCv.getBoundingClientRect();
+  const W=hueStripCv.width;
+  const x=Math.min(W,Math.max(0,(ex-rect.left)*(W/rect.width)));
+  hueCursor=x; pickerHue=Math.round((x/W)*360);
+  currentColor=hsvToHex(pickerHue, hsCursor.x/W, 1-hsCursor.y/hueSatCv.height);
+  syncPickerUI(); drawHueSat(); drawHueStrip();
+}
+function syncPickerUI(){
+  colorBtn.style.background=currentColor;
+  pickerPreview.style.background=currentColor;
+  hexInput.value=currentColor;
+  document.querySelectorAll('.pswatch').forEach(s=>s.classList.toggle('active',s.dataset.color===currentColor));
+}
+function setColorFromHex(hex){
+  if(!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+  currentColor=hex;
+  const {h,s,v}=hexToHsv(hex);
+  pickerHue=h;
+  hsCursor={x:s*hueSatCv.width, y:(1-v)*hueSatCv.height};
+  hueCursor=(h/360)*hueStripCv.width;
+  drawHueSat(); drawHueStrip(); syncPickerUI();
+}
+let draggingHS=false, draggingHue=false;
+hueSatCv.addEventListener('mousedown', e=>{draggingHS=true; pickFromHueSat(e.clientX,e.clientY);});
+hueStripCv.addEventListener('mousedown', e=>{draggingHue=true; pickFromHueStrip(e.clientX);});
+window.addEventListener('mousemove', e=>{if(draggingHS)pickFromHueSat(e.clientX,e.clientY); if(draggingHue)pickFromHueStrip(e.clientX);});
+window.addEventListener('mouseup',()=>{draggingHS=false;draggingHue=false;});
+hueSatCv.addEventListener('touchstart',e=>{e.preventDefault();draggingHS=true;pickFromHueSat(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+hueStripCv.addEventListener('touchstart',e=>{e.preventDefault();draggingHue=true;pickFromHueStrip(e.touches[0].clientX);},{passive:false});
+window.addEventListener('touchmove',e=>{if(draggingHS)pickFromHueSat(e.touches[0].clientX,e.touches[0].clientY); if(draggingHue)pickFromHueStrip(e.touches[0].clientX);});
+window.addEventListener('touchend',()=>{draggingHS=false;draggingHue=false;});
+hexInput.addEventListener('change',()=>setColorFromHex(hexInput.value.trim()));
+hexInput.addEventListener('keydown',e=>{if(e.key==='Enter')setColorFromHex(hexInput.value.trim());});
+const pickerSwatches=document.getElementById('pickerSwatches');
+PRESETS.forEach(c=>{
+  const s=document.createElement('div');
+  s.className='pswatch'+(c===currentColor?' active':'');
+  s.style.background=c; s.dataset.color=c;
+  if(c==='#0d0d0d')s.style.boxShadow='inset 0 0 0 1px #666';
+  s.onclick=()=>setColorFromHex(c);
+  pickerSwatches.appendChild(s);
+});
+colorBtn.style.background=currentColor;
+colorBtn.addEventListener('click',e=>{
+  e.stopPropagation();
+  pickerPanel.classList.toggle('open');
+  if(pickerPanel.classList.contains('open')){drawHueSat();drawHueStrip();}
+});
+document.addEventListener('click',e=>{if(!pickerPanel.contains(e.target)&&e.target!==colorBtn)pickerPanel.classList.remove('open');});
+pickerPanel.addEventListener('click',e=>e.stopPropagation());
+setColorFromHex(currentColor);
+
+// ══════════════════════════════════════════════
+//  CONTROLS
+// ══════════════════════════════════════════════
+document.getElementById('brushOpacity').addEventListener('input',e=>{ brushOpacity=e.target.value/100; });
+
+let camOverlay=false, camOpacityVal=0.20;
+const camToggleBtn    = document.getElementById('camToggle');
+const camOpacityGroup = document.getElementById('camOpacityGroup');
+const camOpacitySlider= document.getElementById('camOpacity');
+camToggleBtn.addEventListener('click',()=>{
+  camOverlay=!camOverlay;
+  camToggleBtn.classList.toggle('on',camOverlay);
+  camOpacityGroup.style.display=camOverlay?'flex':'none';
+  if(!camOverlay)bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+});
+camOpacitySlider.addEventListener('input',e=>{camOpacityVal=e.target.value/100;});
+
+// ══════════════════════════════════════════════
+//  CANVASES
+// ══════════════════════════════════════════════
+const bgCanvas=document.getElementById('bgCanvas');
+const canvas  =document.getElementById('canvas');
+const overlay =document.getElementById('overlay');
+const bgCtx   =bgCanvas.getContext('2d');
+const ctx     =canvas.getContext('2d');
+const octx    =overlay.getContext('2d');
+
+function resize(){
+  const w=canvas.offsetWidth, h=canvas.offsetHeight;
+  const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+  bgCanvas.width=canvas.width=overlay.width=w;
+  bgCanvas.height=canvas.height=overlay.height=h;
+  ctx.putImageData(img,0,0);
+}
+resize(); window.addEventListener('resize',resize);
+
+document.getElementById('clearBtn').onclick=()=>{
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  hasDrawn=false; hintEl.classList.remove('hidden');
+};
+document.getElementById('saveBtn').onclick=()=>{
+  const tmp=document.createElement('canvas');
+  tmp.width=canvas.width; tmp.height=canvas.height;
+  const tctx=tmp.getContext('2d');
+  tctx.fillStyle='#0d0d0d'; tctx.fillRect(0,0,tmp.width,tmp.height);
+  if(camOverlay)tctx.drawImage(bgCanvas,0,0);
+  tctx.drawImage(canvas,0,0);
+  const a=document.createElement('a');
+  a.download=`hand-paint-${Date.now()}.png`;
+  a.href=tmp.toDataURL('image/png'); a.click();
+};
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let lastPos=null, hasDrawn=false;
+const hintEl=document.getElementById('hint');
+
+// Right hand HUD
+const rDot    =document.getElementById('rDot');
+const rStatus =document.getElementById('rStatus');
+const rGesture=document.getElementById('rGesture');
+const rBrush  =document.getElementById('rBrush');
+// Left hand HUD
+const lDot    =document.getElementById('lDot');
+const lStatus =document.getElementById('lStatus');
+const lGesture=document.getElementById('lGesture');
+const lDetail =document.getElementById('lDetail');
+
+// Brush size — controlled by right-hand pinch gesture
+// When user pinches (thumb+index close), we lock that distance as reference.
+// The ratio of current dist / locked dist scales the base size.
+let brushSize = 18;         // current size, driven by pinch
+let pinchRef  = null;       // reference pinch distance when gesture started
+let pinchSizeRef = 18;      // size at moment pinch started
+
+// Left hand color spinning
+let colorSpinning = false;
+let colorHue = 350;         // current spinning hue (0..360)
+const COLOR_SPIN_SPEED = 1.8; // degrees per frame when spinning
+
+function hexToRgba(hex,alpha){
+  const rr=parseInt(hex.slice(1,3),16), gg=parseInt(hex.slice(3,5),16), bb=parseInt(hex.slice(5,7),16);
+  return `rgba(${rr},${gg},${bb},${alpha})`;
+}
+
+// ══════════════════════════════════════════════
+//  LANDMARK HELPERS
+// ══════════════════════════════════════════════
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+const TIP=[8,12,16,20], PIP=[6,10,14,18];
+function countExtended(lm){let n=0;for(let i=0;i<4;i++)if(lm[TIP[i]].y<lm[PIP[i]].y)n++;return n;}
+function fingerSpread(lm){const p=lm[9];return TIP.reduce((s,i)=>s+dist(lm[i],p),0)/4;}
+function thumbIndexDist(lm){return dist(lm[4],lm[8]);}
+
+// Is it a pinch (thumb + index close, regardless of other fingers)?
+function isPinching(lm){ return thumbIndexDist(lm) < 0.055; }
+
+// ══════════════════════════════════════════════
+//  RIGHT HAND GESTURE CLASSIFIER
+// ══════════════════════════════════════════════
+// Pinch is now purely a SIZE gesture (not a brush mode).
+// If pinching: update brushSize, drawing=false (you can't draw while sizing).
+// Otherwise classify brush from finger count.
+function classifyRight(lm) {
+  const ext=countExtended(lm);
+  const tDist=thumbIndexDist(lm);
+
+  // PINCH — size mode
+  if(tDist < 0.065 && ext <= 2) {
+    // Track reference when pinch starts
+    if(pinchRef === null){ pinchRef = tDist; pinchSizeRef = brushSize; }
+    // Scale: ratio of ref/current — opening fingers makes bigger
+    const ratio = Math.min(3.5, Math.max(0.15, pinchRef / tDist));
+    brushSize = Math.round(Math.min(80, Math.max(2, pinchSizeRef * ratio)));
+    return {gesture:'pinch · sizing', brushType:'size', size:brushSize, drawing:false};
+  } else {
+    pinchRef = null; // reset when not pinching
+  }
+
+  if(ext===0) return {gesture:'fist',brushType:'none',size:brushSize,drawing:false};
+  if(ext>=4&&fingerSpread(lm)>0.20){
+    return {gesture:'open · eraser',brushType:'eraser',size:Math.round(24+fingerSpread(lm)*100),drawing:true};
+  }
+  if(ext===1&&lm[8].y<lm[6].y&&lm[12].y>lm[10].y)
+    return {gesture:'1 finger · pen',brushType:'pen',size:brushSize,drawing:true};
+  if(ext===2&&lm[8].y<lm[6].y&&lm[12].y<lm[10].y&&lm[16].y>lm[14].y)
+    return {gesture:'2 fingers · flat',brushType:'calligraphy',size:brushSize,drawing:true};
+  if(ext===3&&lm[8].y<lm[6].y&&lm[12].y<lm[10].y&&lm[16].y<lm[14].y&&lm[20].y>lm[18].y)
+    return {gesture:'3 fingers · spray',brushType:'spray',size:brushSize,drawing:true};
+  if(ext>=4)
+    return {gesture:'open · eraser',brushType:'eraser',size:Math.round(20+fingerSpread(lm)*60),drawing:true};
+
+  return {gesture:'—',brushType:'none',size:brushSize,drawing:false};
+}
+
+// ══════════════════════════════════════════════
+//  LEFT HAND — color spin
+// ══════════════════════════════════════════════
+function processLeft(lm) {
+  const ext=countExtended(lm);
+  const isFist = ext === 0;
+
+  if(isFist) {
+    colorSpinning=false;
+    lDot.className='dot active';
+    lStatus.textContent='frozen';
+    lGesture.textContent='✊ fist';
+    lDetail.textContent='color locked';
+  } else {
+    colorSpinning=true;
+    lDot.className='dot spinning';
+    lStatus.textContent='spinning';
+    lGesture.textContent='🖐 open';
+    lDetail.textContent=`hue ${Math.round(colorHue)}°`;
+  }
+}
+
+// Color spin loop — runs independently of hand tracking frames
+function spinTick() {
+  if(colorSpinning) {
+    colorHue = (colorHue + COLOR_SPIN_SPEED) % 360;
+    currentColor = hsvToHex(colorHue, 0.85, 0.95);
+    syncPickerUI();
+    lDetail.textContent=`hue ${Math.round(colorHue)}°`;
+  }
+  requestAnimationFrame(spinTick);
+}
+spinTick();
+
+// ══════════════════════════════════════════════
+//  STROKE RENDERING
+// ══════════════════════════════════════════════
+function applyStroke(x,y,prev,brushType,size,color,opacity){
+  const cx=(1-x)*canvas.width, cy=y*canvas.height;
+  const px=prev?(1-prev.x)*canvas.width:cx, py=prev?prev.y*canvas.height:cy;
+  ctx.save();
+  if(brushType==='eraser'){
+    ctx.globalCompositeOperation='destination-out';
+    ctx.beginPath(); ctx.arc(cx,cy,size/2,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,1)'; ctx.fill();
+    ctx.restore(); return;
+  }
+  ctx.globalCompositeOperation='source-over';
+  if(brushType==='pen'){
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.strokeStyle=hexToRgba(color,opacity); ctx.lineWidth=size;
+    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(cx,cy); ctx.stroke();
+  }
+  if(brushType==='calligraphy'){
+    const angle=prev?Math.atan2(cy-py,cx-px)+Math.PI/2:Math.PI/2;
+    const hw=size/2, th=Math.max(2,size*0.15);
+    ctx.fillStyle=hexToRgba(color,opacity*0.92);
+    const stamp=(tx,ty)=>{ctx.save();ctx.translate(tx,ty);ctx.rotate(angle);ctx.fillRect(-hw,-th/2,size,th);ctx.restore();};
+    stamp(cx,cy); if(prev){stamp(px,py);stamp((cx+px)/2,(cy+py)/2);}
+  }
+  if(brushType==='spray'){
+    ctx.fillStyle=hexToRgba(color,opacity*0.22);
+    for(let i=0;i<35;i++){
+      const a=Math.random()*Math.PI*2, r=Math.random()*size, dr=Math.random()*1.8+0.4;
+      ctx.beginPath(); ctx.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,dr,0,Math.PI*2); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawOverlay(x,y,brushType,size,drawing,isPinch){
+  octx.clearRect(0,0,overlay.width,overlay.height);
+  const cx=(1-x)*overlay.width, cy=y*overlay.height;
+
+  if(isPinch) {
+    // Show big size ring with current brushSize
+    const r = brushSize/2;
+    octx.save();
+    octx.strokeStyle='rgba(255,255,255,0.5)'; octx.lineWidth=1.5;
+    octx.setLineDash([4,4]);
+    octx.beginPath(); octx.arc(cx,cy,r+8,0,Math.PI*2); octx.stroke();
+    octx.setLineDash([]);
+    // Inner solid circle showing actual brush size
+    octx.strokeStyle=hexToRgba(currentColor,0.7); octx.lineWidth=1;
+    octx.beginPath(); octx.arc(cx,cy,r,0,Math.PI*2); octx.stroke();
+    // Size label
+    octx.fillStyle='rgba(255,255,255,0.7)';
+    octx.font='bold 11px Space Mono, monospace';
+    octx.textAlign='center'; octx.textBaseline='middle';
+    octx.fillText(brushSize+'px', cx, cy);
+    octx.restore();
+    return;
+  }
+
+  const ring=drawing?hexToRgba(currentColor,0.85):'rgba(255,255,255,0.2)';
+  octx.save();
+  if(brushType==='calligraphy'&&drawing){
+    const hw=size/2, th=Math.max(3,size*0.15);
+    octx.strokeStyle=ring; octx.lineWidth=1;
+    octx.strokeRect(cx-hw,cy-th,size,th*2);
+  } else if(brushType==='spray'&&drawing){
+    octx.setLineDash([3,4]); octx.strokeStyle=ring; octx.lineWidth=1;
+    octx.beginPath(); octx.arc(cx,cy,size,0,Math.PI*2); octx.stroke();
+  } else if(brushType==='eraser'&&drawing){
+    octx.strokeStyle='rgba(255,255,255,0.4)'; octx.lineWidth=1.5;
+    octx.beginPath(); octx.arc(cx,cy,size/2,0,Math.PI*2); octx.stroke();
+    const s=7; octx.beginPath();
+    octx.moveTo(cx-s,cy-s);octx.lineTo(cx+s,cy+s);
+    octx.moveTo(cx+s,cy-s);octx.lineTo(cx-s,cy+s); octx.stroke();
+  } else {
+    octx.strokeStyle=ring; octx.lineWidth=1.5;
+    octx.beginPath(); octx.arc(cx,cy,(size||8)/2+4,0,Math.PI*2); octx.stroke();
+  }
+  octx.restore();
+}
+
+// ══════════════════════════════════════════════
+//  MEDIAPIPE
+// ══════════════════════════════════════════════
+const videoEl=document.getElementById('webcam');
+
+async function init(){
+  rStatus.textContent='starting…';
+  const hands=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+  // Request both hands
+  hands.setOptions({maxNumHands:2, modelComplexity:1, minDetectionConfidence:0.72, minTrackingConfidence:0.65});
+
+  hands.onResults(results=>{
+    octx.clearRect(0,0,overlay.width,overlay.height);
+
+    if(!results.multiHandLandmarks||!results.multiHandLandmarks.length){
+      rDot.className='dot'; rStatus.textContent='no hand';
+      rGesture.textContent='—'; rBrush.textContent='—';
+      lDot.className='dot'; lStatus.textContent='no hand';
+      lGesture.textContent='—'; lDetail.textContent='—';
+      lastPos=null; return;
+    }
+
+    // MediaPipe reports handedness as seen from camera (mirrored),
+    // so "Right" label = user's LEFT hand in front of camera (mirrored feed).
+    // We display mirrored video, so we flip the labeling:
+    //   MediaPipe "Left"  → user's right hand (draws)
+    //   MediaPipe "Right" → user's left hand  (color)
+
+    let rightLm=null, leftLm=null; // rightLm = user's right (draws)
+    for(let i=0;i<results.multiHandLandmarks.length;i++){
+      const label=results.multiHandedness[i].label; // 'Left' or 'Right' from MP
+      if(label==='Left')  rightLm=results.multiHandLandmarks[i]; // user's right
+      if(label==='Right') leftLm =results.multiHandLandmarks[i]; // user's left
+    }
+
+    // ── RIGHT HAND (draws) ──
+    if(rightLm){
+      const tip=rightLm[8];
+      const {gesture,brushType,size,drawing}=classifyRight(rightLm);
+      const isPinch=(brushType==='size');
+
+      rGesture.textContent=gesture;
+      rBrush.textContent=`size ${brushSize}px`;
+
+      drawOverlay(tip.x,tip.y,brushType,size,drawing,isPinch);
+
+      if(drawing){
+        rDot.className='dot drawing'; rStatus.textContent='drawing';
+        if(!hasDrawn){hasDrawn=true;hintEl.classList.add('hidden');}
+        applyStroke(tip.x,tip.y,lastPos,brushType,size,currentColor,brushOpacity);
+        lastPos={x:tip.x,y:tip.y};
+      } else {
+        rDot.className='dot active'; rStatus.textContent='hand detected';
+        lastPos=null;
+      }
+    } else {
+      rDot.className='dot'; rStatus.textContent='—';
+      rGesture.textContent='—'; rBrush.textContent='—';
+      lastPos=null;
+    }
+
+    // ── LEFT HAND (color) ──
+    if(leftLm){
+      processLeft(leftLm);
+    } else {
+      lDot.className='dot'; lStatus.textContent='—';
+      lGesture.textContent='—'; lDetail.textContent='—';
+      colorSpinning=false;
+    }
+  });
+
+  try {
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480}});
+    videoEl.srcObject=stream; await videoEl.play();
+
+    // bg cam loop
+    function bgLoop(){
+      if(camOverlay){
+        bgCtx.save();
+        bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+        bgCtx.globalAlpha=camOpacityVal;
+        bgCtx.translate(bgCanvas.width,0); bgCtx.scale(-1,1);
+        bgCtx.drawImage(videoEl,0,0,bgCanvas.width,bgCanvas.height);
+        bgCtx.restore();
+      }
+      requestAnimationFrame(bgLoop);
+    }
+    bgLoop();
+
+    const camera=new Camera(videoEl,{onFrame:async()=>{await hands.send({image:videoEl});},width:640,height:480});
+    camera.start();
+    rStatus.textContent='ready'; lStatus.textContent='ready';
+  } catch(e){
+    rStatus.textContent='camera error'; console.error(e);
+  }
+}
+init();
+</script>
+</body>
+</html>
