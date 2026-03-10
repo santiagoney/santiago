@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>theremin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital@0;1&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080808; --panel: #060606; --border: #181818;
+    --accent: #ff3a6e; --gold: #ffe156; --teal: #00d4c8;
+    --text: #d0d0d0; --muted: #333;
+    --panel-w: 260px;
+  }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Space Mono', monospace;
+    height: 100vh; display: flex; flex-direction: column;
+    overflow: hidden; user-select: none;
+  }
+
+  /* ── header ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 16px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0; gap: 12px; flex-wrap: wrap; z-index: 20;
+  }
+  header h1 { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
+  .controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .control-group { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); }
+  .control-group label { text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+  input[type=range] { -webkit-appearance: none; width: 60px; height: 2px; background: var(--border); outline: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+  .btn { font-family: 'Space Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; background: none; color: var(--muted); border: 1px solid var(--border); padding: 3px 9px; cursor: pointer; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
+  .btn:hover { color: var(--text); border-color: #555; }
+  .btn.on { color: var(--accent); border-color: var(--accent); }
+
+  /* ── layout ── */
+  .workspace { flex: 1; display: flex; overflow: hidden; }
+
+  /* side panels */
+  .side-panel {
+    width: var(--panel-w); flex-shrink: 0;
+    background: var(--panel);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 14px 0 10px; position: relative; overflow: hidden; z-index: 5;
+  }
+  #leftPanel  { border-right: 1px solid var(--border); }
+  #rightPanel { border-left:  1px solid var(--border); }
+
+  .panel-label {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.2em;
+    color: #1e1e1e; margin-bottom: 10px; flex-shrink: 0;
+  }
+  .panel-canvas { flex: 1; display: block; width: 100%; }
+  .panel-readout {
+    font-size: 22px; letter-spacing: -0.02em; line-height: 1;
+    margin-top: 8px; flex-shrink: 0; transition: color 0.15s;
+  }
+  .panel-readout .unit { font-size: 10px; color: var(--muted); margin-left: 2px; }
+  .panel-sub { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #202020; margin-top: 5px; flex-shrink: 0; text-align: center; padding: 0 8px; }
+
+  /* webcam */
+  #webcam {
+    position: absolute; bottom: 8px; right: 8px;
+    width: 72px; height: 54px;
+    border: 1px solid var(--border); border-radius: 3px;
+    object-fit: cover; transform: scaleX(-1);
+    opacity: 0.4; transition: opacity 0.2s; z-index: 10;
+  }
+  #webcam:hover { opacity: 0.9; }
+
+  /* ── center stage ── */
+  .stage { flex: 1; position: relative; overflow: hidden; background: var(--bg); }
+  #stageCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* note display */
+  #noteDisplay {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center; pointer-events: none;
+  }
+  #noteName {
+    font-size: 72px; letter-spacing: -0.04em; line-height: 1;
+    color: var(--accent); opacity: 0;
+    transition: opacity 0.08s, color 0.1s;
+    text-shadow: 0 0 40px currentColor;
+  }
+  #noteName.on { opacity: 1; }
+  #noteFreq {
+    font-size: 11px; letter-spacing: 0.14em; color: var(--muted);
+    margin-top: 6px; text-transform: uppercase;
+  }
+
+  /* status */
+  #statusLine {
+    position: absolute; bottom: 14px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: #1e1e1e; pointer-events: none;
+  }
+
+  /* legend */
+  #legend {
+    position: absolute; top: 12px; left: 12px; z-index: 10;
+    background: rgba(6,6,6,0.93); border: 1px solid var(--border); border-radius: 4px;
+    padding: 9px 13px; font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase;
+    line-height: 2.3; color: #252525; backdrop-filter: blur(6px); pointer-events: none;
+  }
+  #legend strong { color: #3a3a3a; }
+  .lt { font-size: 8px; letter-spacing: 0.16em; display: block; margin-bottom: 2px; }
+  .lt.r { color: var(--accent); } .lt.l { color: var(--gold); }
+  .lsep { border: none; border-top: 1px solid var(--border); margin: 5px 0; }
+
+  /* hint */
+  .hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; pointer-events: none; transition: opacity 0.8s; }
+  .hint h2 { font-size: 16px; color: #1a1a1a; letter-spacing: 0.05em; margin-bottom: 10px; }
+  .hint p  { font-size: 9px; color: #181818; letter-spacing: 0.07em; text-transform: uppercase; line-height: 2.4; }
+  .hint.hidden { opacity: 0; }
+
+  /* waveform colours */
+  .wave-sine  { color: var(--teal); }
+  .wave-saw   { color: var(--accent); }
+  .wave-tri   { color: var(--gold); }
+  .wave-sq    { color: #7b5cff; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>theremin</h1>
+  <div class="controls">
+    <div class="control-group"><label>reverb</label><input type="range" id="reverbSlider" min="0" max="100" value="35"></div>
+    <div class="control-group"><label>portamento</label><input type="range" id="portaSlider" min="1" max="200" value="60"></div>
+    <button class="btn" id="camToggle">cam bg</button>
+    <button class="btn" id="scaleBtn">chromatic</button>
+  </div>
+</header>
+
+<div class="workspace">
+
+  <!-- LEFT panel: timbre + volume -->
+  <div class="side-panel" id="leftPanel">
+    <div class="panel-label">timbre · volume</div>
+    <canvas class="panel-canvas" id="leftCanvas"></canvas>
+    <div class="panel-readout" id="leftReadout" style="color:var(--teal)">—</div>
+    <div class="panel-sub" id="leftSub">← wave → · up=loud down=quiet</div>
+    <video id="webcam" autoplay muted playsinline></video>
+  </div>
+
+  <!-- CENTER stage -->
+  <div class="stage">
+    <canvas id="stageCanvas"></canvas>
+
+    <div id="noteDisplay">
+      <div id="noteName">A</div>
+      <div id="noteFreq">440 hz</div>
+    </div>
+
+    <div id="legend">
+      <span class="lt r">right — pitch</span>
+      <div><strong>←→</strong> note &nbsp;<strong>↑↓</strong> octave</div>
+      <hr class="lsep">
+      <span class="lt l">left — sound</span>
+      <div><strong>←→</strong> waveform</div>
+      <div><strong>↑↓</strong> volume</div>
+      <hr class="lsep">
+      <div style="color:#1e1e1e"><strong>fist</strong> = silence</div>
+    </div>
+
+    <div class="hint" id="hint">
+      <h2>raise your hands</h2>
+      <p>
+        right hand → pitch (←→ note · ↑↓ octave)<br>
+        left hand → timbre + volume<br>
+        fist = silence
+      </p>
+    </div>
+
+    <div id="statusLine" id="statusLine">starting camera…</div>
+  </div>
+
+  <!-- RIGHT panel: pitch visualizer -->
+  <div class="side-panel" id="rightPanel">
+    <div class="panel-label">pitch</div>
+    <canvas class="panel-canvas" id="rightCanvas"></canvas>
+    <div class="panel-readout" id="rightReadout" style="color:var(--accent)">—</div>
+    <div class="panel-sub" id="rightSub">← → note · ↑↓ octave</div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script>
+// ══════════════════════════════════════════════════
+//  AUDIO ENGINE
+// ══════════════════════════════════════════════════
+let audioCtx = null;
+let osc = null, gainNode = null, filterNode = null;
+let reverbNode = null, dryGain = null, wetGain = null;
+let analyserNode = null;
+
+// Smooth audio params — avoids zipper noise
+let targetFreq = 440, currentFreq = 440;
+let targetVol  = 0,   currentVol  = 0;
+let targetWave = 0;   // 0=sine 1=triangle 2=sawtooth 3=square (continuous blend via detune trick)
+const WAVE_TYPES = ['sine','triangle','sawtooth','square'];
+
+// Portamento time in ms (controlled by slider)
+let portaMs = 60;
+let reverbAmount = 0.35;
+
+// Scale snapping
+const SCALES = {
+  chromatic: null,
+  major:    [0,2,4,5,7,9,11],
+  minor:    [0,2,3,5,7,8,10],
+  pentatonic:[0,2,4,7,9],
+  blues:    [0,3,5,6,7,10],
+};
+const SCALE_NAMES = Object.keys(SCALES);
+let scaleIdx = 0;
+
+// Note names
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+function freqToNoteName(f){
+  const midi = 69 + 12 * Math.log2(f/440);
+  const note = Math.round(midi);
+  const octave = Math.floor(note/12)-1;
+  return NOTE_NAMES[((note%12)+12)%12] + octave;
+}
+
+function snapToScale(freqRaw){
+  if(!SCALES[SCALE_NAMES[scaleIdx]]) return freqRaw;
+  const scale = SCALES[SCALE_NAMES[scaleIdx]];
+  const midi = 69 + 12*Math.log2(freqRaw/440);
+  const rounded = Math.round(midi);
+  const octBase = Math.floor(rounded/12)*12;
+  const pc = ((rounded%12)+12)%12;
+  // find nearest scale degree
+  let best=scale[0], bestDist=99;
+  for(const deg of scale){
+    const d=Math.abs(pc-deg);
+    const d2=Math.min(d,12-d);
+    if(d2<bestDist){bestDist=d2;best=deg;}
+  }
+  const snapped = octBase + best;
+  return 440 * Math.pow(2,(snapped-69)/12);
+}
+
+async function initAudio(){
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+
+  analyserNode = audioCtx.createAnalyser();
+  analyserNode.fftSize = 2048;
+
+  filterNode = audioCtx.createBiquadFilter();
+  filterNode.type = 'lowpass';
+  filterNode.frequency.value = 8000;
+
+  gainNode = audioCtx.createGain();
+  gainNode.gain.value = 0;
+
+  // Convolver reverb (impulse synthesis)
+  reverbNode = audioCtx.createConvolver();
+  reverbNode.buffer = buildImpulse(audioCtx, 2.5, 3);
+
+  dryGain = audioCtx.createGain(); dryGain.gain.value = 1 - reverbAmount;
+  wetGain = audioCtx.createGain(); wetGain.gain.value = reverbAmount;
+
+  osc = audioCtx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.value = 440;
+  osc.start();
+
+  // chain: osc → gain → filter → dry→dest
+  //                            → reverb → wet → dest → analyser → dest
+  osc.connect(gainNode);
+  gainNode.connect(filterNode);
+  filterNode.connect(dryGain);
+  filterNode.connect(reverbNode);
+  dryGain.connect(analyserNode);
+  reverbNode.connect(wetGain);
+  wetGain.connect(analyserNode);
+  analyserNode.connect(audioCtx.destination);
+}
+
+function buildImpulse(ctx, duration, decay){
+  const sr=ctx.sampleRate, len=sr*duration;
+  const buf=ctx.createBuffer(2,len,sr);
+  for(let ch=0;ch<2;ch++){
+    const d=buf.getChannelData(ch);
+    for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay);
+  }
+  return buf;
+}
+
+// Crossfade between wave types by mixing two oscillators
+let osc2 = null, osc2Gain = null, osc1Gain = null;
+let currentWaveType = 0; // 0..3 continuous
+
+async function ensureOsc2(){
+  if(osc2) return;
+  osc2 = audioCtx.createOscillator();
+  osc2.type = WAVE_TYPES[1];
+  osc2.frequency.value = currentFreq;
+  osc2Gain = audioCtx.createGain(); osc2Gain.gain.value = 0;
+  osc1Gain = audioCtx.createGain(); osc1Gain.gain.value = 1;
+  // rewire: osc → osc1Gain → gainNode
+  //         osc2 → osc2Gain → gainNode
+  osc.disconnect();
+  osc.connect(osc1Gain); osc1Gain.connect(gainNode);
+  osc2.connect(osc2Gain); osc2Gain.connect(gainNode);
+  osc2.start();
+}
+
+function setWaveBlend(pos){ // pos 0..3 continuous
+  if(!osc2) return;
+  const idx = Math.floor(pos) % 4;
+  const next = (idx+1) % 4;
+  const frac = pos - Math.floor(pos);
+  osc.type  = WAVE_TYPES[idx];
+  osc2.type = WAVE_TYPES[next];
+  if(osc1Gain) osc1Gain.gain.setTargetAtTime(1-frac, audioCtx.currentTime, 0.02);
+  if(osc2Gain) osc2Gain.gain.setTargetAtTime(frac,   audioCtx.currentTime, 0.02);
+  currentWaveType = pos;
+}
+
+// Audio tick — called every animation frame
+function audioTick(){
+  if(!audioCtx) return;
+  const tc = audioCtx.currentTime;
+  const tau = portaMs / 1000;
+
+  // Frequency glide
+  currentFreq += (targetFreq - currentFreq) * (1 - Math.exp(-1/(portaMs*0.001*60)));
+  if(osc) osc.frequency.setTargetAtTime(currentFreq, tc, tau*0.3);
+  if(osc2) osc2.frequency.setTargetAtTime(currentFreq, tc, tau*0.3);
+
+  // Volume glide
+  currentVol += (targetVol - currentVol) * 0.08;
+  if(gainNode) gainNode.gain.setTargetAtTime(Math.max(0,currentVol), tc, 0.015);
+}
+
+// ══════════════════════════════════════════════════
+//  SETTINGS
+// ══════════════════════════════════════════════════
+document.getElementById('reverbSlider').addEventListener('input', e=>{
+  reverbAmount = e.target.value/100;
+  if(dryGain) dryGain.gain.setTargetAtTime(1-reverbAmount, audioCtx?.currentTime||0, 0.05);
+  if(wetGain) wetGain.gain.setTargetAtTime(reverbAmount,   audioCtx?.currentTime||0, 0.05);
+});
+document.getElementById('portaSlider').addEventListener('input', e=>{ portaMs=+e.target.value; });
+
+const scaleBtn = document.getElementById('scaleBtn');
+scaleBtn.addEventListener('click',()=>{
+  scaleIdx=(scaleIdx+1)%SCALE_NAMES.length;
+  scaleBtn.textContent=SCALE_NAMES[scaleIdx];
+});
+
+// cam bg
+let camOverlay=false;
+const camToggleBtn=document.getElementById('camToggle');
+camToggleBtn.addEventListener('click',()=>{
+  camOverlay=!camOverlay; camToggleBtn.classList.toggle('on',camOverlay);
+});
+
+// ══════════════════════════════════════════════════
+//  CANVASES
+// ══════════════════════════════════════════════════
+const stageCanvas  = document.getElementById('stageCanvas');
+const leftCanvas   = document.getElementById('leftCanvas');
+const rightCanvas  = document.getElementById('rightCanvas');
+const sctx = stageCanvas.getContext('2d');
+const lctx = leftCanvas.getContext('2d');
+const rctx = rightCanvas.getContext('2d');
+
+function resizeAll(){
+  stageCanvas.width=stageCanvas.offsetWidth||600;
+  stageCanvas.height=stageCanvas.offsetHeight||400;
+  leftCanvas.width=leftCanvas.offsetWidth||260;
+  leftCanvas.height=leftCanvas.offsetHeight||300;
+  rightCanvas.width=rightCanvas.offsetWidth||260;
+  rightCanvas.height=rightCanvas.offsetHeight||300;
+}
+resizeAll(); window.addEventListener('resize',resizeAll);
+
+// ══════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════
+const noteDisplay  = document.getElementById('noteDisplay');
+const noteName     = document.getElementById('noteName');
+const noteFreq     = document.getElementById('noteFreq');
+const statusLine   = document.getElementById('statusLine');
+const hintEl       = document.getElementById('hint');
+const leftReadout  = document.getElementById('leftReadout');
+const leftSub      = document.getElementById('leftSub');
+const rightReadout = document.getElementById('rightReadout');
+const rightSub     = document.getElementById('rightSub');
+
+let rightHandVisible=false, leftHandVisible=false;
+let soundOn=false;
+
+// Smoothed hand positions
+let rPalmSmooth={x:0.5,y:0.5};
+let lPalmSmooth={x:0.5,y:0.5};
+
+// Finger viz
+let rFingers=[], lFingers=[];
+let rPalmLm={x:0.5,y:0.5}, lPalmLm={x:0.5,y:0.5};
+
+// Waveform label + colour
+const WAVE_LABELS = ['sine','triangle','saw','square'];
+const WAVE_COLORS = ['#00d4c8','#ffe156','#ff3a6e','#7b5cff'];
+
+// Piano note grid for right panel
+const PITCH_MIN_HZ = 65.41;  // C2
+const PITCH_MAX_HZ = 1046.5; // C6  (4 octaves)
+
+// Waveform scope buffer
+const scopeData = new Uint8Array(512);
+
+// Glowing trail for stage
+const trail = [];
+const TRAIL_LEN = 60;
+
+// ══════════════════════════════════════════════════
+//  LANDMARK INFRASTRUCTURE (same as hand-paint)
+// ══════════════════════════════════════════════════
+const LM_ALPHA = 0.32;
+let smoothLmR=null, smoothLmL=null;
+
+function smoothLandmarks(raw,prev,alpha){
+  if(!prev) return raw.map(p=>({x:p.x,y:p.y,z:p.z}));
+  return raw.map((p,i)=>({
+    x:prev[i].x+(p.x-prev[i].x)*alpha,
+    y:prev[i].y+(p.y-prev[i].y)*alpha,
+    z:prev[i].z+(p.z-prev[i].z)*alpha,
+  }));
+}
+
+function dist2(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function palmSize(lm){return dist2(lm[0],lm[9]);}
+
+const TIP=[8,12,16,20],PIP=[6,10,14,18],MCP=[5,9,13,17];
+
+function isExtended(lm,i){
+  const ps=palmSize(lm);
+  return (lm[PIP[i]].y-lm[TIP[i]].y)>ps*0.04 && (lm[MCP[i]].y-lm[TIP[i]].y)>ps*0.01;
+}
+function countExtended(lm){let n=0;for(let i=0;i<4;i++)if(isExtended(lm,i))n++;return n;}
+
+function palmCenter(lm){
+  const pts=[lm[0],lm[5],lm[9],lm[13],lm[17]];
+  return {x:pts.reduce((s,p)=>s+p.x,0)/5, y:pts.reduce((s,p)=>s+p.y,0)/5};
+}
+
+// Gesture debounce
+const HOLD=5;
+let pendingG=null,pendingN=0,committedG=null;
+function debounce(raw){
+  if(raw===committedG){pendingG=raw;pendingN=0;return committedG;}
+  if(raw===pendingG){pendingN++;if(pendingN>=HOLD){committedG=raw;pendingN=0;}}
+  else{pendingG=raw;pendingN=1;}
+  return committedG||raw;
+}
+
+// ══════════════════════════════════════════════════
+//  PROCESS HANDS
+// ══════════════════════════════════════════════════
+function processRight(lm){
+  rightHandVisible=true;
+  const pc=palmCenter(lm);
+  const ext=countExtended(lm);
+  const rawG=ext===0?'fist':'play';
+  const g=debounce(rawG);
+
+  // smooth palm position
+  rPalmSmooth.x+=(pc.x-rPalmSmooth.x)*0.18;
+  rPalmSmooth.y+=(pc.y-rPalmSmooth.y)*0.18;
+  rPalmLm=pc;
+  rFingers=[lm[4],lm[8],lm[12],lm[16],lm[20]];
+
+  if(g==='fist'){
+    targetVol=0; soundOn=false; return;
+  }
+
+  soundOn=true;
+
+  // X: note (mirrored — right side of camera = right side of panel)
+  const rawX=1-rPalmSmooth.x; // 0=left, 1=right
+  // Y: octave — top=high, bottom=low
+  const rawY=rPalmSmooth.y;  // 0=top(high), 1=bottom(low)
+
+  // Map to frequency
+  // X spans two octaves within the current octave band
+  // Y selects octave band: 4 bands over C2..C6
+  const octaveBand=rawY*4; // 0..4
+  const octaveBase=PITCH_MIN_HZ*Math.pow(2,3-octaveBand); // high at top
+  const rawFreq=octaveBase*Math.pow(2, rawX*2); // 2 octave spread per band
+  const snapped=snapToScale(rawFreq);
+
+  targetFreq=Math.min(PITCH_MAX_HZ,Math.max(PITCH_MIN_HZ,snapped));
+
+  const name=freqToNoteName(targetFreq);
+  noteName.textContent=name;
+  noteFreq.textContent=Math.round(targetFreq)+' hz';
+  noteName.classList.add('on');
+
+  // update right readout
+  rightReadout.textContent=name;
+  rightSub.textContent=Math.round(targetFreq)+'hz';
+}
+
+function processLeft(lm){
+  leftHandVisible=true;
+  const pc=palmCenter(lm);
+  const ext=countExtended(lm);
+  const g=debounce(ext===0?'fist':'play');
+
+  lPalmSmooth.x+=(pc.x-lPalmSmooth.x)*0.15;
+  lPalmSmooth.y+=(pc.y-lPalmSmooth.y)*0.15;
+  lPalmLm=pc;
+  lFingers=[lm[4],lm[8],lm[12],lm[16],lm[20]];
+
+  if(g==='fist'){
+    targetVol=0; return;
+  }
+
+  // X: waveform blend (mirrored)
+  const rawX=1-lPalmSmooth.x; // 0..1 → 0..4 wave blend
+  const wavePos=rawX*(WAVE_TYPES.length-0.01);
+  setWaveBlend(wavePos);
+
+  // Y: volume — top=loud, bottom=quiet
+  const rawY=lPalmSmooth.y; // 0=top, 1=bottom
+  const vol=Math.max(0, Math.min(0.7, (1-rawY)*0.75));
+  targetVol=vol;
+
+  const wi=Math.floor(wavePos)%4;
+  leftReadout.style.color=WAVE_COLORS[wi];
+  leftReadout.textContent=WAVE_LABELS[wi];
+  leftSub.textContent=`vol ${Math.round(vol/0.7*100)}%`;
+}
+
+// ══════════════════════════════════════════════════
+//  STAGE DRAW
+// ══════════════════════════════════════════════════
+let bgVideoEl = null; // set after video ready
+let animT = 0;
+
+function drawStage(){
+  const W=stageCanvas.width, H=stageCanvas.height;
+  sctx.clearRect(0,0,W,H);
+
+  // cam bg
+  if(camOverlay && bgVideoEl){
+    sctx.save();
+    sctx.globalAlpha=0.18;
+    sctx.translate(W,0); sctx.scale(-1,1);
+    sctx.drawImage(bgVideoEl,0,0,W,H);
+    sctx.restore();
+  }
+
+  animT++;
+
+  // ── waveform scope ──
+  if(analyserNode && soundOn){
+    analyserNode.getByteTimeDomainData(scopeData);
+    const sw=W*0.7, sx=(W-sw)/2, sy=H*0.5, sh=H*0.22;
+    const wi=Math.floor(currentWaveType)%4;
+    const wc=WAVE_COLORS[wi];
+
+    sctx.save();
+    sctx.strokeStyle=wc;
+    sctx.lineWidth=1.5;
+    sctx.globalAlpha=0.5+currentVol*0.5;
+    sctx.shadowColor=wc; sctx.shadowBlur=8;
+    sctx.beginPath();
+    for(let i=0;i<scopeData.length;i++){
+      const x=sx+i/scopeData.length*sw;
+      const y=sy+(scopeData[i]/128-1)*sh;
+      i===0?sctx.moveTo(x,y):sctx.lineTo(x,y);
+    }
+    sctx.stroke();
+    sctx.restore();
+  } else if(!soundOn && analyserNode){
+    // flat line when silent
+    const sw=W*0.5, sx=(W-sw)/2, sy=H*0.5;
+    sctx.save();sctx.strokeStyle='#1a1a1a';sctx.lineWidth=1;
+    sctx.beginPath();sctx.moveTo(sx,sy);sctx.lineTo(sx+sw,sy);sctx.stroke();sctx.restore();
+  }
+
+  // ── right hand: pitch dot trail ──
+  if(rightHandVisible && soundOn){
+    const px=(1-rPalmSmooth.x)*W, py=rPalmSmooth.y*H;
+    trail.push({x:px,y:py,t:animT});
+    if(trail.length>TRAIL_LEN) trail.shift();
+
+    for(let i=0;i<trail.length;i++){
+      const age=(i/trail.length);
+      const r=3+age*4;
+      sctx.save();
+      sctx.globalAlpha=age*0.6*(soundOn?1:0.3);
+      sctx.fillStyle='#ff3a6e';
+      sctx.shadowColor='#ff3a6e'; sctx.shadowBlur=10*age;
+      sctx.beginPath();sctx.arc(trail[i].x,trail[i].y,r,0,Math.PI*2);sctx.fill();
+      sctx.restore();
+    }
+
+    // finger skeleton
+    sctx.save(); sctx.globalAlpha=0.25;
+    rFingers.forEach(f=>{
+      const fx=(1-f.x)*W, fy=f.y*H;
+      sctx.strokeStyle='#ff3a6e'; sctx.lineWidth=1;
+      sctx.beginPath(); sctx.moveTo(px,py); sctx.lineTo(fx,fy); sctx.stroke();
+      sctx.fillStyle='rgba(255,58,110,0.5)';
+      sctx.beginPath(); sctx.arc(fx,fy,3,0,Math.PI*2); sctx.fill();
+    });
+    sctx.restore();
+  }
+
+  // ── left hand: timbre dot ──
+  if(leftHandVisible){
+    const px=(1-lPalmSmooth.x)*W, py=lPalmSmooth.y*H;
+    const wi=Math.floor(currentWaveType)%4;
+    const wc=WAVE_COLORS[wi];
+
+    sctx.save();
+    sctx.globalAlpha=0.5*Math.max(0.2,targetVol/0.7);
+    sctx.fillStyle=wc; sctx.shadowColor=wc; sctx.shadowBlur=16;
+    sctx.beginPath(); sctx.arc(px,py,7,0,Math.PI*2); sctx.fill();
+    sctx.globalAlpha=0.18;
+    lFingers.forEach(f=>{
+      const fx=(1-f.x)*W,fy=f.y*H;
+      sctx.strokeStyle=wc; sctx.lineWidth=1;
+      sctx.beginPath(); sctx.moveTo(px,py); sctx.lineTo(fx,fy); sctx.stroke();
+      sctx.beginPath(); sctx.arc(fx,fy,2.5,0,Math.PI*2); sctx.fill();
+    });
+    sctx.restore();
+  }
+
+  // ── grid lines (pitch reference) ──
+  sctx.save(); sctx.globalAlpha=0.04;
+  for(let i=0;i<=12;i++){
+    const x=i/12*W;
+    sctx.strokeStyle='#ffffff'; sctx.lineWidth=1;
+    sctx.beginPath(); sctx.moveTo(x,0); sctx.lineTo(x,H); sctx.stroke();
+  }
+  for(let i=0;i<=4;i++){
+    const y=i/4*H;
+    sctx.beginPath(); sctx.moveTo(0,y); sctx.lineTo(W,y); sctx.stroke();
+  }
+  sctx.restore();
+}
+
+// ── Left panel: timbre×volume grid ──
+let leftGradCache=null,lgW=0,lgH=0;
+
+function buildLeftGrad(W,H){
+  if(lgW===W&&lgH===H&&leftGradCache)return;
+  const off=document.createElement('canvas'); off.width=W; off.height=H;
+  const ox=off.getContext('2d');
+  // X: wave colour bands, Y: darkness
+  const steps=Math.ceil(W/2);
+  for(let xi=0;xi<steps;xi++){
+    const wPos=(xi/steps)*(WAVE_COLORS.length-0.01);
+    const wi=Math.floor(wPos)%4;
+    const wn=(wi+1)%4;
+    const frac=wPos-Math.floor(wPos);
+    // interpolate hex colours crudely via hsl
+    const c1=WAVE_COLORS[wi],c2=WAVE_COLORS[wn];
+    const r1=parseInt(c1.slice(1,3),16),g1=parseInt(c1.slice(3,5),16),b1=parseInt(c1.slice(5,7),16);
+    const r2=parseInt(c2.slice(1,3),16),g2=parseInt(c2.slice(3,5),16),b2=parseInt(c2.slice(5,7),16);
+    const r=Math.round(r1+(r2-r1)*frac),g=Math.round(g1+(g2-g1)*frac),b=Math.round(b1+(b2-b1)*frac);
+    const grd=ox.createLinearGradient(0,0,0,H);
+    grd.addColorStop(0,`rgba(${r},${g},${b},0.9)`);
+    grd.addColorStop(1,`rgba(0,0,0,0.95)`);
+    ox.fillStyle=grd; ox.fillRect(xi*2,0,2,H);
+  }
+  leftGradCache=off; lgW=W; lgH=H;
+}
+
+function drawLeftPanel(){
+  const W=leftCanvas.width, H=leftCanvas.height;
+  lctx.clearRect(0,0,W,H);
+  buildLeftGrad(W,H);
+  lctx.globalAlpha=leftHandVisible?0.55:0.2;
+  lctx.drawImage(leftGradCache,0,0,W,H);
+  lctx.globalAlpha=1;
+
+  if(!leftHandVisible){
+    lctx.fillStyle='rgba(0,0,0,0.6)'; lctx.fillRect(0,0,W,H);
+    lctx.fillStyle='rgba(255,255,255,0.12)';
+    lctx.font='9px Space Mono,monospace'; lctx.textAlign='center'; lctx.textBaseline='middle';
+    lctx.fillText('MOVE LEFT HAND',W/2,H/2-8);
+    lctx.fillText('← wave →  · up=loud',W/2,H/2+8);
+    return;
+  }
+
+  // cursor
+  const cx=(1-lPalmSmooth.x)*W, cy=lPalmSmooth.y*H;
+  const wi=Math.floor(currentWaveType)%4;
+  const wc=WAVE_COLORS[wi];
+
+  // skeleton
+  lctx.save(); lctx.globalAlpha=0.3;
+  lFingers.forEach(f=>{
+    const fx=(1-f.x)*W,fy=f.y*H;
+    lctx.strokeStyle='rgba(255,255,255,0.4)'; lctx.lineWidth=1;
+    lctx.beginPath(); lctx.moveTo(cx,cy); lctx.lineTo(fx,fy); lctx.stroke();
+    lctx.fillStyle='rgba(255,255,255,0.6)';
+    lctx.beginPath(); lctx.arc(fx,fy,3,0,Math.PI*2); lctx.fill();
+  });
+  lctx.restore();
+
+  // crosshair
+  lctx.save();
+  lctx.strokeStyle='rgba(0,0,0,0.4)'; lctx.lineWidth=2;
+  lctx.beginPath(); lctx.moveTo(cx-16,cy); lctx.lineTo(cx+16,cy); lctx.moveTo(cx,cy-16); lctx.lineTo(cx,cy+16); lctx.stroke();
+  lctx.strokeStyle=wc; lctx.lineWidth=1;
+  lctx.shadowColor=wc; lctx.shadowBlur=8;
+  lctx.beginPath(); lctx.moveTo(cx-14,cy); lctx.lineTo(cx+14,cy); lctx.moveTo(cx,cy-14); lctx.lineTo(cx,cy+14); lctx.stroke();
+  lctx.fillStyle=wc; lctx.beginPath(); lctx.arc(cx,cy,6,0,Math.PI*2); lctx.fill();
+  lctx.restore();
+}
+
+// ── Right panel: pitch grid ──
+function drawRightPanel(){
+  const W=rightCanvas.width, H=rightCanvas.height;
+  rctx.clearRect(0,0,W,H);
+
+  // piano roll style grid — 12 notes
+  const noteH=H/24;
+  for(let i=0;i<24;i++){
+    const y=i/24*H;
+    const note=((23-i)%12);
+    const isBlack=[1,3,6,8,10].includes(note);
+    rctx.fillStyle=isBlack?'#0a0a0a':'#0f0f0f';
+    rctx.fillRect(0,y,W,noteH+0.5);
+    if(!isBlack){
+      rctx.fillStyle='#151515'; rctx.fillRect(0,y+noteH-0.5,W,0.5);
+    }
+    // note label
+    if(!isBlack){
+      rctx.fillStyle='#2a2a2a';
+      rctx.font='7px Space Mono'; rctx.textBaseline='middle'; rctx.textAlign='left';
+      rctx.fillText(NOTE_NAMES[note]+(Math.floor((23-i)/12)+2),4,y+noteH/2);
+    }
+  }
+
+  if(!rightHandVisible){
+    rctx.fillStyle='rgba(0,0,0,0.5)'; rctx.fillRect(0,0,W,H);
+    rctx.fillStyle='rgba(255,255,255,0.1)';
+    rctx.font='9px Space Mono,monospace'; rctx.textAlign='center'; rctx.textBaseline='middle';
+    rctx.fillText('RIGHT HAND = PITCH',W/2,H/2-8);
+    rctx.fillText('← note →  · ↑↓ octave',W/2,H/2+8);
+    return;
+  }
+
+  // active note highlight
+  if(soundOn && targetFreq>0){
+    const midi=69+12*Math.log2(targetFreq/440);
+    const loMidi=36, hiMidi=84; // C2..C6
+    const t=Math.max(0,Math.min(1,(midi-loMidi)/(hiMidi-loMidi)));
+    const noteY=H-(t*H);
+    const noteR=Math.round(midi)%12;
+    const isBlack=[1,3,6,8,10].includes(noteR);
+
+    rctx.save();
+    rctx.fillStyle='rgba(255,58,110,0.18)'; rctx.fillRect(0,noteY-10,W,20);
+    rctx.strokeStyle='#ff3a6e'; rctx.lineWidth=1.5;
+    rctx.shadowColor='#ff3a6e'; rctx.shadowBlur=10;
+    rctx.beginPath(); rctx.moveTo(0,noteY); rctx.lineTo(W,noteY); rctx.stroke();
+    rctx.restore();
+  }
+
+  // palm X position dot
+  const px=(1-rPalmSmooth.x)*W, py=rPalmSmooth.y*H;
+  rctx.save();
+  rctx.fillStyle='rgba(255,58,110,0.25)'; rctx.beginPath(); rctx.arc(px,py,14,0,Math.PI*2); rctx.fill();
+  rctx.fillStyle='#ff3a6e'; rctx.shadowColor='#ff3a6e'; rctx.shadowBlur=12;
+  rctx.beginPath(); rctx.arc(px,py,5,0,Math.PI*2); rctx.fill();
+  rctx.restore();
+}
+
+// ══════════════════════════════════════════════════
+//  MAIN RENDER LOOP
+// ══════════════════════════════════════════════════
+function renderLoop(){
+  audioTick();
+  drawStage();
+  drawLeftPanel();
+  drawRightPanel();
+
+  // update note display visibility
+  if(!soundOn || !rightHandVisible){
+    noteName.classList.remove('on');
+  }
+  requestAnimationFrame(renderLoop);
+}
+renderLoop();
+
+// ══════════════════════════════════════════════════
+//  MEDIAPIPE
+// ══════════════════════════════════════════════════
+const videoEl=document.getElementById('webcam');
+
+async function init(){
+  statusLine.textContent='starting camera…';
+  const hands=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+  hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.80,minTrackingConfidence:0.75});
+
+  hands.onResults(results=>{
+    rightHandVisible=false; leftHandVisible=false;
+    if(!results.multiHandLandmarks||!results.multiHandLandmarks.length){
+      targetVol=0; soundOn=false; noteName.classList.remove('on');
+      smoothLmR=null; smoothLmL=null;
+      statusLine.textContent='no hands detected';
+      return;
+    }
+
+    let rightRaw=null, leftRaw=null;
+    for(let i=0;i<results.multiHandLandmarks.length;i++){
+      const label=results.multiHandedness[i].label;
+      if(label==='Left')  rightRaw=results.multiHandLandmarks[i]; // MP flip
+      if(label==='Right') leftRaw =results.multiHandLandmarks[i];
+    }
+
+    if(rightRaw){ smoothLmR=smoothLandmarks(rightRaw,smoothLmR,LM_ALPHA); processRight(smoothLmR); }
+    else{ smoothLmR=null; if(soundOn){targetVol=0;soundOn=false;} }
+
+    if(leftRaw){ smoothLmL=smoothLandmarks(leftRaw,smoothLmL,LM_ALPHA); processLeft(smoothLmL); }
+    else{ smoothLmL=null; }
+
+    statusLine.textContent=soundOn?`${freqToNoteName(targetFreq)} · ${Math.round(targetFreq)}hz`:'hands detected · fist=silence';
+    hintEl.classList.add('hidden');
+  });
+
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480,frameRate:{ideal:30}}});
+    videoEl.srcObject=stream; await videoEl.play();
+    bgVideoEl=videoEl;
+
+    // unlock audio on first interaction
+    document.addEventListener('click',async()=>{
+      await initAudio();
+      await ensureOsc2();
+    },{once:true});
+
+    // also unlock on hand detection
+    let audioUnlocked=false;
+    const origOnResults=hands.onResults.bind(hands);
+    hands.onResults=async(r)=>{
+      if(!audioUnlocked&&r.multiHandLandmarks?.length){
+        audioUnlocked=true;
+        await initAudio();
+        await ensureOsc2();
+      }
+      origOnResults(r);
+    };
+
+    const camera=new Camera(videoEl,{onFrame:async()=>{await hands.send({image:videoEl});},width:640,height:480});
+    camera.start();
+    statusLine.textContent='raise your hands';
+  }catch(e){
+    statusLine.textContent='camera error — '+e.message; console.error(e);
+  }
+}
+init();
+</script>
+</body>
+</html>
