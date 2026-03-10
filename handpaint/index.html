@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>hand paint</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital@0;1&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d0d0d; --panel: #080808; --border: #1a1a1a;
+    --accent: #ff3a6e; --text: #d8d8d8; --muted: #3a3a3a;
+    --panel-w: 270px;
+  }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Space Mono', monospace;
+    height: 100vh; display: flex; flex-direction: column;
+    overflow: hidden; user-select: none;
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0; gap: 10px; flex-wrap: wrap; z-index: 20; position: relative;
+  }
+  header h1 { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+  .controls { display: flex; align-items: center; gap: 11px; flex-wrap: wrap; }
+  .control-group { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); }
+  .control-group label { text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+  input[type=range] { -webkit-appearance: none; width: 58px; height: 2px; background: var(--border); outline: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+  #colorBtn { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #2a2a2a; cursor: pointer; transition: transform 0.15s; flex-shrink: 0; }
+  #colorBtn:hover { transform: scale(1.2); }
+  .btn { font-family: 'Space Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; background: none; color: var(--muted); border: 1px solid var(--border); padding: 3px 8px; cursor: pointer; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
+  .btn:hover { color: var(--text); border-color: #555; }
+  .btn.danger:hover { color: var(--accent); border-color: var(--accent); }
+  .btn.on { color: var(--accent); border-color: var(--accent); }
+
+  /* ── layout ── */
+  .workspace { flex: 1; display: flex; overflow: hidden; }
+
+  /* side panels */
+  .side-panel {
+    width: var(--panel-w); flex-shrink: 0;
+    background: var(--panel);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 16px 0 12px; position: relative; overflow: hidden; z-index: 5;
+  }
+  #leftPanel  { border-right: 1px solid var(--border); }
+  #rightPanel { border-left:  1px solid var(--border); }
+
+  .panel-label {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.2em;
+    color: #222; margin-bottom: 12px; flex-shrink: 0;
+  }
+
+  .panel-canvas { flex: 1; display: block; width: 100%; }
+
+  .panel-readout {
+    font-size: 24px; letter-spacing: -0.02em; color: var(--text);
+    line-height: 1; margin-top: 10px; transition: color 0.2s; flex-shrink: 0;
+  }
+  .panel-readout .unit { font-size: 10px; color: var(--muted); margin-left: 2px; }
+  .panel-readout.active { color: #ffe156; }
+  .panel-readout.active-r { color: var(--accent); }
+
+  .panel-sub {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: #252525; margin-top: 6px; flex-shrink: 0; text-align: center; padding: 0 8px;
+  }
+
+  /* webcam */
+  #webcam {
+    position: absolute; bottom: 8px; right: 8px;
+    width: 72px; height: 54px;
+    border: 1px solid var(--border); border-radius: 3px;
+    object-fit: cover; transform: scaleX(-1);
+    opacity: 0.45; transition: opacity 0.2s; z-index: 10;
+  }
+  #webcam:hover { opacity: 0.9; }
+
+  /* draw area */
+  .draw-area { flex: 1; position: relative; overflow: hidden; }
+  #bgCanvas, #canvas, #overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #overlay { pointer-events: none; }
+
+  /* HUD */
+  #hud {
+    position: absolute; bottom: 12px; left: 12px;
+    z-index: 10; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.08em; line-height: 1.9; pointer-events: none;
+  }
+  .hud-gesture { font-size: 11px; color: var(--accent); }
+  .hud-detail  { color: #2a2a2a; }
+  .dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #222; margin-right: 4px; vertical-align: middle; transition: background 0.25s; }
+  .dot.on      { background: #3dff7a; }
+  .dot.drawing { background: var(--accent); }
+
+  /* hint */
+  .hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; pointer-events: none; transition: opacity 0.6s; }
+  .hint h2 { font-size: 17px; color: #1c1c1c; letter-spacing: 0.05em; margin-bottom: 9px; }
+  .hint p  { font-size: 9px; color: #1c1c1c; letter-spacing: 0.07em; text-transform: uppercase; line-height: 2.3; }
+  .hint.hidden { opacity: 0; }
+
+  /* legend */
+  #legend {
+    position: absolute; top: 12px; right: 12px; z-index: 10;
+    background: rgba(8,8,8,0.92); border: 1px solid var(--border); border-radius: 4px;
+    padding: 9px 12px; font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase;
+    line-height: 2.3; color: #2e2e2e; backdrop-filter: blur(6px); pointer-events: none;
+  }
+  #legend strong { color: #484848; }
+  .lt { font-size: 8px; letter-spacing: 0.16em; display: block; margin-bottom: 2px; }
+  .lt.r { color: var(--accent); } .lt.l { color: #ffe156; }
+  .lsep { border: none; border-top: 1px solid var(--border); margin: 5px 0; }
+
+  /* color picker */
+  #pickerPanel {
+    position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%);
+    z-index: 100; background: #161616; border: 1px solid #282828; border-radius: 6px;
+    padding: 13px; display: none; flex-direction: column; gap: 10px; width: 224px;
+    box-shadow: 0 10px 36px rgba(0,0,0,0.85);
+  }
+  #pickerPanel.open { display: flex; }
+  #hueSatCanvas { width: 100%; height: 146px; border-radius: 3px; cursor: crosshair; display: block; }
+  #hueStrip     { width: 100%; height: 12px; border-radius: 3px; cursor: crosshair; display: block; }
+  .picker-row   { display: flex; align-items: center; gap: 9px; }
+  #pickerPreview { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #333; flex-shrink: 0; }
+  #hexInput { font-family: 'Space Mono', monospace; font-size: 10px; background: #0e0e0e; border: 1px solid #252525; color: var(--text); padding: 4px 7px; border-radius: 3px; flex: 1; outline: none; letter-spacing: 0.08em; }
+  .swatches-row { display: flex; gap: 5px; flex-wrap: wrap; }
+  .pswatch { width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 1.5px solid transparent; transition: transform 0.12s; flex-shrink: 0; }
+  .pswatch:hover { transform: scale(1.35); }
+  .pswatch.active { border-color: #fff; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>hand paint</h1>
+  <div class="controls">
+    <div class="control-group"><label>opacity</label><input type="range" id="brushOpacity" min="5" max="100" value="80"></div>
+    <div class="control-group"><label>color</label><div id="colorBtn"></div></div>
+    <button class="btn" id="camToggle">cam bg</button>
+    <div class="control-group" id="camOpacityGroup" style="display:none"><label>fade</label><input type="range" id="camOpacity" min="5" max="55" value="20"></div>
+    <button class="btn" id="saveBtn">save</button>
+    <button class="btn danger" id="clearBtn">clear</button>
+  </div>
+</header>
+
+<div class="workspace">
+
+  <!-- ── LEFT PANEL: brightness ── -->
+  <div class="side-panel" id="leftPanel">
+    <div class="panel-label">hue · brightness</div>
+    <canvas class="panel-canvas" id="brightCanvas"></canvas>
+    <div class="panel-readout" id="brightReadout">50<span class="unit">%</span></div>
+    <div class="panel-sub" id="brightSub">← hue → · up=light down=dark</div>
+    <video id="webcam" autoplay muted playsinline></video>
+  </div>
+
+  <!-- ── DRAW AREA ── -->
+  <div class="draw-area">
+    <canvas id="bgCanvas"></canvas>
+    <canvas id="canvas"></canvas>
+    <canvas id="overlay"></canvas>
+
+    <div id="hud">
+      <div><span class="dot" id="rDot"></span><span id="rStatus">—</span></div>
+      <div class="hud-gesture" id="rGesture">—</div>
+      <div class="hud-detail"  id="rBrush">—</div>
+    </div>
+
+    <div id="legend">
+      <span class="lt r">right — draw</span>
+      <div><strong>☝</strong> pen <strong>✌</strong> flat <strong>🤟</strong> spray</div>
+      <div><strong>🖐</strong> eraser <strong>✊</strong> lift</div>
+      <hr class="lsep">
+      <span class="lt l">left — light/dark + size</span>
+      <div><strong>left ←→</strong> hue · <strong>up/down</strong> = bright</div>
+    </div>
+
+    <div class="hint" id="hint">
+      <h2>show your hands</h2>
+      <p>
+        right → draw (☝ ✌ 🤟 🖐)<br>
+        left ←→ hue · up/down brightness
+      </p>
+    </div>
+  </div>
+
+  <!-- ── RIGHT PANEL: size ── -->
+  <div class="side-panel" id="rightPanel">
+    <div class="panel-label">size</div>
+    <canvas class="panel-canvas" id="pinchCanvas"></canvas>
+    <div class="panel-readout active-r" id="sizeReadout">18<span class="unit">px</span></div>
+    <div class="panel-sub" id="sizeSub">pinch ↔ spread</div>
+  </div>
+
+</div>
+
+<!-- color picker -->
+<div id="pickerPanel">
+  <canvas id="hueSatCanvas" width="198" height="146"></canvas>
+  <canvas id="hueStrip"     width="198" height="12"></canvas>
+  <div class="picker-row">
+    <div id="pickerPreview"></div>
+    <input type="text" id="hexInput" maxlength="7" value="#ff3a6e">
+  </div>
+  <div class="swatches-row" id="pickerSwatches"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script>
+// ══════════════════════════════════════════════════
+//  COLOR PICKER
+// ══════════════════════════════════════════════════
+const PRESETS = ['#ff3a6e','#ff8c42','#ffe156','#3dff7a','#00d4ff','#7b5cff','#ff99cc','#ffffff','#888888','#0d0d0d'];
+
+// Base color = hue+saturation chosen by picker. Brightness modifies it live.
+let baseHue = 350, baseSat = 0.85;
+let brightnessVal = 0.50;  // 0 = black, 1 = white, 0.5 = full color
+let currentColor = '#ff3a6e';
+let pickerHue = 350;
+let brushOpacity = 0.80;
+
+const colorBtn      = document.getElementById('colorBtn');
+const pickerPanel   = document.getElementById('pickerPanel');
+const pickerPreview = document.getElementById('pickerPreview');
+const hexInput      = document.getElementById('hexInput');
+const hueSatCv      = document.getElementById('hueSatCanvas');
+const hueStripCv    = document.getElementById('hueStrip');
+const hsCtx = hueSatCv.getContext('2d');
+const hueCtx = hueStripCv.getContext('2d');
+let hsCursor = {x:198, y:0}, hueCursorX = 0;
+
+function hsvToHex(h,s,v){
+  const i=Math.floor(h/60)%6, f=h/60-Math.floor(h/60);
+  const p=v*(1-s),q=v*(1-f*s),t=v*(1-(1-f)*s);
+  let r,g,b;
+  if(i===0){r=v;g=t;b=p}else if(i===1){r=q;g=v;b=p}
+  else if(i===2){r=p;g=v;b=t}else if(i===3){r=p;g=q;b=v}
+  else if(i===4){r=t;g=p;b=v}else{r=v;g=p;b=q}
+  const h2=x=>Math.round(x*255).toString(16).padStart(2,'0');
+  return '#'+h2(r)+h2(g)+h2(b);
+}
+function hexToHsv(hex){
+  let r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
+  let h=0,s=max===0?0:d/max,v=max;
+  if(d!==0){if(max===r)h=((g-b)/d)%6;else if(max===g)h=(b-r)/d+2;else h=(r-g)/d+4;h=Math.round(h*60);if(h<0)h+=360;}
+  return {h,s,v};
+}
+
+// Recompute currentColor from base hue/sat + brightness
+function applyBrightness(){
+  // brightness 0..1 maps: 0→black (v=0,s=1), 0.5→full (v=1,s=baseSat), 1→white (v=1,s=0)
+  let v, s;
+  if(brightnessVal <= 0.5){
+    const t = brightnessVal / 0.5;
+    v = t;
+    s = baseSat;
+  } else {
+    const t = (brightnessVal - 0.5) / 0.5;
+    v = 1;
+    s = baseSat * (1 - t);
+  }
+  currentColor = hsvToHex(baseHue, s, v);
+  syncPickerUI();
+}
+
+function drawHueSat(){
+  const W=hueSatCv.width,H=hueSatCv.height;
+  const gS=hsCtx.createLinearGradient(0,0,W,0);
+  gS.addColorStop(0,'#fff');gS.addColorStop(1,`hsl(${pickerHue},100%,50%)`);
+  hsCtx.fillStyle=gS;hsCtx.fillRect(0,0,W,H);
+  const gV=hsCtx.createLinearGradient(0,0,0,H);
+  gV.addColorStop(0,'rgba(0,0,0,0)');gV.addColorStop(1,'rgba(0,0,0,1)');
+  hsCtx.fillStyle=gV;hsCtx.fillRect(0,0,W,H);
+  hsCtx.strokeStyle='#fff';hsCtx.lineWidth=1.5;
+  hsCtx.beginPath();hsCtx.arc(hsCursor.x,hsCursor.y,6,0,Math.PI*2);hsCtx.stroke();
+  hsCtx.strokeStyle='rgba(0,0,0,0.4)';hsCtx.lineWidth=1;
+  hsCtx.beginPath();hsCtx.arc(hsCursor.x,hsCursor.y,7,0,Math.PI*2);hsCtx.stroke();
+}
+function drawHueStrip(){
+  const W=hueStripCv.width,H=hueStripCv.height;
+  const g=hueCtx.createLinearGradient(0,0,W,0);
+  for(let i=0;i<=360;i+=10)g.addColorStop(i/360,`hsl(${i},100%,50%)`);
+  hueCtx.fillStyle=g;hueCtx.fillRect(0,0,W,H);
+  hueCtx.strokeStyle='#fff';hueCtx.lineWidth=2;
+  hueCtx.beginPath();hueCtx.moveTo(hueCursorX,0);hueCtx.lineTo(hueCursorX,H);hueCtx.stroke();
+}
+function pickHS(ex,ey){
+  const rect=hueSatCv.getBoundingClientRect();
+  const W=hueSatCv.width,H=hueSatCv.height;
+  const x=Math.min(W,Math.max(0,(ex-rect.left)*(W/rect.width)));
+  const y=Math.min(H,Math.max(0,(ey-rect.top)*(H/rect.height)));
+  hsCursor={x,y};
+  baseSat=x/W; baseHue=pickerHue;
+  currentColor=hsvToHex(pickerHue,x/W,1-y/H);
+  syncPickerUI();drawHueSat();
+}
+function pickHue(ex){
+  const rect=hueStripCv.getBoundingClientRect();
+  const W=hueStripCv.width;
+  const x=Math.min(W,Math.max(0,(ex-rect.left)*(W/rect.width)));
+  hueCursorX=x;pickerHue=Math.round((x/W)*360);
+  baseHue=pickerHue; baseSat=hsCursor.x/W;
+  currentColor=hsvToHex(pickerHue,hsCursor.x/W,1-hsCursor.y/hueSatCv.height);
+  syncPickerUI();drawHueSat();drawHueStrip();
+}
+function syncPickerUI(){
+  colorBtn.style.background=currentColor;
+  pickerPreview.style.background=currentColor;
+  hexInput.value=currentColor;
+  document.querySelectorAll('.pswatch').forEach(s=>s.classList.toggle('active',s.dataset.color===currentColor));
+}
+function setColorFromHex(hex){
+  if(!/^#[0-9a-fA-F]{6}$/.test(hex))return;
+  currentColor=hex;
+  const {h,s,v}=hexToHsv(hex);
+  pickerHue=h; baseHue=h; baseSat=s;
+  hsCursor={x:s*hueSatCv.width,y:(1-v)*hueSatCv.height};
+  hueCursorX=(h/360)*hueStripCv.width;
+  drawHueSat();drawHueStrip();syncPickerUI();
+}
+let dHS=false,dHue=false;
+hueSatCv.addEventListener('mousedown',e=>{dHS=true;pickHS(e.clientX,e.clientY);});
+hueStripCv.addEventListener('mousedown',e=>{dHue=true;pickHue(e.clientX);});
+window.addEventListener('mousemove',e=>{if(dHS)pickHS(e.clientX,e.clientY);if(dHue)pickHue(e.clientX);});
+window.addEventListener('mouseup',()=>{dHS=false;dHue=false;});
+hexInput.addEventListener('change',()=>setColorFromHex(hexInput.value.trim()));
+hexInput.addEventListener('keydown',e=>{if(e.key==='Enter')setColorFromHex(hexInput.value.trim());});
+const pickerSwatches=document.getElementById('pickerSwatches');
+PRESETS.forEach(c=>{
+  const s=document.createElement('div');
+  s.className='pswatch'+(c===currentColor?' active':'');
+  s.style.background=c;s.dataset.color=c;
+  if(c==='#0d0d0d')s.style.boxShadow='inset 0 0 0 1px #555';
+  s.onclick=()=>setColorFromHex(c);
+  pickerSwatches.appendChild(s);
+});
+colorBtn.addEventListener('click',e=>{
+  e.stopPropagation();pickerPanel.classList.toggle('open');
+  if(pickerPanel.classList.contains('open')){drawHueSat();drawHueStrip();}
+});
+document.addEventListener('click',e=>{if(!pickerPanel.contains(e.target)&&e.target!==colorBtn)pickerPanel.classList.remove('open');});
+pickerPanel.addEventListener('click',e=>e.stopPropagation());
+setColorFromHex(currentColor);
+
+document.getElementById('brushOpacity').addEventListener('input',e=>{brushOpacity=e.target.value/100;});
+
+let camOverlay=false,camOpacityVal=0.20;
+const camToggleBtn=document.getElementById('camToggle');
+const camOpacityGroup=document.getElementById('camOpacityGroup');
+camToggleBtn.addEventListener('click',()=>{
+  camOverlay=!camOverlay;camToggleBtn.classList.toggle('on',camOverlay);
+  camOpacityGroup.style.display=camOverlay?'flex':'none';
+  if(!camOverlay)bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+});
+document.getElementById('camOpacity').addEventListener('input',e=>{camOpacityVal=e.target.value/100;});
+
+// ══════════════════════════════════════════════════
+//  CANVASES
+// ══════════════════════════════════════════════════
+const bgCanvas     = document.getElementById('bgCanvas');
+const canvas       = document.getElementById('canvas');
+const overlay      = document.getElementById('overlay');
+const pinchCanvas  = document.getElementById('pinchCanvas');
+const brightCanvas = document.getElementById('brightCanvas');
+const bgCtx  = bgCanvas.getContext('2d');
+const ctx    = canvas.getContext('2d');
+const octx   = overlay.getContext('2d');
+const pctx   = pinchCanvas.getContext('2d');
+const bctx   = brightCanvas.getContext('2d');
+
+function resizeAll(){
+  const dw=canvas.offsetWidth, dh=canvas.offsetHeight;
+  const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+  bgCanvas.width=canvas.width=overlay.width=dw;
+  bgCanvas.height=canvas.height=overlay.height=dh;
+  ctx.putImageData(img,0,0);
+  pinchCanvas.width=pinchCanvas.offsetWidth||180;
+  pinchCanvas.height=pinchCanvas.offsetHeight||300;
+  brightCanvas.width=brightCanvas.offsetWidth||180;
+  brightCanvas.height=brightCanvas.offsetHeight||300;
+}
+resizeAll();
+window.addEventListener('resize',resizeAll);
+
+document.getElementById('clearBtn').onclick=()=>{
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  hasDrawn=false;hintEl.classList.remove('hidden');
+};
+document.getElementById('saveBtn').onclick=()=>{
+  const tmp=document.createElement('canvas');tmp.width=canvas.width;tmp.height=canvas.height;
+  const tctx=tmp.getContext('2d');tctx.fillStyle='#0d0d0d';tctx.fillRect(0,0,tmp.width,tmp.height);
+  if(camOverlay)tctx.drawImage(bgCanvas,0,0);tctx.drawImage(canvas,0,0);
+  const a=document.createElement('a');a.download=`hand-paint-${Date.now()}.png`;
+  a.href=tmp.toDataURL('image/png');a.click();
+};
+
+// ══════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════
+let lastPos=null, hasDrawn=false;
+let brushSize=18, smoothSize=18;
+
+const hintEl      = document.getElementById('hint');
+const rDot        = document.getElementById('rDot');
+const rStatus     = document.getElementById('rStatus');
+const rGesture    = document.getElementById('rGesture');
+const rBrush      = document.getElementById('rBrush');
+const sizeReadout = document.getElementById('sizeReadout');
+const sizeSub     = document.getElementById('sizeSub');
+const brightReadout = document.getElementById('brightReadout');
+const brightSub     = document.getElementById('brightSub');
+
+// Smoothed values
+let smoothNormPinch  = 1.0;   // right hand thumb-index
+let smoothBrightness = 0.5;   // left hand openness → brightness
+let leftHandVisible  = false;
+let rightHandVisible = false;
+
+// Finger tracking for panels
+let rThumb={x:-1,y:-1}, rIndex={x:-1,y:-1};
+// Left: track all fingertips for the hand-open visualization
+let lFingers = [];
+let lPalmCenter = {x:-1,y:-1};
+
+function hexToRgba(hex,alpha){
+  if(!hex||hex.length<7)return `rgba(200,200,200,${alpha})`;
+  const rr=parseInt(hex.slice(1,3),16),gg=parseInt(hex.slice(3,5),16),bb=parseInt(hex.slice(5,7),16);
+  return `rgba(${rr},${gg},${bb},${alpha})`;
+}
+
+// ══════════════════════════════════════════════════
+//  LANDMARK MATH
+// ══════════════════════════════════════════════════
+function dist2(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function palmSize(lm){return dist2(lm[0],lm[9]);}
+function normPinch(lm){ const p=palmSize(lm); return p>0?dist2(lm[4],lm[8])/p:1; }
+
+// Hand openness: average distance of all 4 fingertips from palm center, normalized by palm size
+// Returns ~0 (fist) … ~2+ (fully open)
+function normOpenness(lm){
+  const p=palmSize(lm);
+  if(p===0)return 0;
+  const tips=[8,12,16,20];
+  const avg=tips.reduce((s,i)=>s+dist2(lm[i],lm[9]),0)/4;
+  return avg/p;
+}
+
+const TIP=[8,12,16,20], PIP=[6,10,14,18];
+function countExtended(lm){let n=0;for(let i=0;i<4;i++)if(lm[TIP[i]].y<lm[PIP[i]].y)n++;return n;}
+function fingerSpread(lm){const p=lm[9];return TIP.reduce((s,i)=>s+dist2(lm[i],p),0)/4;}
+
+// ══════════════════════════════════════════════════
+//  BRIGHTNESS PANEL DRAW  (X=hue, Y=brightness)
+// ══════════════════════════════════════════════════
+
+// Cached gradient image so we don't rebuild every frame
+let gradCache = null, gradCacheW = 0, gradCacheH = 0;
+
+function buildGradCache(W, H){
+  if(gradCacheW===W && gradCacheH===H && gradCache) return;
+  const off = document.createElement('canvas'); off.width=W; off.height=H;
+  const ox = off.getContext('2d');
+  // Draw column by column: hue across X, brightness down Y
+  const steps = Math.ceil(W/2);
+  for(let xi=0;xi<steps;xi++){
+    const hue = (xi/steps)*360;
+    // vertical gradient per column: white top → fullcolor mid → black bottom
+    const grd = ox.createLinearGradient(0,0,0,H);
+    grd.addColorStop(0,   `hsl(${hue},0%,100%)`);
+    grd.addColorStop(0.5, `hsl(${hue},90%,50%)`);
+    grd.addColorStop(1,   `hsl(${hue},0%,0%)`);
+    ox.fillStyle = grd;
+    ox.fillRect(xi*2, 0, 2, H);
+  }
+  gradCache = off; gradCacheW=W; gradCacheH=H;
+}
+
+// smoothed cursor position in panel space
+let smoothCursorX = -1, smoothCursorY = -1;
+
+function drawBrightPanel(){
+  const W=brightCanvas.width, H=brightCanvas.height;
+  bctx.clearRect(0,0,W,H);
+
+  // draw the 2D hue×brightness gradient
+  buildGradCache(W, H);
+  bctx.globalAlpha = leftHandVisible ? 0.55 : 0.25;
+  bctx.drawImage(gradCache, 0, 0, W, H);
+  bctx.globalAlpha = 1;
+
+  // border
+  bctx.strokeStyle='rgba(255,255,255,0.04)';bctx.lineWidth=1;
+  bctx.strokeRect(0,0,W,H);
+
+  if(!leftHandVisible){
+    // idle overlay
+    bctx.fillStyle='rgba(0,0,0,0.55)';bctx.fillRect(0,0,W,H);
+    bctx.fillStyle='rgba(255,255,255,0.18)';
+    bctx.font='9px Space Mono,monospace';bctx.textAlign='center';bctx.textBaseline='middle';
+    bctx.fillText('MOVE HAND HERE',W/2,H/2-8);
+    bctx.fillText('← hue →  · up/down = bright',W/2,H/2+8);
+    return;
+  }
+
+  // draw hand skeleton (fingertips + palm)
+  if(lFingers.length===5 && lPalmCenter.x > 0){
+    const map = lm => ({x:(1-lm.x)*W, y:lm.y*H});
+    const c = map(lPalmCenter);
+
+    bctx.strokeStyle='rgba(0,0,0,0.3)';bctx.lineWidth=2;
+    lFingers.forEach(tip=>{ const t=map(tip); bctx.beginPath();bctx.moveTo(c.x,c.y);bctx.lineTo(t.x,t.y);bctx.stroke(); });
+
+    bctx.strokeStyle='rgba(255,255,255,0.18)';bctx.lineWidth=1.5;
+    lFingers.forEach(tip=>{ const t=map(tip); bctx.beginPath();bctx.moveTo(c.x,c.y);bctx.lineTo(t.x,t.y);bctx.stroke(); });
+
+    lFingers.forEach(tip=>{
+      const t=map(tip);
+      bctx.fillStyle='rgba(0,0,0,0.4)';bctx.beginPath();bctx.arc(t.x,t.y,7,0,Math.PI*2);bctx.fill();
+      bctx.fillStyle='rgba(255,255,255,0.7)';bctx.beginPath();bctx.arc(t.x,t.y,4,0,Math.PI*2);bctx.fill();
+    });
+    bctx.fillStyle='rgba(255,255,255,0.4)';bctx.beginPath();bctx.arc(c.x,c.y,5,0,Math.PI*2);bctx.fill();
+  }
+
+  // cursor crosshair at smoothed palm position
+  if(smoothCursorX >= 0){
+    const cx=smoothCursorX, cy=smoothCursorY;
+
+    // crosshair lines
+    bctx.strokeStyle='rgba(0,0,0,0.5)';bctx.lineWidth=2;bctx.setLineDash([]);
+    bctx.beginPath();bctx.moveTo(cx-18,cy);bctx.lineTo(cx+18,cy);bctx.moveTo(cx,cy-18);bctx.lineTo(cx,cy+18);bctx.stroke();
+    bctx.strokeStyle='rgba(255,255,255,0.8)';bctx.lineWidth=1;
+    bctx.beginPath();bctx.moveTo(cx-16,cy);bctx.lineTo(cx+16,cy);bctx.moveTo(cx,cy-16);bctx.lineTo(cx,cy+16);bctx.stroke();
+
+    // outer ring
+    bctx.strokeStyle='rgba(255,255,255,0.6)';bctx.lineWidth=1.5;
+    bctx.beginPath();bctx.arc(cx,cy,11,0,Math.PI*2);bctx.stroke();
+
+    // inner fill with current color
+    bctx.fillStyle=currentColor;
+    bctx.beginPath();bctx.arc(cx,cy,7,0,Math.PI*2);bctx.fill();
+
+    // hue label at bottom
+    bctx.fillStyle='rgba(255,255,255,0.5)';
+    bctx.font='8px Space Mono,monospace';bctx.textAlign='center';bctx.textBaseline='top';
+    bctx.fillText(`h:${Math.round(baseHue)}° b:${Math.round(brightnessVal*100)}%`,cx,cy+15);
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  SIZE PANEL DRAW (right hand)
+// ══════════════════════════════════════════════════
+const SIZE_MIN=2, SIZE_MAX=80;
+
+function drawSizePanel(){
+  const W=pinchCanvas.width, H=pinchCanvas.height;
+  pctx.clearRect(0,0,W,H);
+
+  pctx.fillStyle='#111';
+  for(let x=12;x<W;x+=18)for(let y=12;y<H;y+=18){pctx.beginPath();pctx.arc(x,y,0.8,0,Math.PI*2);pctx.fill();}
+
+  if(!rightHandVisible){
+    pctx.fillStyle='#1a1a1a';pctx.font='9px Space Mono,monospace';
+    pctx.textAlign='center';pctx.textBaseline='middle';
+    pctx.fillText('PINCH HERE',W/2,H*0.42);pctx.fillText('TO RESIZE',W/2,H*0.42+15);
+    drawSizeGauge(W,H);return;
+  }
+
+  // Live fingertip display
+  const tx=rThumb.x, ty=rThumb.y, ix=rIndex.x, iy=rIndex.y;
+  const midX=(tx+ix)/2, midY=(ty+iy)/2;
+  const d=Math.hypot(tx-ix,ty-iy);
+
+  // Spread glow
+  if(d>6){
+    pctx.fillStyle=hexToRgba(currentColor,0.04);
+    pctx.beginPath();pctx.arc(midX,midY,d*0.55,0,Math.PI*2);pctx.fill();
+  }
+
+  // connecting line — color shifts warm (close) → cool (open)
+  const openness=Math.min(1,Math.max(0,(smoothNormPinch-0.1)/1.6));
+  const lineH=Math.round(openness*200); // 0=red, 200=teal
+  pctx.strokeStyle=`hsla(${lineH},60%,55%,0.7)`;pctx.lineWidth=1.5;pctx.setLineDash([]);
+  pctx.beginPath();pctx.moveTo(tx,ty);pctx.lineTo(ix,iy);pctx.stroke();
+
+  // thumb
+  pctx.fillStyle='rgba(255,255,255,0.1)';pctx.beginPath();pctx.arc(tx,ty,13,0,Math.PI*2);pctx.fill();
+  pctx.fillStyle='#ccc';pctx.beginPath();pctx.arc(tx,ty,8,0,Math.PI*2);pctx.fill();
+  pctx.fillStyle='#555';pctx.font='7px Space Mono';pctx.textAlign='center';pctx.textBaseline='middle';
+  pctx.fillText('T',tx,ty);
+
+  // index
+  pctx.fillStyle='rgba(255,255,255,0.1)';pctx.beginPath();pctx.arc(ix,iy,13,0,Math.PI*2);pctx.fill();
+  pctx.fillStyle=hexToRgba(currentColor,0.9);pctx.beginPath();pctx.arc(ix,iy,8,0,Math.PI*2);pctx.fill();
+  pctx.fillStyle='rgba(0,0,0,0.5)';pctx.font='7px Space Mono';pctx.textAlign='center';pctx.textBaseline='middle';
+  pctx.fillText('I',ix,iy);
+
+  drawSizeGauge(W,H);
+}
+
+function drawSizeGauge(W,H){
+  const gx=W-14, gy=18, gh=H-36;
+
+  // track
+  pctx.strokeStyle='#1e1e1e';pctx.lineWidth=1;
+  pctx.beginPath();pctx.moveTo(gx,gy);pctx.lineTo(gx,gy+gh);pctx.stroke();
+
+  const t=Math.min(1,Math.max(0,(smoothSize-SIZE_MIN)/(SIZE_MAX-SIZE_MIN)));
+  const my=gy+gh-t*gh;
+
+  // fill
+  pctx.fillStyle='rgba(255,58,110,0.1)';pctx.fillRect(gx-2,my,4,gy+gh-my);
+
+  // glow
+  pctx.fillStyle='rgba(255,58,110,0.2)';pctx.beginPath();pctx.arc(gx,my,8,0,Math.PI*2);pctx.fill();
+
+  // marker
+  pctx.fillStyle='#ff3a6e';pctx.strokeStyle='rgba(255,255,255,0.5)';pctx.lineWidth=1.2;
+  pctx.beginPath();pctx.arc(gx,my,4,0,Math.PI*2);pctx.fill();pctx.stroke();
+
+  // brush preview circle
+  const previewR=Math.min(smoothSize/2,(W-28)*0.42);
+  const previewX=(W-14)/2, previewY=H*0.55;
+  pctx.strokeStyle=hexToRgba(currentColor,0.3);pctx.lineWidth=1;pctx.setLineDash([]);
+  pctx.beginPath();pctx.arc(previewX,previewY,previewR,0,Math.PI*2);pctx.stroke();
+  // inner dot
+  pctx.fillStyle=hexToRgba(currentColor,0.15);
+  pctx.beginPath();pctx.arc(previewX,previewY,2,0,Math.PI*2);pctx.fill();
+}
+
+// ══════════════════════════════════════════════════
+//  LEFT HAND PROCESSOR — X=hue, Y=brightness
+// ══════════════════════════════════════════════════
+function processLeft(lm){
+  leftHandVisible=true;
+
+  // Use palm center (landmark 9) as the control point
+  const palm = lm[9];
+  // X: mirrored — left side of panel = low hue, right = high hue
+  // palm.x is 0..1 where 0=right edge of camera (user's left), 1=left edge
+  // we mirror display, so (1-palm.x) maps naturally: user moves hand right → higher X in panel
+  const rawX = 1 - palm.x; // 0..1, left→right in panel
+  const rawY = palm.y;      // 0..1, top→bottom
+
+  // Smooth
+  const PW=brightCanvas.width, PH=brightCanvas.height;
+  const targetCX = rawX * PW;
+  const targetCY = rawY * PH;
+  if(smoothCursorX < 0){ smoothCursorX=targetCX; smoothCursorY=targetCY; }
+  smoothCursorX += (targetCX - smoothCursorX) * 0.15;
+  smoothCursorY += (targetCY - smoothCursorY) * 0.15;
+
+  // Hue: 0..360 mapped across X
+  const targetHue = rawX * 360;
+  baseHue += (targetHue - baseHue) * 0.15;
+
+  // Brightness: Y inverted — top=light(1), bottom=dark(0)
+  const targetB = 1 - rawY;
+  smoothBrightness += (targetB - smoothBrightness) * 0.12;
+  brightnessVal = smoothBrightness;
+
+  // store fingers for skeleton viz
+  lFingers = [lm[8],lm[12],lm[16],lm[20],lm[4]];
+  lPalmCenter = lm[9];
+
+  applyBrightness();
+
+  const hpct = Math.round(baseHue);
+  const bpct = Math.round(brightnessVal*100);
+  brightReadout.innerHTML=`h${hpct}<span class="unit">°</span>`;
+  brightSub.textContent=`bright ${bpct}%`;
+}
+
+// ══════════════════════════════════════════════════
+//  RIGHT HAND GESTURE — draw
+// ══════════════════════════════════════════════════
+function classifyRight(lm){
+  rightHandVisible=true;
+  const ext=countExtended(lm);
+  const np=normPinch(lm);
+
+  // smooth pinch
+  smoothNormPinch += (np-smoothNormPinch)*0.22;
+
+  // Map normalized pinch → brush size
+  const t=Math.min(1,Math.max(0,(smoothNormPinch-0.1)/1.6));
+  const targetSize=SIZE_MIN+t*(SIZE_MAX-SIZE_MIN);
+  brushSize += (targetSize-brushSize)*0.16;
+  smoothSize += (brushSize-smoothSize)*0.22;
+  const displaySize=Math.round(smoothSize);
+
+  // Update panel finger positions (mirrored x, clamped to panel)
+  const PW=pinchCanvas.width, PH=pinchCanvas.height;
+  const cl=(v,mn,mx)=>Math.min(mx,Math.max(mn,v));
+  rThumb={x:cl((1-lm[4].x)*PW,10,PW-10), y:cl(lm[4].y*PH,10,PH-10)};
+  rIndex={x:cl((1-lm[8].x)*PW,10,PW-10), y:cl(lm[8].y*PH,10,PH-10)};
+
+  sizeReadout.innerHTML=displaySize+'<span class="unit">px</span>';
+  sizeSub.textContent=`spread ${Math.round(smoothNormPinch*50)}%`;
+
+  if(ext===0) return {gesture:'✊ fist',brushType:'none',size:displaySize,drawing:false};
+  if(ext>=4&&fingerSpread(lm)>0.20) return {gesture:'🖐 eraser',brushType:'eraser',size:Math.round(24+fingerSpread(lm)*80),drawing:true};
+  if(ext===1&&lm[8].y<lm[6].y&&lm[12].y>lm[10].y) return {gesture:'☝ pen',brushType:'pen',size:displaySize,drawing:true};
+  if(ext===2&&lm[8].y<lm[6].y&&lm[12].y<lm[10].y&&lm[16].y>lm[14].y) return {gesture:'✌ calligraphy',brushType:'calligraphy',size:displaySize,drawing:true};
+  if(ext===3&&lm[8].y<lm[6].y&&lm[12].y<lm[10].y&&lm[16].y<lm[14].y&&lm[20].y>lm[18].y) return {gesture:'🤟 spray',brushType:'spray',size:displaySize,drawing:true};
+  if(ext>=4) return {gesture:'🖐 eraser',brushType:'eraser',size:Math.round(20+fingerSpread(lm)*60),drawing:true};
+  return {gesture:'—',brushType:'none',size:displaySize,drawing:false};
+}
+
+// ══════════════════════════════════════════════════
+//  STROKE RENDERING
+// ══════════════════════════════════════════════════
+function applyStroke(x,y,prev,brushType,size,color,opacity){
+  const cx=(1-x)*canvas.width, cy=y*canvas.height;
+  const px=prev?(1-prev.x)*canvas.width:cx, py=prev?prev.y*canvas.height:cy;
+  ctx.save();
+  if(brushType==='eraser'){
+    ctx.globalCompositeOperation='destination-out';
+    ctx.beginPath();ctx.arc(cx,cy,size/2,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,1)';ctx.fill();ctx.restore();return;
+  }
+  ctx.globalCompositeOperation='source-over';
+  if(brushType==='pen'){
+    ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=hexToRgba(color,opacity);ctx.lineWidth=size;
+    ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(cx,cy);ctx.stroke();
+  }
+  if(brushType==='calligraphy'){
+    const angle=prev?Math.atan2(cy-py,cx-px)+Math.PI/2:Math.PI/2;
+    const hw=size/2,th=Math.max(2,size*0.15);ctx.fillStyle=hexToRgba(color,opacity*0.92);
+    const stamp=(tx,ty)=>{ctx.save();ctx.translate(tx,ty);ctx.rotate(angle);ctx.fillRect(-hw,-th/2,size,th);ctx.restore();};
+    stamp(cx,cy);if(prev){stamp(px,py);stamp((cx+px)/2,(cy+py)/2);}
+  }
+  if(brushType==='spray'){
+    ctx.fillStyle=hexToRgba(color,opacity*0.22);
+    for(let i=0;i<35;i++){
+      const a=Math.random()*Math.PI*2,r=Math.random()*size,dr=Math.random()*1.8+0.4;
+      ctx.beginPath();ctx.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,dr,0,Math.PI*2);ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawOverlay(x,y,brushType,size,drawing){
+  octx.clearRect(0,0,overlay.width,overlay.height);
+  const cx=(1-x)*overlay.width, cy=y*overlay.height;
+  const ring=drawing?hexToRgba(currentColor,0.85):'rgba(255,255,255,0.15)';
+  octx.save();
+  if(brushType==='calligraphy'&&drawing){
+    const hw=size/2,th=Math.max(3,size*0.15);octx.strokeStyle=ring;octx.lineWidth=1;octx.strokeRect(cx-hw,cy-th,size,th*2);
+  } else if(brushType==='spray'&&drawing){
+    octx.setLineDash([3,4]);octx.strokeStyle=ring;octx.lineWidth=1;octx.beginPath();octx.arc(cx,cy,size,0,Math.PI*2);octx.stroke();
+  } else if(brushType==='eraser'&&drawing){
+    octx.strokeStyle='rgba(255,255,255,0.3)';octx.lineWidth=1.5;octx.beginPath();octx.arc(cx,cy,size/2,0,Math.PI*2);octx.stroke();
+    const s=7;octx.beginPath();octx.moveTo(cx-s,cy-s);octx.lineTo(cx+s,cy+s);octx.moveTo(cx+s,cy-s);octx.lineTo(cx-s,cy+s);octx.stroke();
+  } else {
+    octx.strokeStyle=ring;octx.lineWidth=1.5;octx.beginPath();octx.arc(cx,cy,(size||18)/2+4,0,Math.PI*2);octx.stroke();
+  }
+  octx.restore();
+}
+
+// ══════════════════════════════════════════════════
+//  PANEL RENDER LOOPS
+// ══════════════════════════════════════════════════
+function panelLoop(){
+  drawSizePanel();
+  drawBrightPanel();
+  requestAnimationFrame(panelLoop);
+}
+panelLoop();
+
+// ══════════════════════════════════════════════════
+//  MEDIAPIPE
+// ══════════════════════════════════════════════════
+const videoEl=document.getElementById('webcam');
+
+async function init(){
+  rStatus.textContent='starting…';
+  const hands=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+  hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.75,minTrackingConfidence:0.70});
+
+  hands.onResults(results=>{
+    if(!results.multiHandLandmarks||!results.multiHandLandmarks.length){
+      rDot.className='dot';rStatus.textContent='—';rGesture.textContent='—';rBrush.textContent='—';
+      lastPos=null;rightHandVisible=false;leftHandVisible=false;return;
+    }
+
+    // MP flip: 'Left' label = user's right, 'Right' label = user's left
+    let rightLm=null,leftLm=null;
+    for(let i=0;i<results.multiHandLandmarks.length;i++){
+      const label=results.multiHandedness[i].label;
+      if(label==='Left')  rightLm=results.multiHandLandmarks[i];
+      if(label==='Right') leftLm =results.multiHandLandmarks[i];
+    }
+
+    rightHandVisible=!!rightLm;
+    leftHandVisible =!!leftLm;
+
+    if(rightLm){
+      const tip=rightLm[8];
+      const {gesture,brushType,size,drawing}=classifyRight(rightLm);
+      rGesture.textContent=gesture;
+      rBrush.textContent=`${Math.round(smoothSize)}px · ${brushType}`;
+      drawOverlay(tip.x,tip.y,brushType,size,drawing);
+      if(drawing){
+        rDot.className='dot drawing';rStatus.textContent='drawing';
+        if(!hasDrawn){hasDrawn=true;hintEl.classList.add('hidden');}
+        applyStroke(tip.x,tip.y,lastPos,brushType,size,currentColor,brushOpacity);
+        lastPos={x:tip.x,y:tip.y};
+      } else {
+        rDot.className='dot on';rStatus.textContent='ready';lastPos=null;
+      }
+    } else {
+      rDot.className='dot';rStatus.textContent='—';rGesture.textContent='—';rBrush.textContent='—';
+      rightHandVisible=false;lastPos=null;
+    }
+
+    if(leftLm) processLeft(leftLm);
+    else { leftHandVisible=false; smoothCursorX=-1; smoothCursorY=-1; brightSub.textContent='← hue → · up=light down=dark'; }
+  });
+
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480}});
+    videoEl.srcObject=stream;await videoEl.play();
+    function bgLoop(){
+      if(camOverlay){
+        bgCtx.save();bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+        bgCtx.globalAlpha=camOpacityVal;bgCtx.translate(bgCanvas.width,0);bgCtx.scale(-1,1);
+        bgCtx.drawImage(videoEl,0,0,bgCanvas.width,bgCanvas.height);bgCtx.restore();
+      }
+      requestAnimationFrame(bgLoop);
+    }
+    bgLoop();
+    const camera=new Camera(videoEl,{onFrame:async()=>{await hands.send({image:videoEl});},width:640,height:480});
+    camera.start();rStatus.textContent='ready';
+  }catch(e){rStatus.textContent='camera error';console.error(e);}
+}
+init();
+</script>
+</body>
+</html>
