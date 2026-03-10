@@ -1,0 +1,2947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>8-BIT RACK SYNTH</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ink:#0a0a0f;--panel:#0d0d18;--border:#2a2a4a;--border2:#1a1a30;
+  --accent1:#ff2d9b;--accent2:#00f5ff;--accent3:#6b21ff;--accent4:#39ff14;--accent5:#ffe600;
+  --text:#8a9ab0;--text-dim:#3a4a5a;
+  --key-white:#d8dde8;--key-black:#151820;
+  --font-mono:'Press Start 2P',monospace;--font-disp:'Press Start 2P',monospace;
+}
+html,body{width:100%;height:100%;background:var(--ink);overflow:hidden;}
+body{display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);
+  background:radial-gradient(ellipse at 50% 30%,#0d0d1c 0%,#060708 100%);}
+
+/* ── PALETTE SWITCHER ── */
+#palettePicker{display:flex;gap:5px;align-items:center;}
+.pal-btn{
+  width:16px;height:16px;border:2px solid transparent;border-radius:0;
+  cursor:pointer;transition:border-color 0.05s steps(1);flex-shrink:0;
+  image-rendering:pixelated;
+}
+.pal-btn.active{border-color:#fff;box-shadow:0 0 6px #fff;}
+.pal-btn:hover{transform:scale(1.15);}
+
+/* ── SCANLINES ── */
+body::before{content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.18) 2px,rgba(0,0,0,0.18) 4px);
+  pointer-events:none;z-index:9000;}
+/* CRT vignette */
+body::after{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.75) 100%);
+  pointer-events:none;z-index:8999;}
+
+/* ── PIXEL GRID BG ── */
+.grid-bg{position:fixed;inset:0;
+  background-image:linear-gradient(#1a1a2e 1px,transparent 1px),linear-gradient(90deg,#1a1a2e 1px,transparent 1px);
+  background-size:32px 32px;opacity:0.45;animation:gridScroll 10s linear infinite;pointer-events:none;z-index:0;}
+@keyframes gridScroll{from{background-position:0 0}to{background-position:0 32px}}
+
+/* ── MONEY RAIN ── */
+#moneyCanvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:8998;image-rendering:pixelated;}
+
+/* ── RACK SHELL ── */
+.rack-shell{display:flex;align-items:stretch;max-width:1420px;width:99vw;height:97vh;position:relative;z-index:10;}
+
+/* ── ARROW COLUMN ── */
+.rack-nav{
+  width:32px;flex-shrink:0;background:#090912;
+  border:3px solid var(--accent1);border-right:none;border-radius:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  padding:12px 0;
+}
+.nav-btn{
+  width:22px;height:22px;background:#0a0a14;border:2px solid var(--accent1);
+  border-radius:0;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:9px;color:var(--accent1);transition:all 0.05s steps(1);user-select:none;
+  font-family:var(--font-disp);
+}
+.nav-btn:hover{background:var(--accent1);color:#000;}
+.nav-btn:active{background:#0a0a14;}
+.nav-dots{display:flex;flex-direction:column;gap:6px;align-items:center;}
+.nav-dot{width:6px;height:6px;border-radius:0;background:#1e1e38;transition:background 0.1s steps(1);}
+.nav-dot.on{background:var(--accent1);box-shadow:0 0 6px var(--accent1),0 0 14px var(--accent1);}
+
+/* ── RACK VIEWPORT ── */
+.rack-viewport{
+  flex:1;overflow:hidden;position:relative;
+  border:3px solid var(--accent1);border-radius:0;
+  background:var(--panel);
+  box-shadow:0 0 0 2px #000,0 0 30px rgba(255,45,155,0.2),inset 0 0 60px rgba(0,0,0,0.8);
+}
+.rack-viewport::before{content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,transparent,rgba(255,255,255,0.003) 1px,transparent 2px);
+  pointer-events:none;z-index:0;}
+
+/* ── RACK SCROLL ── */
+.rack-scroll{position:absolute;inset:0;transition:transform 0.42s cubic-bezier(0.4,0,0.2,1);}
+.rack-row{display:flex;width:100%;height:97vh;border-bottom:3px solid #0a0a14;position:relative;z-index:1;}
+.rack-row-tag{
+  position:absolute;right:8px;top:8px;
+  font-family:var(--font-disp);font-size:6px;letter-spacing:0.2em;
+  text-transform:uppercase;color:#1e1e38;pointer-events:none;
+}
+
+/* ── MODULE ── */
+.module{
+  flex:1;position:relative;z-index:1;
+  padding:12px 14px 11px 28px;
+  display:flex;flex-direction:column;gap:8px;
+  border-right:2px solid var(--border2);
+}
+.module:last-child{border-right:none;}
+
+/* silkscreen side guide */
+.guide{
+  position:absolute;left:0;top:0;bottom:0;width:16px;
+  background:#08080f;border-right:2px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.guide span{
+  font-family:var(--font-disp);font-size:5.5px;letter-spacing:0.18em;
+  text-transform:uppercase;white-space:nowrap;
+  transform:rotate(-90deg);pointer-events:none;
+}
+.drone    .guide span{color:#3a0020;}
+.keyboard .guide span{color:#00202a;}
+.seqmod   .guide span{color:#1a0038;}
+.ringmod  .guide span{color:#00280a;}
+.delaymod .guide span{color:#2a2200;}
+
+/* ── MODULE HEADER ── */
+.mod-hdr{display:flex;align-items:center;justify-content:space-between;padding-bottom:6px;border-bottom:2px solid var(--border2);}
+.mod-title{font-family:var(--font-disp);font-size:6px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim);}
+.mod-name{font-family:var(--font-disp);font-size:9px;letter-spacing:0.15em;font-weight:900;text-transform:uppercase;text-shadow:0 0 8px currentColor;}
+.drone    .mod-name{color:var(--accent1);}
+.keyboard .mod-name{color:var(--accent2);}
+.seqmod   .mod-name{color:var(--accent3);}
+.ringmod  .mod-name{color:var(--accent4);}
+.delaymod .mod-name{color:var(--accent5);}
+
+/* ── LED ── */
+.led-row{display:flex;gap:4px;align-items:center;}
+.led{width:8px;height:8px;border-radius:0;background:#0a0a14;border:1px solid #222236;transition:background 0.04s steps(1),box-shadow 0.04s steps(1);}
+.led.r.on{background:#ff2d9b;box-shadow:0 0 6px #ff2d9b,0 0 14px rgba(255,45,155,0.5);}
+.led.b.on{background:#00f5ff;box-shadow:0 0 6px #00f5ff,0 0 14px rgba(0,245,255,0.4);}
+.led.g.on{background:#39ff14;box-shadow:0 0 6px #39ff14,0 0 14px rgba(57,255,20,0.3);}
+.led.p.on{background:#6b21ff;box-shadow:0 0 6px #6b21ff,0 0 14px rgba(107,33,255,0.4);}
+.led.y.on{background:#ffe600;box-shadow:0 0 6px #ffe600,0 0 14px rgba(255,230,0,0.4);}
+
+/* ── SCREW ── */
+.screw{width:10px;height:10px;border-radius:0;background:#141428;border:2px solid #2a2a4a;position:relative;flex-shrink:0;}
+.screw::after{content:'';position:absolute;top:50%;left:10%;right:10%;height:1px;background:rgba(255,255,255,0.15);transform:translateY(-50%) rotate(45deg);}
+
+/* ── CTRL ── */
+.ctrl-row{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;}
+.ctrl-group{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.ctrl-lbl{font-size:5.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-dim);text-align:center;font-family:var(--font-disp);}
+.ctrl-val{font-size:6px;letter-spacing:0.08em;color:var(--text);text-align:center;min-width:28px;font-family:var(--font-mono);}
+
+/* ── SECTION ── */
+.sec{font-size:5.5px;letter-spacing:0.22em;text-transform:uppercase;color:var(--text-dim);padding:0 0 3px;border-bottom:1px solid var(--border2);font-family:var(--font-disp);margin-bottom:1px;}
+.vdiv{width:2px;background:var(--border2);align-self:stretch;flex-shrink:0;}
+
+/* ── KNOB ── */
+.knob{width:44px;height:44px;position:relative;cursor:pointer;user-select:none;}
+.knob.sm{width:34px;height:34px;}.knob.lg{width:54px;height:54px;}
+.knob-ring{position:absolute;inset:0;border-radius:50%;background:#1a1a2e;border:2px solid #2a2a4a;box-shadow:0 2px 8px rgba(0,0,0,0.8);}
+.knob-body{position:absolute;inset:4px;border-radius:50%;background:#0d0d1a;border:1px solid #1e1e38;}
+.knob.sm .knob-body{inset:3px;}.knob.lg .knob-body{inset:5px;}
+.knob-dot{width:3px;height:40%;border-radius:2px;position:absolute;bottom:50%;left:50%;transform-origin:bottom center;transform:translateX(-50%) rotate(0deg);}
+.drone    .knob-dot{background:var(--accent1);box-shadow:0 0 4px var(--accent1);}
+.keyboard .knob-dot{background:var(--accent2);box-shadow:0 0 4px var(--accent2);}
+.seqmod   .knob-dot{background:var(--accent3);box-shadow:0 0 4px var(--accent3);}
+.ringmod  .knob-dot{background:var(--accent4);box-shadow:0 0 4px var(--accent4);}
+.delaymod .knob-dot{background:var(--accent5);box-shadow:0 0 4px var(--accent5);}
+.knob-arc{position:absolute;inset:0;border-radius:0;pointer-events:none;}
+
+/* ── TOGGLE ── */
+.tog{width:34px;height:18px;background:#08080f;border:2px solid var(--border);border-radius:0;cursor:pointer;position:relative;}
+.tog-thumb{width:12px;height:12px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:0;position:absolute;top:1px;left:1px;transition:left 0.08s steps(3);}
+.tog.on .tog-thumb{left:18px;}
+.drone    .tog.on .tog-thumb{background:var(--accent1);border-color:var(--accent1);box-shadow:0 0 6px var(--accent1);}
+.keyboard .tog.on .tog-thumb{background:var(--accent2);border-color:var(--accent2);box-shadow:0 0 6px var(--accent2);}
+.seqmod   .tog.on .tog-thumb{background:var(--accent3);border-color:var(--accent3);box-shadow:0 0 6px var(--accent3);}
+.ringmod  .tog.on .tog-thumb{background:var(--accent4);border-color:var(--accent4);box-shadow:0 0 6px var(--accent4);}
+.delaymod .tog.on .tog-thumb{background:var(--accent5);border-color:var(--accent5);box-shadow:0 0 6px var(--accent5);}
+
+/* ── WAVE SEL ── */
+.wave-sel{display:flex;gap:2px;}
+.wave-btn{width:22px;height:22px;background:#08080f;border:2px solid var(--border);cursor:pointer;border-radius:0;display:flex;align-items:center;justify-content:center;transition:border-color 0.05s steps(1),background 0.05s steps(1);}
+.wave-btn svg{width:14px;height:10px;}
+.drone    .wave-btn.active{background:#1a0014;border-color:var(--accent1);box-shadow:0 0 8px rgba(255,45,155,0.4);}
+.keyboard .wave-btn.active{background:#001a1a;border-color:var(--accent2);box-shadow:0 0 8px rgba(0,245,255,0.3);}
+.seqmod   .wave-btn.active{background:#0a001a;border-color:var(--accent3);box-shadow:0 0 8px rgba(107,33,255,0.3);}
+.ringmod  .wave-btn.active{background:#001a08;border-color:var(--accent4);}
+.delaymod .wave-btn.active{background:#1a1400;border-color:var(--accent5);}
+
+/* ── DISPLAY ── */
+.disp{background:#030308;border:2px solid var(--accent2);border-radius:0;padding:4px 8px;font-size:8px;font-family:var(--font-mono);color:var(--accent2);letter-spacing:0.1em;text-align:center;box-shadow:inset 0 0 12px rgba(0,0,0,0.9),0 0 8px rgba(0,245,255,0.2);min-width:70px;text-shadow:0 0 8px var(--accent2);flex-shrink:0;}
+.disp.lg{font-size:9px;min-width:88px;}
+
+/* ── SCOPE ── */
+.scope{background:#030308;border:2px solid var(--border2);border-radius:0;padding:3px;box-shadow:inset 0 0 8px rgba(0,0,0,0.9);flex-shrink:0;}
+.scope canvas{display:block;}
+
+/* ── KEYBOARD ── */
+.keys-sec{border-top:2px solid var(--border2);padding-top:8px;margin-top:2px;}
+.keys-wrap{position:relative;height:68px;display:flex;gap:2px;padding:0 2px;background:#05050e;border:2px solid var(--border);border-radius:0;overflow:hidden;box-shadow:inset 0 3px 8px rgba(0,0,0,0.8);}
+.key{flex:1;height:100%;background:linear-gradient(180deg,#ccddee,#aabbcc);border-radius:0;border:1px solid #8899aa;border-top:none;cursor:pointer;position:relative;transition:background 0.04s steps(1);}
+.key:hover{background:linear-gradient(180deg,#ddeeff,#bbccdd);}
+.key.pressed{background:linear-gradient(180deg,var(--accent2),#0088bb) !important;}
+.key .note-label{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:5px;color:#445566;font-family:var(--font-disp);pointer-events:none;}
+.key.black{position:absolute;top:0;width:5.5%;height:60%;background:linear-gradient(180deg,#0d0d1e,#050510);border:1px solid #0a0a14;border-top:none;border-radius:0;z-index:2;box-shadow:2px 3px 6px rgba(0,0,0,0.9);}
+.key.black:hover{background:linear-gradient(180deg,#1a1a30,#0d0d20);}
+.key.black.pressed{background:linear-gradient(180deg,var(--accent3),#330088) !important;}
+
+/* ── STEP SEQ ── */
+.seq-grid{display:flex;gap:4px;flex-wrap:wrap;}
+.seq-step{display:flex;flex-direction:column;align-items:center;gap:3px;background:#080810;border:2px solid var(--border);border-radius:0;padding:5px 3px 4px;position:relative;transition:border-color 0.05s steps(1),background 0.05s steps(1);}
+.seq-step.playing{background:#0a0020;border-color:var(--accent3);box-shadow:0 0 8px var(--accent3);}
+.seq-step.playing::after{content:'';position:absolute;top:2px;right:2px;width:5px;height:5px;border-radius:0;background:var(--accent3);box-shadow:0 0 6px var(--accent3);}
+.seq-gate{width:22px;height:9px;background:#05050e;border:2px solid #1e1e38;border-radius:0;cursor:pointer;transition:all 0.05s steps(1);}
+.seq-gate.on{background:#1a0044;border-color:var(--accent3);box-shadow:0 0 6px rgba(107,33,255,0.5);}
+.seq-num{font-size:5.5px;color:var(--text-dim);font-family:var(--font-disp);}
+.seq-ctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:2px;}
+.seq-btn{font-family:var(--font-disp);font-size:6px;letter-spacing:0.1em;text-transform:uppercase;background:#08080f;color:var(--text-dim);border:2px solid var(--border);padding:4px 8px;cursor:pointer;border-radius:0;transition:all 0.05s steps(1);}
+.seq-btn:hover{color:var(--accent3);border-color:var(--accent3);}
+.seq-btn.active{color:var(--accent3);border-color:var(--accent3);background:#0a001a;box-shadow:0 0 6px var(--accent3);}
+
+/* ── RING MOD ── */
+.ring-diagram{font-size:7px;color:#0a2014;font-family:var(--font-mono);line-height:1.9;text-align:center;padding:3px 0;}
+
+/* ── DELAY TAP ── */
+.tap-btn{font-family:var(--font-disp);font-size:6px;letter-spacing:0.1em;text-transform:uppercase;background:#08080f;color:var(--text-dim);border:2px solid var(--border);padding:5px 10px;cursor:pointer;border-radius:0;transition:all 0.05s steps(1);}
+.tap-btn:hover{color:var(--accent5);border-color:var(--accent5);box-shadow:0 0 6px var(--accent5);}
+.tap-btn:active{background:#1a1400;color:var(--accent5);}
+
+/* ── 8-BIT HEADER BANNER ── */
+#pixelHeader{
+  position:fixed;top:0;left:0;right:0;height:36px;z-index:300;
+  background:#04040e;border-bottom:2px solid var(--accent1);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 12px;
+  box-shadow:0 0 20px rgba(255,45,155,0.3);
+}
+#pixelHeader .ph-title{
+  font-family:var(--font-disp);font-size:8px;color:var(--accent1);
+  text-shadow:0 0 8px var(--accent1),0 0 20px var(--accent1);
+  letter-spacing:0.2em;animation:titlePulse 2s steps(2) infinite;
+}
+@keyframes titlePulse{0%,100%{opacity:1}50%{opacity:0.7}}
+#pixelHeader .ph-score{
+  font-family:var(--font-disp);font-size:7px;color:var(--accent5);
+  letter-spacing:0.1em;text-shadow:0 0 6px var(--accent5);
+}
+#pixelHeader .ph-lives{display:flex;gap:4px;align-items:center;}
+#pixelHeader .ph-life{
+  width:8px;height:8px;background:var(--accent1);
+  clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+}
+/* Row labels become insert-coin style */
+.rack-row-tag{animation:rowTagBlink 3s steps(2) infinite;}
+@keyframes rowTagBlink{0%,85%,100%{opacity:1}90%{opacity:0}}
+/* Module borders glow on hover */
+.module:hover{box-shadow:inset 0 0 20px rgba(255,45,155,0.05);}
+/* Pixel-art decorative corner on module headers */
+.mod-hdr::after{
+  content:'►';position:absolute;right:4px;top:50%;transform:translateY(-50%);
+  font-size:6px;color:var(--text-dim);opacity:0.4;
+}
+.mod-hdr{position:relative;}
+/* Insert coin prompt */
+#insertCoin{
+  position:fixed;inset:0;z-index:9990;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  background:rgba(2,0,10,0.82);cursor:pointer;
+  font-family:var(--font-disp);
+}
+#insertCoin .ic-title{
+  font-size:clamp(10px,2vw,18px);color:var(--accent1);
+  text-shadow:0 0 16px var(--accent1),0 0 40px var(--accent1);
+  letter-spacing:0.25em;animation:coinBlink 0.9s steps(2) infinite;
+}
+#insertCoin .ic-sub{
+  font-size:clamp(6px,1vw,9px);color:var(--accent5);
+  text-shadow:0 0 8px var(--accent5);letter-spacing:0.18em;
+}
+#insertCoin .ic-hint{
+  font-size:clamp(5px,0.8vw,7px);color:var(--text-dim);letter-spacing:0.14em;margin-top:8px;
+}
+@keyframes coinBlink{0%,100%{opacity:1}50%{opacity:0.1}}
+/* Pixel checkerboard border on the rack viewport */
+.rack-viewport::after{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:5;
+  background:
+    repeating-linear-gradient(90deg,transparent 0,transparent 3px,rgba(255,45,155,0.06) 3px,rgba(255,45,155,0.06) 4px);
+}
+/* Knob ring glow on hover */
+.knob:hover .knob-ring{box-shadow:0 0 0 1px currentColor;}
+/* Wave btn text style */
+.wave-btn{font-family:var(--font-disp) !important;font-size:5px !important;}
+/* Seq steps pulse when playing */
+.seq-step.playing{animation:stepPulse 0.1s steps(1) 3;}
+@keyframes stepPulse{0%{background:#1a0044}100%{background:#0a001a}}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<canvas id="moneyCanvas"></canvas>
+
+<!-- ── 8-BIT HEADER ── -->
+<div id="pixelHeader">
+  <div class="ph-title">★ RACK SYNTH 8000 ★</div>
+  <div id="palettePicker">
+    <span style="font-size:5px;color:#3a4a5a;font-family:var(--font-disp);letter-spacing:0.1em;margin-right:3px;">PAL</span>
+    <div class="pal-btn active" id="pal0" title="NEON PUNK" style="background:linear-gradient(135deg,#ff2d9b,#00f5ff);"></div>
+    <div class="pal-btn" id="pal1" title="GAMEBOY" style="background:linear-gradient(135deg,#0f380f,#9bbc0f);"></div>
+    <div class="pal-btn" id="pal2" title="AMBER CRT" style="background:linear-gradient(135deg,#1a0800,#ff8800);"></div>
+    <div class="pal-btn" id="pal3" title="VOID PURPLE" style="background:linear-gradient(135deg,#0a001a,#c800ff);"></div>
+    <div class="pal-btn" id="pal4" title="ICE COLD" style="background:linear-gradient(135deg,#001a2a,#00ffee);"></div>
+  </div>
+  <div class="ph-lives">
+    <div class="ph-life"></div><div class="ph-life"></div><div class="ph-life"></div>
+    <span style="font-size:6px;color:var(--text-dim);margin-left:6px;font-family:var(--font-disp);">CREDITS</span>
+  </div>
+  <div class="ph-score" id="scoreDisp">SCORE: 000000</div>
+</div>
+
+<div id="insertCoin">
+  <div class="ic-title">★ RACK SYNTH 8000 ★</div>
+  <div class="ic-sub">— CLICK ANYWHERE TO START —</div>
+  <div class="ic-hint">AUDIO REQUIRES USER INTERACTION</div>
+</div>
+
+<div class="rack-shell" style="margin-top:36px;height:calc(97vh - 36px);">
+
+
+  <!-- NAV -->
+  <div class="rack-nav">
+    <div class="nav-btn" id="navUp">▲</div>
+    <div class="nav-dots">
+      <div class="nav-dot on" id="dot0"></div>
+      <div class="nav-dot" id="dot1"></div>
+      <div class="nav-dot" id="dot2"></div>
+      <div class="nav-dot" id="dot3"></div>
+      <div class="nav-dot" id="dot4"></div>
+    </div>
+    <div class="nav-btn" id="navDn">▼</div>
+  </div>
+
+  <!-- VIEWPORT -->
+  <div class="rack-viewport">
+    <div class="rack-scroll" id="rackScroll">
+
+      <!-- ═══ ROW 0 : DRONE + KEYS ═══ -->
+      <div class="rack-row" id="row0">
+        <div class="rack-row-tag">row 01 — synthesis</div>
+
+        <!-- DRONE -->
+        <div class="module drone">
+          <div class="guide"><span>DRONE OSCILLATOR · CONTINUOUS TONE · VCO + VCF + LFO + SUB</span></div>
+          <div class="mod-hdr">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="screw"></div>
+              <div><div class="mod-title">module 01</div><div class="mod-name">DRONE</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="disp lg" id="d-freqDisp">—— hz</div>
+              <div class="led-row"><div class="led r" id="d-led"></div><div class="led b" id="d-lfo-led"></div></div>
+              <div class="screw"></div>
+            </div>
+          </div>
+
+          <div class="sec">oscillator</div>
+          <div class="ctrl-row">
+            <div class="ctrl-group">
+              <div class="ctrl-lbl">wave</div>
+              <div class="wave-sel" id="d-wave-sel">
+                <div class="wave-btn active" data-wave="sine"><svg viewBox="0 0 14 10" fill="none" stroke="#8a9ab0" stroke-width="1.2"><path d="M1 5C3 1 5 1 7 5S11 9 13 5"/></svg></div>
+                <div class="wave-btn" data-wave="triangle"><svg viewBox="0 0 14 10" fill="none" stroke="#8a9ab0" stroke-width="1.2"><polyline points="1,8 4,2 7,8 10,2 13,8"/></svg></div>
+                <div class="wave-btn" data-wave="sawtooth"><svg viewBox="0 0 14 10" fill="none" stroke="#8a9ab0" stroke-width="1.2"><polyline points="1,8 7,2 7,8 13,2"/></svg></div>
+                <div class="wave-btn" data-wave="square"><svg viewBox="0 0 14 10" fill="none" stroke="#8a9ab0" stroke-width="1.2"><polyline points="1,8 1,2 7,2 7,8 7,2 13,2 13,8"/></svg></div>
+              </div>
+            </div>
+            <div class="ctrl-group"><div class="ctrl-lbl">freq</div><div class="knob lg" id="d-freq" data-min="40" data-max="800" data-val="110" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="d-freq-v">110</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">detune</div><div class="knob" id="d-detune" data-min="-50" data-max="50" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="d-detune-v">0</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">pan</div><div class="knob sm" id="d-pan" data-min="-1" data-max="1" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="d-pan-v">0</div></div><div class="ctrl-group"><div class="ctrl-lbl">glide</div><div class="knob sm" id="d-glide" data-min="0" data-max="2" data-val="0" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="d-glide-v">0</div></div><div class="ctrl-group"><div class="ctrl-lbl">sub</div><div class="knob sm" id="d-sub" data-min="0" data-max="1" data-val="0.3"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="d-sub-v">0.30</div></div>
+            <div class="vdiv"></div>
+            <div>
+              <div class="sec" style="border:none;padding:0;margin-bottom:5px;">filter</div>
+              <div class="ctrl-row" style="gap:9px;">
+                <div class="ctrl-group"><div class="ctrl-lbl">cutoff</div><div class="knob lg" id="d-filt" data-min="60" data-max="18000" data-val="2000" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="d-filt-v">2.0k</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">reso</div><div class="knob" id="d-reso" data-min="0.5" data-max="20" data-val="2"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="d-reso-v">2.0</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">type</div><div class="tog" id="d-ftype" style="width:48px;margin-top:11px;"><div class="tog-thumb"></div></div><div class="ctrl-val" id="d-ftype-v" style="font-size:6.5px;">LP</div></div>
+              </div>
+            </div>
+            <div class="vdiv"></div>
+            <div>
+              <div class="sec" style="border:none;padding:0;margin-bottom:5px;">lfo</div>
+              <div class="ctrl-row" style="gap:9px;">
+                <div class="ctrl-group"><div class="ctrl-lbl">rate</div><div class="knob" id="d-lrate" data-min="0.05" data-max="20" data-val="0.5" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="d-lrate-v">0.5</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">depth</div><div class="knob" id="d-ldepth" data-min="0" data-max="1" data-val="0.3"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="d-ldepth-v">0.30</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">target</div><div class="tog" id="d-ltarget" style="margin-top:11px;"><div class="tog-thumb"></div></div><div class="ctrl-val" id="d-ltarget-v" style="font-size:6.5px;">pitch</div></div>
+              </div>
+            </div>
+            <div class="vdiv"></div>
+            <div>
+              <div class="sec" style="border:none;padding:0;margin-bottom:5px;">vca</div>
+              <div class="ctrl-row" style="gap:9px;">
+                <div class="ctrl-group"><div class="ctrl-lbl">vol</div><div class="knob lg" id="d-vol" data-min="0" data-max="1" data-val="0.6"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="d-vol-v">0.60</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">power</div><div class="tog" id="d-power" style="margin-top:11px;"><div class="tog-thumb"></div></div><div class="ctrl-val" id="d-power-v" style="font-size:6.5px;">OFF</div></div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:2px;">
+            <div class="scope"><canvas id="d-scope" width="148" height="36"></canvas></div>
+            <div style="font-size:6.5px;color:var(--text-dim);letter-spacing:0.12em;line-height:1.9;font-family:var(--font-mono);">DRONE<br>SYNTH<br>v1.0</div>
+          </div>
+        </div>
+
+        <!-- KEYS -->
+        <div class="module keyboard">
+          <div class="guide"><span>KEYBOARD SYNTH · POLYPHONIC · ADSR ENVELOPE · FILTER ENV · GLIDE · VCA</span></div>
+          <div class="mod-hdr">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="screw"></div>
+              <div><div class="mod-title">module 02</div><div class="mod-name">KEYS</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="disp lg" id="k-noteDisp">—</div>
+              <div class="led-row"><div class="led b" id="k-led"></div><div class="led g" id="k-env-led"></div></div>
+              <div class="screw"></div>
+            </div>
+          </div>
+          <div class="sec">oscillator</div>
+          <div class="ctrl-row">
+            <div class="ctrl-group"><div class="ctrl-lbl">wave</div>
+              <div class="wave-sel" id="k-wave-sel">
+                <div class="wave-btn active" data-wave="sawtooth"><svg viewBox="0 0 14 10" fill="none" stroke="#8a9ab0" stroke-width="1.2"><polyline points="1,8 7,2 7,8 13,2"/></svg></div>
+                <div class="wave-btn" data-wave="square"><svg viewBox="0 0 14 10" fill="none" stroke="#8a9ab0" stroke-width="1.2"><polyline points="1,8 1,2 7,2 7,8 7,2 13,2 13,8"/></svg></div>
+                <div class="wave-btn" data-wave="triangle"><svg viewBox="0 0 14 10" fill="none" stroke="#8a9ab0" stroke-width="1.2"><polyline points="1,8 4,2 7,8 10,2 13,8"/></svg></div>
+                <div class="wave-btn" data-wave="sine"><svg viewBox="0 0 14 10" fill="none" stroke="#8a9ab0" stroke-width="1.2"><path d="M1 5C3 1 5 1 7 5S11 9 13 5"/></svg></div>
+              </div>
+            </div>
+            <div class="ctrl-group"><div class="ctrl-lbl">octave</div><div class="knob sm" id="k-oct" data-min="1" data-max="6" data-val="4" data-step="1"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="k-oct-v">4</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">detune</div><div class="knob sm" id="k-detune" data-min="-50" data-max="50" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="k-detune-v">0</div></div>
+            <div class="vdiv"></div>
+            <div>
+              <div class="sec" style="border:none;padding:0;margin-bottom:5px;">filter</div>
+              <div class="ctrl-row" style="gap:9px;">
+                <div class="ctrl-group"><div class="ctrl-lbl">cutoff</div><div class="knob lg" id="k-filt" data-min="60" data-max="18000" data-val="4000" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="k-filt-v">4.0k</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">reso</div><div class="knob" id="k-reso" data-min="0.5" data-max="20" data-val="3"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="k-reso-v">3.0</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">env→f</div><div class="knob sm" id="k-envf" data-min="0" data-max="8000" data-val="2000"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="k-envf-v">2.0k</div></div>
+              </div>
+            </div>
+            <div class="vdiv"></div>
+            <div>
+              <div class="sec" style="border:none;padding:0;margin-bottom:5px;">envelope</div>
+              <div class="ctrl-row" style="gap:7px;">
+                <div class="ctrl-group"><div class="ctrl-lbl">A</div><div class="knob sm" id="k-att" data-min="0.001" data-max="2" data-val="0.01" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="k-att-v">10ms</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">D</div><div class="knob sm" id="k-dec" data-min="0.01" data-max="3" data-val="0.3" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="k-dec-v">300ms</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">S</div><div class="knob sm" id="k-sus" data-min="0" data-max="1" data-val="0.5"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="k-sus-v">0.50</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">R</div><div class="knob sm" id="k-rel" data-min="0.01" data-max="4" data-val="0.4" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="k-rel-v">400ms</div></div>
+              </div>
+            </div>
+            <div class="vdiv"></div>
+            <div>
+              <div class="sec" style="border:none;padding:0;margin-bottom:5px;">vca</div>
+              <div class="ctrl-row" style="gap:9px;">
+                <div class="ctrl-group"><div class="ctrl-lbl">vol</div><div class="knob lg" id="k-vol" data-min="0" data-max="1" data-val="0.7"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="k-vol-v">0.70</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">glide</div><div class="knob sm" id="k-glide" data-min="0" data-max="0.5" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="k-glide-v">0</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">pan</div><div class="knob sm" id="k-pan" data-min="-1" data-max="1" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="k-pan-v">0</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="scope" style="margin-top:2px;"><canvas id="k-scope" width="148" height="36"></canvas></div>
+          <div class="keys-sec">
+            <div class="sec" style="margin-bottom:6px;">keyboard — A·S·D·F·G·H·J·K  /  W·E·T·Y·U blacks</div>
+            <div class="keys-wrap" id="keyboard"></div>
+          </div>
+        </div>
+      </div><!-- /row0 -->
+
+      <!-- ═══ ROW 1 : EURORACK FX ═══ -->
+      <div class="rack-row" id="row1">
+        <div class="rack-row-tag">row 02 — modulation / fx</div>
+
+        <!-- STEP SEQ -->
+        <div class="module seqmod" style="flex:2;">
+          <div class="guide"><span>8-STEP SEQUENCER · PITCH + VOL + GATE PER STEP · SWING · CLOCK · GLIDE · TARGET</span></div>
+          <div class="mod-hdr">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="screw"></div>
+              <div><div class="mod-title">module 03</div><div class="mod-name">STEP SEQ</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="disp" id="seq-disp" style="color:#cc44ff;text-shadow:0 0 6px #cc44ff;min-width:58px;">STOP</div>
+              <div class="led-row"><div class="led p" id="seq-led1"></div><div class="led p" id="seq-led2"></div></div>
+              <div class="screw"></div>
+            </div>
+          </div>
+          <div class="sec">steps — drag knob = pitch &nbsp;·&nbsp; click bar = gate on/off</div>
+          <div class="seq-grid" id="seq-grid"></div>
+          <div class="seq-ctrl">
+            <div class="ctrl-group"><div class="ctrl-lbl">clock</div><div class="knob sm" id="seq-rate" data-min="0.5" data-max="16" data-val="4" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="seq-rate-v">4.0</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">swing</div><div class="knob sm" id="seq-swing" data-min="0" data-max="0.45" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="seq-swing-v">0%</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">range</div><div class="knob sm" id="seq-range" data-min="1" data-max="4" data-val="2" data-step="1"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="seq-range-v">2oct</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">root</div><div class="knob sm" id="seq-root" data-min="0" data-max="11" data-val="0" data-step="1"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="seq-root-v">C</div></div>
+            <div class="vdiv"></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">glide</div><div class="knob sm" id="seq-glide" data-min="0" data-max="0.5" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="seq-glide-v">0</div></div><div class="ctrl-group"><div class="ctrl-lbl">steps</div><div class="knob sm" id="seq-steps" data-min="2" data-max="16" data-val="8" data-step="1"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="seq-steps-v">8</div></div><div class="ctrl-group"><div class="ctrl-lbl">target</div><div class="tog" id="seq-target" style="margin-top:11px;"><div class="tog-thumb"></div></div><div class="ctrl-val" id="seq-target-v" style="font-size:6.5px;">drone</div></div>
+            <div style="display:flex;gap:5px;align-self:flex-end;padding-bottom:2px;">
+              <div class="seq-btn" id="seq-play">▶ play</div>
+              <div class="seq-btn" id="seq-stop">■ stop</div>
+              <div class="seq-btn" id="seq-rand">⟳ rand</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RING MOD -->
+        <div class="module ringmod">
+          <div class="guide"><span>RING MODULATOR · AMPLITUDE MOD · CARRIER OSC · DRY/WET · MIX</span></div>
+          <div class="mod-hdr">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="screw"></div>
+              <div><div class="mod-title">module 04</div><div class="mod-name">RING MOD</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="disp" id="rm-disp" style="color:#00ffaa;text-shadow:0 0 6px #00ffaa;">OFF</div>
+              <div class="led-row"><div class="led g" id="rm-led"></div></div>
+              <div class="screw"></div>
+            </div>
+          </div>
+          <div class="ring-diagram">
+            DRONE ──┐<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;× ──▶ OUT<br>
+            CARRIER ┘
+          </div>
+          <div class="sec">ring modulator</div>
+          <div class="ctrl-row">
+            <div class="ctrl-group"><div class="ctrl-lbl">carrier</div><div class="knob lg" id="rm-freq" data-min="20" data-max="2000" data-val="220" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="rm-freq-v">220</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">mix</div><div class="knob lg" id="rm-mix" data-min="0" data-max="1" data-val="0.5"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="rm-mix-v">0.50</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">dry/wet</div><div class="knob" id="rm-dw" data-min="0" data-max="1" data-val="0.5"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="rm-dw-v">0.50</div></div>
+          </div>
+          <div class="ctrl-row" style="margin-top:5px;">
+            <div class="ctrl-group"><div class="ctrl-lbl">lfo·rate</div><div class="knob sm" id="rm-lrate" data-min="0" data-max="20" data-val="0" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="rm-lrate-v">0</div></div><div class="ctrl-group"><div class="ctrl-lbl">lfo·depth</div><div class="knob sm" id="rm-ldepth" data-min="0" data-max="200" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="rm-ldepth-v">0</div></div><div class="ctrl-group"><div class="ctrl-lbl">enable</div><div class="tog" id="rm-enable" style="margin-top:11px;"><div class="tog-thumb"></div></div><div class="ctrl-val" id="rm-enable-v" style="font-size:6.5px;">OFF</div></div>
+          </div>
+          <div class="scope" style="margin-top:4px;"><canvas id="rm-scope" width="148" height="36"></canvas></div>
+        </div>
+
+        <!-- DELAY -->
+        <div class="module delaymod">
+          <div class="guide"><span>DIGITAL DELAY · TIME · FEEDBACK · DAMPING · TAP TEMPO · DRY/WET MIX</span></div>
+          <div class="mod-hdr">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="screw"></div>
+              <div><div class="mod-title">module 05</div><div class="mod-name">DELAY</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="disp" id="del-disp" style="color:#ffcc00;text-shadow:0 0 6px #ffcc00;">350 ms</div>
+              <div class="led-row"><div class="led y" id="del-led"></div></div>
+              <div class="screw"></div>
+            </div>
+          </div>
+          <div class="sec">delay unit</div>
+          <div class="ctrl-row">
+            <div class="ctrl-group"><div class="ctrl-lbl">time</div><div class="knob lg" id="del-time" data-min="0.01" data-max="1.2" data-val="0.35" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="del-time-v">350ms</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">feedback</div><div class="knob lg" id="del-fb" data-min="0" data-max="0.95" data-val="0.4"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="del-fb-v">0.40</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">mix</div><div class="knob" id="del-mix" data-min="0" data-max="1" data-val="0.3"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="del-mix-v">0.30</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">damp</div><div class="knob sm" id="del-damp" data-min="200" data-max="18000" data-val="5000" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="del-damp-v">5.0k</div></div>
+          </div>
+          <div class="ctrl-row" style="margin-top:5px;align-items:center;">
+            <div class="ctrl-group"><div class="ctrl-lbl">width</div><div class="knob sm" id="del-width" data-min="0" data-max="1" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="del-width-v">0</div></div><div class="ctrl-group"><div class="ctrl-lbl">enable</div><div class="tog" id="del-enable" style="margin-top:11px;"><div class="tog-thumb"></div></div><div class="ctrl-val" id="del-enable-v" style="font-size:6.5px;">OFF</div></div>
+            <button class="tap-btn" id="del-tap" style="align-self:flex-end;margin-bottom:2px;">TAP</button>
+          </div>
+          <div class="scope" style="margin-top:4px;"><canvas id="del-scope" width="148" height="36"></canvas></div>
+        </div>
+
+      </div><!-- /row1 -->
+
+      <!-- ═══ ROW 2 : CHIPTUNE + BITCRUSHER + FILTER EQ ═══ -->
+      <div class="rack-row" id="row2">
+        <div class="rack-row-tag">row 03 — chiptune / crush / eq</div>
+
+        <!-- CHIPTUNE OSC -->
+        <div class="module drone" style="--accent1:#ff2d9b;">
+          <div class="guide"><span>CHIPTUNE OSC · NES/GAMEBOY WAVEFORMS · ARPEGGIO · VIBRATO · PULSE WIDTH</span></div>
+          <div class="mod-hdr">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="screw"></div>
+              <div><div class="mod-title">module 06</div><div class="mod-name" style="color:#ff2d9b;text-shadow:0 0 8px #ff2d9b;">CHIP OSC</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="disp lg" id="chip-disp" style="color:#ff2d9b;text-shadow:0 0 6px #ff2d9b;border-color:#ff2d9b;">OFF</div>
+              <div class="led-row"><div class="led r" id="chip-led"></div><div class="led r" id="chip-arp-led"></div></div>
+              <div class="screw"></div>
+            </div>
+          </div>
+          <div class="sec">waveform</div>
+          <div class="ctrl-row">
+            <div class="ctrl-group"><div class="ctrl-lbl">type</div>
+              <div style="display:flex;flex-direction:column;gap:3px;margin-top:2px;">
+                <div style="display:flex;gap:3px;" id="chip-wave-sel">
+                  <div class="wave-btn active" data-wave="pulse" style="border-color:#ff2d9b;width:28px;font-size:5px;color:#ff2d9b;">PUL</div>
+                  <div class="wave-btn" data-wave="triangle" style="width:28px;font-size:5px;">TRI</div>
+                  <div class="wave-btn" data-wave="noise" style="width:28px;font-size:5px;">NOI</div>
+                  <div class="wave-btn" data-wave="dpcm" style="width:28px;font-size:5px;">SAW</div>
+                </div>
+              </div>
+            </div>
+            <div class="ctrl-group"><div class="ctrl-lbl">freq</div><div class="knob lg" id="chip-freq" data-min="40" data-max="4000" data-val="220" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#ff2d9b;box-shadow:0 0 4px #ff2d9b;"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="chip-freq-v">220</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">pwidth</div><div class="knob" id="chip-pw" data-min="0.05" data-max="0.95" data-val="0.5"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#ff2d9b;"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="chip-pw-v">0.50</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">oct</div><div class="knob sm" id="chip-oct" data-min="1" data-max="8" data-val="4" data-step="1"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#ff2d9b;"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="chip-oct-v">4</div></div><div class="ctrl-group"><div class="ctrl-lbl">glide</div><div class="knob sm" id="chip-glide" data-min="0" data-max="0.5" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#ff2d9b;"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="chip-glide-v">0</div></div><div class="ctrl-group"><div class="ctrl-lbl">vol</div><div class="knob" id="chip-vol" data-min="0" data-max="1" data-val="0.5"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#ff2d9b;"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="chip-vol-v">0.50</div></div>
+            <div class="vdiv"></div>
+            <div>
+              <div class="sec" style="border:none;padding:0;margin-bottom:5px;">arpeggio</div>
+              <div class="ctrl-row" style="gap:8px;">
+                <div class="ctrl-group"><div class="ctrl-lbl">speed</div><div class="knob sm" id="chip-aspd" data-min="4" data-max="32" data-val="8" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#ff2d9b;"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="chip-aspd-v">8</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">mode</div><div class="tog" id="chip-arp" style="margin-top:11px;border-color:#ff2d9b;"><div class="tog-thumb"></div></div><div class="ctrl-val" id="chip-arp-v" style="font-size:6px;">OFF</div></div>
+              </div>
+            </div>
+            <div class="vdiv"></div>
+            <div>
+              <div class="sec" style="border:none;padding:0;margin-bottom:5px;">vibrato</div>
+              <div class="ctrl-row" style="gap:8px;">
+                <div class="ctrl-group"><div class="ctrl-lbl">rate</div><div class="knob sm" id="chip-vrate" data-min="0.5" data-max="20" data-val="6" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#ff2d9b;"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="chip-vrate-v">6.0</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">depth</div><div class="knob sm" id="chip-vdepth" data-min="0" data-max="0.08" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#ff2d9b;"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="chip-vdepth-v">0</div></div>
+              </div>
+            </div>
+            <div class="vdiv"></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">power</div><div class="tog" id="chip-power" style="margin-top:18px;border-color:#ff2d9b;"><div class="tog-thumb"></div></div><div class="ctrl-val" id="chip-power-v" style="font-size:6px;">OFF</div></div>
+          </div>
+          <div class="scope"><canvas id="chip-scope" width="148" height="36"></canvas></div>
+        </div>
+
+        <!-- BITCRUSHER -->
+        <div class="module seqmod">
+          <div class="guide"><span>BITCRUSHER · BIT DEPTH REDUCTION · SAMPLE RATE CRUSH · DISTORTION · LO-FI</span></div>
+          <div class="mod-hdr">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="screw"></div>
+              <div><div class="mod-title">module 07</div><div class="mod-name">BITCRUSH</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="disp" id="bc-disp" style="color:#6b21ff;text-shadow:0 0 6px #6b21ff;border-color:#6b21ff;">16 BIT</div>
+              <div class="led-row"><div class="led p" id="bc-led"></div></div>
+              <div class="screw"></div>
+            </div>
+          </div>
+          <div class="sec">bit crusher — lo-fi engine</div>
+          <div style="font-size:6px;color:#6b21ff;font-family:var(--font-mono);line-height:2;text-align:center;padding:4px 0;border:1px solid #1a1a38;margin-bottom:6px;">
+            ████░░░░ BITS<br>▓▓▓▓░░░░ RATE
+          </div>
+          <div class="ctrl-row">
+            <div class="ctrl-group"><div class="ctrl-lbl">bits</div><div class="knob lg" id="bc-bits" data-min="1" data-max="16" data-val="16" data-step="1"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="bc-bits-v">16</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">rate÷</div><div class="knob lg" id="bc-rate" data-min="1" data-max="64" data-val="1" data-step="1"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="bc-rate-v">1</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">mix</div><div class="knob" id="bc-mix" data-min="0" data-max="1" data-val="1"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="bc-mix-v">1.00</div></div>
+          </div>
+          <div class="ctrl-row" style="margin-top:6px;">
+            <div class="ctrl-group"><div class="ctrl-lbl">vol</div><div class="knob sm" id="bc-vol" data-min="0" data-max="1" data-val="1"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="bc-vol-v">1</div></div><div class="ctrl-group"><div class="ctrl-lbl">enable</div><div class="tog" id="bc-enable" style="margin-top:11px;"><div class="tog-thumb"></div></div><div class="ctrl-val" id="bc-enable-v" style="font-size:6px;">OFF</div></div>
+          </div>
+          <div class="scope"><canvas id="bc-scope" width="148" height="36"></canvas></div>
+        </div>
+
+        <!-- EQ / FILTER -->
+        <div class="module ringmod">
+          <div class="guide"><span>3-BAND EQ · LOW SHELF · MID PEAK · HIGH SHELF · GAIN · MASTER FILTER</span></div>
+          <div class="mod-hdr">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="screw"></div>
+              <div><div class="mod-title">module 08</div><div class="mod-name">EQ · FILTER</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="disp" id="eq-disp" style="color:#39ff14;text-shadow:0 0 6px #39ff14;border-color:#39ff14;">FLAT</div>
+              <div class="led-row"><div class="led g" id="eq-led"></div></div>
+              <div class="screw"></div>
+            </div>
+          </div>
+          <div class="sec">3-band eq</div>
+          <div class="ctrl-row">
+            <div class="ctrl-group"><div class="ctrl-lbl">low</div><div class="knob lg" id="eq-lo" data-min="-18" data-max="18" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="eq-lo-v">0dB</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">mid</div><div class="knob lg" id="eq-mid" data-min="-18" data-max="18" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="eq-mid-v">0dB</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">hi</div><div class="knob lg" id="eq-hi" data-min="-18" data-max="18" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="eq-hi-v">0dB</div></div>
+            <div class="vdiv"></div>
+            <div>
+              <div class="sec" style="border:none;padding:0;margin-bottom:5px;">master filter</div>
+              <div class="ctrl-row" style="gap:8px;">
+                <div class="ctrl-group"><div class="ctrl-lbl">freq</div><div class="knob lg" id="eq-fc" data-min="60" data-max="20000" data-val="20000" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="eq-fc-v">20k</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">reso</div><div class="knob" id="eq-q" data-min="0.5" data-max="12" data-val="0.7"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="eq-q-v">0.7</div></div>
+                <div class="ctrl-group"><div class="ctrl-lbl">type</div><div class="tog" id="eq-ftype" style="margin-top:11px;"><div class="tog-thumb"></div></div><div class="ctrl-val" id="eq-ftype-v" style="font-size:6px;">LP</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="ctrl-row" style="margin-top:6px;">
+            <div class="ctrl-group"><div class="ctrl-lbl">mid·hz</div><div class="knob sm" id="eq-midfreq" data-min="200" data-max="8000" data-val="1000" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="eq-midfreq-v">1000</div></div><div class="ctrl-group"><div class="ctrl-lbl">vol</div><div class="knob sm" id="eq-vol" data-min="0" data-max="2" data-val="1"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="eq-vol-v">1</div></div><div class="ctrl-group"><div class="ctrl-lbl">enable</div><div class="tog" id="eq-enable" style="margin-top:11px;"><div class="tog-thumb"></div></div><div class="ctrl-val" id="eq-enable-v" style="font-size:6px;">OFF</div></div>
+          </div>
+          <div class="scope"><canvas id="eq-scope" width="148" height="36"></canvas></div>
+        </div>
+
+      </div><!-- /row2 -->
+
+      <!-- ═══ ROW 3 : WAVESHAPER ═══ -->
+      <div class="rack-row" id="row3">
+        <div class="rack-row-tag">row 04 — shaper</div>
+
+        <!-- WAVESHAPER DISTORTION -->
+        <div class="module delaymod">
+          <div class="guide"><span>WAVESHAPER · SOFT CLIP · HARD CLIP · FOLDBACK · OVERDRIVE · DISTORTION</span></div>
+          <div class="mod-hdr">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="screw"></div>
+              <div><div class="mod-title">module 09</div><div class="mod-name">SHAPER</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="disp" id="ws-disp" style="color:#ffe600;text-shadow:0 0 6px #ffe600;border-color:#ffe600;">CLEAN</div>
+              <div class="led-row"><div class="led y" id="ws-led"></div></div>
+              <div class="screw"></div>
+            </div>
+          </div>
+          <div class="sec">distortion type</div>
+          <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px;" id="ws-type-sel">
+            <div class="wave-btn" data-ws="soft" style="font-size:5px;width:36px;padding:3px;">SOFT</div>
+            <div class="wave-btn active" data-ws="hard" style="font-size:5px;width:36px;padding:3px;border-color:#ffe600;">HARD</div>
+            <div class="wave-btn" data-ws="fold" style="font-size:5px;width:36px;padding:3px;">FOLD</div>
+            <div class="wave-btn" data-ws="tube" style="font-size:5px;width:36px;padding:3px;">TUBE</div>
+          </div>
+          <div class="ctrl-row">
+            <div class="ctrl-group"><div class="ctrl-lbl">drive</div><div class="knob lg" id="ws-drive" data-min="1" data-max="400" data-val="1" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="ws-drive-v">1</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">tone</div><div class="knob" id="ws-tone" data-min="200" data-max="12000" data-val="4000" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="ws-tone-v">4.0k</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">mix</div><div class="knob" id="ws-mix" data-min="0" data-max="1" data-val="0.5"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="ws-mix-v">0.50</div></div>
+          </div>
+          <div class="ctrl-row" style="margin-top:6px;">
+            <div class="ctrl-group"><div class="ctrl-lbl">vol</div><div class="knob sm" id="ws-vol" data-min="0" data-max="2" data-val="1"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="ws-vol-v">1</div></div><div class="ctrl-group"><div class="ctrl-lbl">enable</div><div class="tog" id="ws-enable" style="margin-top:11px;"><div class="tog-thumb"></div></div><div class="ctrl-val" id="ws-enable-v" style="font-size:6px;">OFF</div></div>
+          </div>
+          <div class="scope"><canvas id="ws-scope" width="148" height="36"></canvas></div>
+        </div>
+
+      </div><!-- /row3 -->
+
+
+      <!-- ═══ ROW 4 : DRUMS + PIANO KEYBOARD ═══ -->
+      <div class="rack-row" id="row4">
+        <div class="rack-row-tag">row 05 — drums / piano</div>
+
+        <!-- DRUM MACHINE -->
+        <div class="module seqmod" style="flex:2.2;">
+          <div class="guide"><span>DRUM MACHINE · 8-STEP · KICK · SNARE · CLAP · HH OPEN · HH CLOSED · BONGO HI · BONGO LO · CONGA · RIMSHOT · CYMBAL · TEMPO · SWING</span></div>
+          <div class="mod-hdr">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="screw"></div>
+              <div><div class="mod-title">module 11</div><div class="mod-name">DRUMS</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="disp" id="dr-disp" style="color:#cc44ff;text-shadow:0 0 6px #cc44ff;border-color:#cc44ff;min-width:54px;">STOP</div>
+              <div class="led-row"><div class="led p" id="dr-led1"></div><div class="led p" id="dr-led2"></div></div>
+              <div class="screw"></div>
+            </div>
+          </div>
+
+          <!-- DRUM GRID: rows = drums, cols = steps -->
+          <div style="overflow-x:auto;margin:4px 0;">
+            <div id="dr-grid" style="display:grid;grid-template-columns:52px repeat(8,1fr);gap:2px;min-width:340px;"></div>
+          </div>
+
+          <!-- DRUM CONTROLS -->
+          <div class="seq-ctrl" style="margin-top:4px;gap:6px;">
+            <div class="ctrl-group"><div class="ctrl-lbl">bpm</div><div class="knob lg" id="dr-bpm" data-min="60" data-max="200" data-val="120" data-step="1"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="54" height="54"></canvas></div><div class="ctrl-val" id="dr-bpm-v">120</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">swing</div><div class="knob" id="dr-swing" data-min="0" data-max="0.45" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="dr-swing-v">0%</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">vol</div><div class="knob" id="dr-vol" data-min="0" data-max="1.5" data-val="0.8"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="44" height="44"></canvas></div><div class="ctrl-val" id="dr-vol-v">0.80</div></div>
+            <div class="vdiv"></div>
+            <div style="display:flex;gap:4px;align-self:flex-end;padding-bottom:2px;">
+              <div class="seq-btn" id="dr-play" style="border-color:#cc44ff;color:#cc44ff;">▶ PLAY</div>
+              <div class="seq-btn" id="dr-stop" style="border-color:#ff2d9b;color:#ff2d9b;">■ STOP</div>
+              <div class="seq-btn" id="dr-rand" style="border-color:#ffe600;color:#ffe600;">⟳ RAND</div>
+              <div class="seq-btn" id="dr-clear" style="border-color:#00f5ff;color:#00f5ff;">✕ CLR</div>
+            </div>
+          </div>
+          <div class="scope"><canvas id="dr-scope" width="148" height="36"></canvas></div>
+        </div>
+
+        <!-- PIANO KEYBOARD MODULE -->
+        <div class="module keyboard" style="flex:2.2;">
+          <div class="guide"><span>PIANO · 3 OCTAVES · WAVEFORM SELECT · ATTACK · DECAY · SUSTAIN · RELEASE · POLYPHONIC · MOUSE + COMPUTER KEYS</span></div>
+          <div class="mod-hdr">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="screw"></div>
+              <div><div class="mod-title">module 12</div><div class="mod-name">PIANO</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <div class="disp lg" id="pn-disp" style="color:#00f5ff;border-color:#00f5ff;min-width:72px;">READY</div>
+              <div class="led-row"><div class="led b" id="pn-led"></div><div class="led b" id="pn-led2"></div></div>
+              <div class="screw"></div>
+            </div>
+          </div>
+
+          <!-- WAVEFORM SELECT -->
+          <div class="sec">waveform + options</div>
+          <div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap;" id="pn-wave-sel">
+            <div class="wave-btn active" data-pwave="sine" style="border-color:#00f5ff;color:#00f5ff;font-size:5px;padding:3px 6px;">SINE</div>
+            <div class="wave-btn" data-pwave="triangle" style="font-size:5px;padding:3px 6px;">TRI</div>
+            <div class="wave-btn" data-pwave="square" style="font-size:5px;padding:3px 6px;">SQR</div>
+            <div class="wave-btn" data-pwave="sawtooth" style="font-size:5px;padding:3px 6px;">SAW</div>
+            <div class="wave-btn" data-pwave="pulse" style="font-size:5px;padding:3px 6px;">PUL</div>
+            <div class="wave-btn" data-pwave="organ" style="font-size:5px;padding:3px 6px;">ORG</div>
+          </div>
+
+          <!-- ADSR + OCT -->
+          <div class="ctrl-row" style="gap:6px;">
+            <div class="ctrl-group"><div class="ctrl-lbl">attack</div><div class="knob sm" id="pn-atk" data-min="0.002" data-max="2" data-val="0.01" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#00f5ff;"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="pn-atk-v">10ms</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">decay</div><div class="knob sm" id="pn-dec" data-min="0.01" data-max="2" data-val="0.1" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#00f5ff;"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="pn-dec-v">100ms</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">sustain</div><div class="knob sm" id="pn-sus" data-min="0" data-max="1" data-val="0.6"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#00f5ff;"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="pn-sus-v">0.60</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">release</div><div class="knob sm" id="pn-rel" data-min="0.01" data-max="4" data-val="0.3" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#00f5ff;"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="pn-rel-v">300ms</div></div>
+            <div class="vdiv"></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">cutoff</div><div class="knob sm" id="pn-filt" data-min="60" data-max="18000" data-val="8000" data-curve="exp"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#00f5ff;"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="pn-filt-v">8000</div></div><div class="ctrl-group"><div class="ctrl-lbl">detune</div><div class="knob sm" id="pn-detune" data-min="-50" data-max="50" data-val="0"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#00f5ff;"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="pn-detune-v">0</div></div><div class="ctrl-group"><div class="ctrl-lbl">octave</div><div class="knob sm" id="pn-oct" data-min="2" data-max="6" data-val="4" data-step="1"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#00f5ff;"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="pn-oct-v">4</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">vol</div><div class="knob sm" id="pn-vol" data-min="0" data-max="1" data-val="0.6"><div class="knob-ring"></div><div class="knob-body"><div class="knob-dot" style="background:#00f5ff;"></div></div><canvas class="knob-arc" width="34" height="34"></canvas></div><div class="ctrl-val" id="pn-vol-v">0.60</div></div>
+            <div class="ctrl-group"><div class="ctrl-lbl">poly</div><div class="tog" id="pn-poly" style="margin-top:11px;border-color:#00f5ff;"><div class="tog-thumb"></div></div><div class="ctrl-val" id="pn-poly-v" style="font-size:6px;">ON</div></div>
+          </div>
+
+          <!-- PIANO KEYS CANVAS -->
+          <div style="margin-top:6px;border:2px solid #00f5ff;background:#020208;cursor:pointer;" id="pn-keys-wrap">
+            <canvas id="pn-keys" style="display:block;width:100%;image-rendering:pixelated;"></canvas>
+          </div>
+          <!-- keyboard map hint -->
+          <div style="font-size:5px;color:#2a3a4a;font-family:var(--font-mono);margin-top:3px;text-align:center;letter-spacing:0.1em;">
+            A S D F G H J K → white keys &nbsp;|&nbsp; W E T Y U → black keys &nbsp;|&nbsp; Z/X = oct down/up
+          </div>
+          <div class="scope"><canvas id="pn-scope" width="148" height="36"></canvas></div>
+        </div>
+
+      </div><!-- /row4 -->
+
+    </div><!-- /rack-scroll -->
+  </div><!-- /rack-viewport -->
+</div><!-- /rack-shell -->
+
+<script>
+// ════════════════════════════════════════════════
+//  RACK NAV
+// ════════════════════════════════════════════════
+let curRow=0;const ROWS=5;
+function goRow(r){
+  curRow=Math.max(0,Math.min(ROWS-1,r));
+  const rowEl=document.getElementById('row'+curRow)||document.getElementById('row0');
+  const h=document.getElementById('row0').offsetHeight||window.innerHeight;
+  document.getElementById('rackScroll').style.transform=`translateY(-${curRow*h}px)`;
+  for(let i=0;i<ROWS;i++){const d=document.getElementById('dot'+i);if(d)d.classList.toggle('on',i===curRow);}
+}
+document.getElementById('navUp').addEventListener('click',()=>goRow(curRow-1));
+document.getElementById('navDn').addEventListener('click',()=>goRow(curRow+1));
+document.addEventListener('keydown',e=>{
+  if(e.altKey&&e.key==='ArrowUp'){e.preventDefault();goRow(curRow-1);}
+  if(e.altKey&&e.key==='ArrowDown'){e.preventDefault();goRow(curRow+1);}
+});
+// ── MOUSEWHEEL SCROLL BETWEEN ROWS ──
+document.querySelector('.rack-viewport').addEventListener('wheel',e=>{
+  // Only trigger if not scrolling a knob (knobs handle their own wheel)
+  if(e.target.closest('.knob'))return;
+  e.preventDefault();
+  if(e.deltaY>30)goRow(curRow+1);
+  else if(e.deltaY<-30)goRow(curRow-1);
+},{passive:false});
+window.addEventListener('resize',()=>goRow(curRow));
+
+// ════════════════════════════════════════════════
+//  AUDIO
+// ════════════════════════════════════════════════
+let AC=null,masterGain=null,masterComp=null;
+function getAC(){if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC;}
+function initMaster(){if(masterGain)return;const ac=getAC();masterComp=ac.createDynamicsCompressor();masterComp.threshold.value=-12;masterComp.ratio.value=4;masterGain=ac.createGain();masterGain.gain.value=0.82;masterComp.connect(masterGain);masterGain.connect(ac.destination);}
+
+// ════════════════════════════════════════════════
+//  KNOB ENGINE
+// ════════════════════════════════════════════════
+const KS={};
+const MOD_COLORS={drone:'rgba(255,45,155,0.8)',keyboard:'rgba(0,245,255,0.8)',seqmod:'rgba(107,33,255,0.8)',ringmod:'rgba(57,255,20,0.8)',delaymod:'rgba(255,230,0,0.8)'};
+
+function initKnob(el){
+  const id=el.id;if(!id)return;
+  const min=+el.dataset.min,max=+el.dataset.max,val=+el.dataset.val;
+  const curve=el.dataset.curve==='exp',step=el.dataset.step?+el.dataset.step:null;
+  KS[id]={min,max,val,curve,step};
+  const dot=el.querySelector('.knob-dot'),arc=el.querySelector('.knob-arc');
+  redrawKnob(el,arc,dot,val,min,max,curve);
+  let sY,sV;
+  const dn=e=>{getAC();initMaster();sY=e.clientY??e.touches?.[0]?.clientY??0;sV=KS[id].val;e.preventDefault();window.addEventListener('mousemove',mv);window.addEventListener('touchmove',mv,{passive:false});window.addEventListener('mouseup',up);window.addEventListener('touchend',up);};
+  const mv=e=>{
+    const y=e.clientY??e.touches?.[0]?.clientY??sY,dy=sY-y,rng=max-min;
+    let n=curve?Math.log(sV/min)/Math.log(max/min):(sV-min)/rng;
+    n=Math.max(0,Math.min(1,n+dy/180));
+    let nv=curve?min*Math.pow(max/min,n):min+n*rng;
+    if(step)nv=Math.round(nv/step)*step;
+    nv=Math.max(min,Math.min(max,nv));
+    KS[id].val=nv;redrawKnob(el,arc,dot,nv,min,max,curve);
+    el.dispatchEvent(new CustomEvent('kc',{detail:nv,bubbles:true}));
+  };
+  const up=()=>{window.removeEventListener('mousemove',mv);window.removeEventListener('touchmove',mv);window.removeEventListener('mouseup',up);window.removeEventListener('touchend',up);};
+  el.addEventListener('mousedown',dn);el.addEventListener('touchstart',dn,{passive:false});
+  el.addEventListener('wheel',e=>{
+    e.preventDefault();getAC();initMaster();
+    const {min,max,val,curve,step}=KS[id],rng=max-min;
+    let n=curve?Math.log(val/min)/Math.log(max/min):(val-min)/rng;
+    n=Math.max(0,Math.min(1,n-e.deltaY*0.004));
+    let nv=curve?min*Math.pow(max/min,n):min+n*rng;
+    if(step)nv=Math.round(nv/step)*step;
+    nv=Math.max(min,Math.min(max,nv));
+    KS[id].val=nv;redrawKnob(el,arc,dot,nv,min,max,curve);
+    el.dispatchEvent(new CustomEvent('kc',{detail:nv,bubbles:true}));
+  },{passive:false});
+}
+
+function norm(v,min,max,curve){return curve?Math.log(v/min)/Math.log(max/min):(v-min)/(max-min);}
+function redrawKnob(el,arc,dot,v,min,max,curve){
+  dot.style.transform=`translateX(-50%) rotate(${-150+norm(v,min,max,curve)*300}deg)`;
+  const W=arc.width,H=arc.height,cx=W/2,cy=H/2,r=W/2-3,ctx=arc.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const s=150*Math.PI/180,sw=norm(v,min,max,curve)*300;
+  ctx.beginPath();ctx.arc(cx,cy,r,s,s+300*Math.PI/180);ctx.strokeStyle='#1e2228';ctx.lineWidth=2;ctx.stroke();
+  if(sw>1){
+    const mod=el.closest('.module');
+    const cls=mod?Array.from(mod.classList).find(c=>MOD_COLORS[c]):null;
+    ctx.beginPath();ctx.arc(cx,cy,r,s,s+sw*Math.PI/180);
+    ctx.strokeStyle=cls?MOD_COLORS[cls]:'rgba(150,150,150,0.5)';ctx.lineWidth=2;ctx.stroke();
+  }
+}
+
+function setKnobVal(id,v){
+  const k=KS[id];if(!k)return;k.val=v;
+  const el=document.getElementById(id);if(!el)return;
+  redrawKnob(el,el.querySelector('.knob-arc'),el.querySelector('.knob-dot'),v,k.min,k.max,k.curve);
+}
+
+function initTog(el,cb){el.addEventListener('click',()=>{getAC();initMaster();el.classList.toggle('on');cb(el.classList.contains('on'));});}
+function initWaveSel(cont,cb){cont.querySelectorAll('.wave-btn').forEach(b=>{b.addEventListener('click',()=>{getAC();initMaster();cont.querySelectorAll('.wave-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');cb(b.dataset.wave);});});}
+
+function drawScope(canvas,analyser,color){
+  const W=canvas.width,H=canvas.height,ctx=canvas.getContext('2d');
+  ctx.fillStyle='#050809';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#0d1018';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+  if(!analyser)return;
+  const buf=new Uint8Array(analyser.fftSize);analyser.getByteTimeDomainData(buf);
+  ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.shadowColor=color;ctx.shadowBlur=4;
+  ctx.beginPath();
+  for(let i=0;i<buf.length;i++){const x=i/buf.length*W,y=(1-(buf[i]/128-1)*0.9)*H/2;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.stroke();ctx.shadowBlur=0;
+}
+function disp(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+
+// ════════════════════════════════════════════════
+//  DRONE
+// ════════════════════════════════════════════════
+const D={osc:null,subOsc:null,filter:null,gain:null,lfoOsc:null,lfoGain:null,analyser:null,running:false,wave:'sine',freq:110,detune:0,subLevel:0.3,filtFreq:2000,filtQ:2,filtType:'lowpass',lfoRate:0.5,lfoDepth:0.3,lfoTarget:'pitch',vol:0.6};
+
+function droneStart(){
+  const ac=getAC();initMaster();
+  D.analyser=ac.createAnalyser();D.analyser.fftSize=512;
+  D.filter=ac.createBiquadFilter();D.filter.type=D.filtType;D.filter.frequency.value=D.filtFreq;D.filter.Q.value=D.filtQ;
+  D.gain=ac.createGain();D.gain.gain.value=D.vol;
+  D.osc=ac.createOscillator();D.osc.type=D.wave;D.osc.frequency.value=D.freq;D.osc.detune.value=D.detune;
+  D.subOsc=ac.createOscillator();D.subOsc.type='sine';D.subOsc.frequency.value=D.freq/2;
+  const sg=ac.createGain();sg.gain.value=D.subLevel;
+  D.lfoOsc=ac.createOscillator();D.lfoOsc.frequency.value=D.lfoRate;
+  D.lfoGain=ac.createGain();D.lfoGain.gain.value=0;
+  D.osc.connect(D.filter);D.subOsc.connect(sg);sg.connect(D.filter);
+  D.filter.connect(D.gain);D.gain.connect(D.analyser);
+  droneRoute();
+  D.lfoOsc.connect(D.lfoGain);droneLfo();
+  D.osc.start();D.subOsc.start();D.lfoOsc.start();
+  D.running=true;document.getElementById('d-led').classList.add('on');
+}
+function droneStop(){
+  if(!D.running)return;
+  D.gain.gain.setTargetAtTime(0,AC.currentTime,0.05);
+  setTimeout(()=>{try{D.osc.stop();D.subOsc.stop();D.lfoOsc.stop();}catch(e){}D.osc=D.subOsc=D.lfoOsc=D.gain=D.filter=D.lfoGain=D.analyser=null;D.running=false;},200);
+  document.getElementById('d-led').classList.remove('on');
+}
+function droneRoute(){
+  if(!D.analyser)return;
+  try{D.analyser.disconnect();}catch(e){}
+  const next=DEL.enabled&&DEL.inG?DEL.inG:masterComp;
+  D.analyser.connect(next);
+}
+function droneLfo(){
+  if(!D.lfoGain)return;try{D.lfoGain.disconnect();}catch(e){}
+  if(D.lfoTarget==='pitch'){D.lfoGain.gain.value=D.freq*D.lfoDepth*0.5;D.lfoGain.connect(D.osc.frequency);}
+  else{D.lfoGain.gain.value=D.filtFreq*D.lfoDepth*0.8;D.lfoGain.connect(D.filter.frequency);}
+}
+
+document.getElementById('d-vol').addEventListener('kc',e=>{D.vol=e.detail;disp('d-vol-v',D.vol.toFixed(2));if(D.gain)D.gain.gain.setTargetAtTime(D.vol,AC.currentTime,0.01);});
+document.getElementById('d-freq').addEventListener('kc',e=>{D.freq=e.detail;disp('d-freq-v',Math.round(D.freq)+'');document.getElementById('d-freqDisp').textContent=Math.round(D.freq)+' hz';if(D.osc)D.osc.frequency.setTargetAtTime(D.freq,AC.currentTime,0.02);if(D.subOsc)D.subOsc.frequency.setTargetAtTime(D.freq/2,AC.currentTime,0.02);droneLfo();});
+document.getElementById('d-detune').addEventListener('kc',e=>{D.detune=e.detail;disp('d-detune-v',Math.round(D.detune)+'');if(D.osc)D.osc.detune.setTargetAtTime(D.detune,AC.currentTime,0.02);});
+document.getElementById('d-sub').addEventListener('kc',e=>{D.subLevel=e.detail;disp('d-sub-v',D.subLevel.toFixed(2));});
+document.getElementById('d-filt').addEventListener('kc',e=>{D.filtFreq=e.detail;disp('d-filt-v',D.filtFreq>=1000?(D.filtFreq/1000).toFixed(1)+'k':Math.round(D.filtFreq)+'');if(D.filter)D.filter.frequency.setTargetAtTime(D.filtFreq,AC.currentTime,0.02);droneLfo();});
+document.getElementById('d-reso').addEventListener('kc',e=>{D.filtQ=e.detail;disp('d-reso-v',D.filtQ.toFixed(1));if(D.filter)D.filter.Q.setTargetAtTime(D.filtQ,AC.currentTime,0.02);});
+document.getElementById('d-lrate').addEventListener('kc',e=>{D.lfoRate=e.detail;disp('d-lrate-v',D.lfoRate.toFixed(2));if(D.lfoOsc)D.lfoOsc.frequency.setTargetAtTime(D.lfoRate,AC.currentTime,0.02);document.getElementById('d-lfo-led').classList.toggle('on',D.lfoDepth>0.05);});
+document.getElementById('d-ldepth').addEventListener('kc',e=>{D.lfoDepth=e.detail;disp('d-ldepth-v',D.lfoDepth.toFixed(2));droneLfo();document.getElementById('d-lfo-led').classList.toggle('on',D.lfoDepth>0.05);});
+initTog(document.getElementById('d-ftype'),on=>{D.filtType=on?'highpass':'lowpass';disp('d-ftype-v',on?'HP':'LP');if(D.filter)D.filter.type=D.filtType;});
+initTog(document.getElementById('d-ltarget'),on=>{D.lfoTarget=on?'filter':'pitch';disp('d-ltarget-v',on?'filt':'pitch');droneLfo();});
+initTog(document.getElementById('d-power'),on=>{disp('d-power-v',on?'ON':'OFF');on?droneStart():droneStop();});
+document.getElementById('d-pan').addEventListener('kc',e=>{if(!D.panner){const ac=getAC();D.panner=ac.createStereoPanner();masterComp.disconnect();masterComp.connect(D.panner);D.panner.connect(masterGain);}D.panner.pan.setTargetAtTime(e.detail,AC.currentTime,0.02);disp('d-pan-v',e.detail.toFixed(2));});
+document.getElementById('d-glide').addEventListener('kc',e=>{D.glide=e.detail;disp('d-glide-v',e.detail===0?'0':e.detail.toFixed(2));});
+initWaveSel(document.getElementById('d-wave-sel'),w=>{D.wave=w;if(D.osc)D.osc.type=w;});
+
+// ════════════════════════════════════════════════
+//  KEYBOARD SYNTH
+// ════════════════════════════════════════════════
+const K={voices:{},mf:null,mg:null,analyser:null,wave:'sawtooth',octave:4,detune:0,filtFreq:4000,filtQ:3,envF:2000,att:0.01,dec:0.3,sus:0.5,rel:0.4,vol:0.7,glide:0,lastFreq:null};
+
+function kInit(){
+  const ac=getAC();initMaster();if(K.analyser)return;
+  K.analyser=ac.createAnalyser();K.analyser.fftSize=512;
+  K.mf=ac.createBiquadFilter();K.mf.type='lowpass';K.mf.frequency.value=K.filtFreq;K.mf.Q.value=K.filtQ;
+  K.mg=ac.createGain();K.mg.gain.value=K.vol;
+  K.mf.connect(K.mg);K.mg.connect(K.analyser);keysRoute();
+}
+function keysRoute(){
+  if(!K.analyser)return;try{K.analyser.disconnect();}catch(e){}
+  const next=DEL.enabled&&DEL.inG?DEL.inG:masterComp;
+  K.analyser.connect(next);
+}
+function noteOn(freq){
+  if(window._synthVis) window._synthVis.noteEvent={freq,time:performance.now()};
+  kInit();const ac=getAC(),t=ac.currentTime;if(K.voices[freq])noteOff(freq);
+  const osc=ac.createOscillator();osc.type=K.wave;
+  if(K.glide>0&&K.lastFreq){osc.frequency.setValueAtTime(K.lastFreq,t);osc.frequency.linearRampToValueAtTime(freq,t+K.glide);}else{osc.frequency.value=freq;}
+  osc.detune.value=K.detune;
+  const eg=ac.createGain();eg.gain.setValueAtTime(0,t);eg.gain.linearRampToValueAtTime(1,t+K.att);eg.gain.linearRampToValueAtTime(K.sus,t+K.att+K.dec);
+  const fe=ac.createBiquadFilter();fe.type='lowpass';fe.frequency.setValueAtTime(K.filtFreq,t);fe.frequency.linearRampToValueAtTime(K.filtFreq+K.envF,t+K.att);fe.frequency.linearRampToValueAtTime(K.filtFreq,t+K.att+K.dec);fe.Q.value=K.filtQ;
+  osc.connect(eg);eg.connect(fe);fe.connect(K.mf);osc.start(t);
+  K.voices[freq]={osc,eg,fe};K.lastFreq=freq;
+  document.getElementById('k-led').classList.add('on');document.getElementById('k-env-led').classList.add('on');
+}
+function noteOff(freq){
+  const v=K.voices[freq];if(!v)return;const t=AC.currentTime;
+  v.eg.gain.cancelScheduledValues(t);v.eg.gain.setTargetAtTime(0,t,K.rel/3);
+  setTimeout(()=>{try{v.osc.stop();}catch(e){}delete K.voices[freq];if(!Object.keys(K.voices).length){document.getElementById('k-led').classList.remove('on');document.getElementById('k-env-led').classList.remove('on');}},( K.rel+0.3)*1000);
+}
+
+document.getElementById('k-vol').addEventListener('kc',e=>{K.vol=e.detail;disp('k-vol-v',K.vol.toFixed(2));if(K.mg)K.mg.gain.setTargetAtTime(K.vol,AC.currentTime,0.01);});
+document.getElementById('k-filt').addEventListener('kc',e=>{K.filtFreq=e.detail;disp('k-filt-v',K.filtFreq>=1000?(K.filtFreq/1000).toFixed(1)+'k':Math.round(K.filtFreq)+'');if(K.mf)K.mf.frequency.setTargetAtTime(K.filtFreq,AC.currentTime,0.02);});
+document.getElementById('k-reso').addEventListener('kc',e=>{K.filtQ=e.detail;disp('k-reso-v',K.filtQ.toFixed(1));if(K.mf)K.mf.Q.setTargetAtTime(K.filtQ,AC.currentTime,0.02);});
+document.getElementById('k-envf').addEventListener('kc',e=>{K.envF=e.detail;disp('k-envf-v',K.envF>=1000?(K.envF/1000).toFixed(1)+'k':Math.round(K.envF)+'');});
+document.getElementById('k-att').addEventListener('kc',e=>{K.att=e.detail;disp('k-att-v',e.detail<0.1?Math.round(e.detail*1000)+'ms':e.detail.toFixed(2)+'s');});
+document.getElementById('k-dec').addEventListener('kc',e=>{K.dec=e.detail;disp('k-dec-v',e.detail<1?Math.round(e.detail*1000)+'ms':e.detail.toFixed(2)+'s');});
+document.getElementById('k-sus').addEventListener('kc',e=>{K.sus=e.detail;disp('k-sus-v',e.detail.toFixed(2));});
+document.getElementById('k-rel').addEventListener('kc',e=>{K.rel=e.detail;disp('k-rel-v',e.detail<1?Math.round(e.detail*1000)+'ms':e.detail.toFixed(2)+'s');});
+document.getElementById('k-oct').addEventListener('kc',e=>{K.octave=Math.round(e.detail);disp('k-oct-v',K.octave+'');renderKeyboard();});
+document.getElementById('k-detune').addEventListener('kc',e=>{K.detune=e.detail;disp('k-detune-v',Math.round(e.detail)+'');});
+document.getElementById('k-glide').addEventListener('kc',e=>{K.glide=e.detail;disp('k-glide-v',e.detail===0?'0':e.detail.toFixed(2));});
+document.getElementById('k-pan').addEventListener('kc',e=>{if(!K.panner){const ac=getAC();K.panner=ac.createStereoPanner();if(K.mg){K.mg.disconnect();K.mg.connect(K.panner);K.panner.connect(masterComp);}}if(K.panner)K.panner.pan.setTargetAtTime(e.detail,AC.currentTime,0.02);disp('k-pan-v',e.detail.toFixed(2));});
+initWaveSel(document.getElementById('k-wave-sel'),w=>{K.wave=w;});
+
+// ── KEYBOARD UI ──────────────────────
+const NOTE_NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const WHITES=[0,2,4,5,7,9,11],BLACKS=[1,3,null,6,8,10];
+const KMAP={'a':0,'w':1,'s':2,'e':3,'d':4,'f':5,'t':6,'g':7,'y':8,'h':9,'u':10,'j':11,'k':12};
+function midiFreq(m){return 440*Math.pow(2,(m-69)/12);}
+
+function renderKeyboard(){
+  const wrap=document.getElementById('keyboard');wrap.innerHTML='';const oct=K.octave;
+  for(let o=0;o<2;o++) WHITES.forEach(s=>{
+    const m=(oct+o)*12+s,f=midiFreq(m),n=NOTE_NAMES[s]+(oct+o);
+    const k=document.createElement('div');k.className='key';k.dataset.freq=f;k.dataset.name=n;
+    k.innerHTML=`<span class="note-label">${n}</span>`;wrap.appendChild(k);
+  });
+  for(let o=0;o<2;o++) BLACKS.forEach((s,bi)=>{
+    if(s===null)return;const m=(oct+o)*12+s,f=midiFreq(m),n=NOTE_NAMES[s]+(oct+o);
+    const wi=o*7+[0,1,null,3,4,5][bi];if(wi===null)return;
+    const k=document.createElement('div');k.className='key black';k.dataset.freq=f;k.dataset.name=n;
+    k.style.left=((wi+0.65)/14*100)+'%';wrap.appendChild(k);
+  });
+  wrap.querySelectorAll('.key').forEach(k=>{
+    const f=+k.dataset.freq,n=k.dataset.name;
+    k.addEventListener('mousedown',e=>{e.preventDefault();getAC();kInit();noteOn(f);k.classList.add('pressed');disp('k-noteDisp',n);});
+    k.addEventListener('mouseup',()=>{noteOff(f);k.classList.remove('pressed');});
+    k.addEventListener('mouseleave',()=>{if(k.classList.contains('pressed')){noteOff(f);k.classList.remove('pressed');}});
+    k.addEventListener('touchstart',e=>{e.preventDefault();getAC();kInit();noteOn(f);k.classList.add('pressed');},{passive:false});
+    k.addEventListener('touchend',()=>{noteOff(f);k.classList.remove('pressed');});
+  });
+}
+const kbActive={};
+document.addEventListener('keydown',e=>{
+  if(e.altKey||e.repeat)return;
+  const s=KMAP[e.key.toLowerCase()];if(s===undefined)return;
+  getAC();kInit();const m=K.octave*12+s,f=midiFreq(m),n=NOTE_NAMES[s%12]+K.octave;
+  if(kbActive[e.key])return;kbActive[e.key]=f;noteOn(f);disp('k-noteDisp',n);
+  document.querySelectorAll(`[data-freq="${f}"]`).forEach(k=>k.classList.add('pressed'));
+});
+document.addEventListener('keyup',e=>{
+  const f=kbActive[e.key];if(!f)return;noteOff(f);delete kbActive[e.key];
+  document.querySelectorAll(`[data-freq="${f}"]`).forEach(k=>k.classList.remove('pressed'));
+});
+
+// ════════════════════════════════════════════════
+//  STEP SEQUENCER
+// ════════════════════════════════════════════════
+const SEQ={steps:8,cur:0,playing:false,timer:null,rate:4,swing:0,range:2,root:0,glide:0,target:'drone',pitches:Array(16).fill(0.5),vols:Array(16).fill(1),gates:Array(16).fill(true)};
+const SNAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+function buildSeqGrid(){
+  const g=document.getElementById('seq-grid');g.innerHTML='';
+  for(let i=0;i<16;i++){delete KS['sq'+i];delete KS['sv'+i];}
+  for(let i=0;i<SEQ.steps;i++){
+    const s=document.createElement('div');s.className='seq-step';s.id='ss'+i;
+    const num=document.createElement('div');num.className='seq-num';num.textContent=i+1;
+    const kw=document.createElement('div');kw.className='knob sm';kw.id='sq'+i;
+    kw.dataset.min='0';kw.dataset.max='1';kw.dataset.val=SEQ.pitches[i];kw.title='pitch';
+    kw.innerHTML='<div class="knob-ring"></div><div class="knob-body"><div class="knob-dot"></div></div><canvas class="knob-arc" width="34" height="34"></canvas>';
+    const kv=document.createElement('div');kv.className='knob sm';kv.id='sv'+i;
+    kv.dataset.min='0';kv.dataset.max='1';kv.dataset.val=SEQ.vols[i];kv.title='vol';
+    kv.style.cssText='transform:scale(0.78);margin:-3px 0;';
+    kv.innerHTML='<div class="knob-ring" style="border-color:#6b21ff;"></div><div class="knob-body"><div class="knob-dot" style="background:#6b21ff;"></div></div><canvas class="knob-arc" width="34" height="34"></canvas>';
+    const gate=document.createElement('div');gate.className='seq-gate'+(SEQ.gates[i]?' on':'');gate.id='sg'+i;
+    s.appendChild(num);s.appendChild(kw);s.appendChild(kv);s.appendChild(gate);g.appendChild(s);
+    initKnob(kw);initKnob(kv);
+    kw.addEventListener('kc',e=>{SEQ.pitches[i]=e.detail;});
+    kv.addEventListener('kc',e=>{SEQ.vols[i]=e.detail;});
+    gate.addEventListener('click',()=>{SEQ.gates[i]=!SEQ.gates[i];gate.classList.toggle('on',SEQ.gates[i]);});
+  }
+}
+
+function seqFreq(norm){
+  const semis=SEQ.range*12,semi=Math.round(norm*semis);
+  return midiFreq(36+SEQ.root+semi);
+}
+function freqName(f){
+  const m=Math.round(69+12*Math.log2(f/440));
+  return NOTE_NAMES[((m%12)+12)%12]+(Math.floor(m/12)-1);
+}
+function seqTick(i){
+  document.querySelectorAll('.seq-step').forEach((s,j)=>s.classList.toggle('playing',j===i));
+  document.getElementById('seq-led1').classList.toggle('on',i%2===0);
+  document.getElementById('seq-led2').classList.toggle('on',i%4===0);
+  const f=seqFreq(SEQ.pitches[i]);
+  const vol=SEQ.vols[i];
+  const tc=SEQ.glide>0?SEQ.glide:0.02;
+  if(SEQ.gates[i]){
+    if(SEQ.target==='drone'&&D.running&&D.osc){
+      D.osc.frequency.setTargetAtTime(f,AC.currentTime,tc);
+      if(D.subOsc)D.subOsc.frequency.setTargetAtTime(f/2,AC.currentTime,tc);
+      if(D.gain)D.gain.gain.setTargetAtTime(vol*D.vol,AC.currentTime,0.01);
+      document.getElementById('d-freqDisp').textContent=Math.round(f)+' hz';
+    }else if(SEQ.target==='keys'){getAC();kInit();Object.keys(K.voices).forEach(x=>noteOff(+x));noteOn(f,vol);disp('k-noteDisp',freqName(f));}
+  }
+  disp('seq-disp',freqName(f));
+}
+function seqSched(){
+  if(!SEQ.playing)return;seqTick(SEQ.cur);
+  const base=1000/SEQ.rate,sw=SEQ.cur%2===0?1+SEQ.swing:1-SEQ.swing;
+  SEQ.timer=setTimeout(()=>{SEQ.cur=(SEQ.cur+1)%SEQ.steps;seqSched();},base*sw);
+}
+function seqPlay(){if(SEQ.playing)return;SEQ.playing=true;SEQ.cur=0;document.getElementById('seq-play').classList.add('active');disp('seq-disp','PLAY');seqSched();}
+function seqStop(){SEQ.playing=false;clearTimeout(SEQ.timer);SEQ.cur=0;document.querySelectorAll('.seq-step').forEach(s=>s.classList.remove('playing'));document.getElementById('seq-play').classList.remove('active');disp('seq-disp','STOP');document.getElementById('seq-led1').classList.remove('on');document.getElementById('seq-led2').classList.remove('on');}
+function seqRand(){
+  for(let i=0;i<SEQ.steps;i++){
+    SEQ.pitches[i]=Math.random();SEQ.vols[i]=0.4+Math.random()*0.6;SEQ.gates[i]=Math.random()>0.25;
+    const kw=document.getElementById('sq'+i);if(kw&&KS['sq'+i]){KS['sq'+i].val=SEQ.pitches[i];redrawKnob(kw,kw.querySelector('.knob-arc'),kw.querySelector('.knob-dot'),SEQ.pitches[i],0,1,false);}
+    const kv=document.getElementById('sv'+i);if(kv&&KS['sv'+i]){KS['sv'+i].val=SEQ.vols[i];redrawKnob(kv,kv.querySelector('.knob-arc'),kv.querySelector('.knob-dot'),SEQ.vols[i],0,1,false);}
+    document.getElementById('sg'+i)?.classList.toggle('on',SEQ.gates[i]);
+  }
+}
+document.getElementById('seq-play').addEventListener('click',()=>{getAC();initMaster();seqPlay();});
+document.getElementById('seq-stop').addEventListener('click',seqStop);
+document.getElementById('seq-rand').addEventListener('click',seqRand);
+document.getElementById('seq-rate').addEventListener('kc',e=>{SEQ.rate=e.detail;disp('seq-rate-v',e.detail.toFixed(1));});
+document.getElementById('seq-swing').addEventListener('kc',e=>{SEQ.swing=e.detail;disp('seq-swing-v',Math.round(e.detail*100)+'%');});
+document.getElementById('seq-range').addEventListener('kc',e=>{SEQ.range=Math.round(e.detail);disp('seq-range-v',SEQ.range+'oct');});
+document.getElementById('seq-root').addEventListener('kc',e=>{SEQ.root=Math.round(e.detail);disp('seq-root-v',SNAMES[SEQ.root]);});
+initTog(document.getElementById('seq-target'),on=>{SEQ.target=on?'keys':'drone';disp('seq-target-v',on?'keys':'drone');});
+document.getElementById('seq-glide').addEventListener('kc',e=>{SEQ.glide=e.detail;disp('seq-glide-v',e.detail===0?'0':e.detail.toFixed(2));});
+document.getElementById('seq-steps').addEventListener('kc',e=>{const n=Math.round(e.detail);SEQ.steps=n;disp('seq-steps-v',n+'');buildSeqGrid();});
+
+// ════════════════════════════════════════════════
+//  RING MOD
+// ════════════════════════════════════════════════
+const RM={enabled:false,car:null,ring:null,dry:null,wet:null,analyser:null,mix:0.5,dw:0.5,freq:220};
+function rmInit(){
+  const ac=getAC();initMaster();if(RM.analyser)return;
+  RM.analyser=ac.createAnalyser();RM.analyser.fftSize=512;
+  RM.car=ac.createOscillator();RM.car.frequency.value=RM.freq;
+  RM.ring=ac.createGain();RM.ring.gain.value=0;
+  RM.car.connect(RM.ring);
+  RM.dry=ac.createGain();RM.dry.gain.value=1-RM.dw;
+  RM.wet=ac.createGain();RM.wet.gain.value=RM.dw;
+  RM.ring.connect(RM.wet);RM.dry.connect(RM.analyser);RM.wet.connect(RM.analyser);RM.analyser.connect(masterComp);
+  RM.car.start();
+}
+function rmEnable(on){
+  RM.enabled=on;rmInit();
+  RM.ring.gain.setTargetAtTime(on?RM.mix:0,AC.currentTime,0.05);
+  document.getElementById('rm-led').classList.toggle('on',on);
+  disp('rm-disp',on?'ON':'OFF');
+  if(on){if(D.analyser)D.analyser.connect(RM.dry);if(K.analyser)K.analyser.connect(RM.dry);}
+}
+document.getElementById('rm-freq').addEventListener('kc',e=>{RM.freq=e.detail;disp('rm-freq-v',Math.round(e.detail)+'');if(RM.car)RM.car.frequency.setTargetAtTime(RM.freq,AC.currentTime,0.02);disp('rm-disp',RM.enabled?Math.round(RM.freq)+'hz':'OFF');});
+document.getElementById('rm-mix').addEventListener('kc',e=>{RM.mix=e.detail;disp('rm-mix-v',e.detail.toFixed(2));if(RM.ring&&RM.enabled)RM.ring.gain.setTargetAtTime(RM.mix,AC.currentTime,0.02);});
+document.getElementById('rm-dw').addEventListener('kc',e=>{RM.dw=e.detail;disp('rm-dw-v',e.detail.toFixed(2));if(RM.wet){RM.wet.gain.setTargetAtTime(RM.dw,AC.currentTime,0.02);RM.dry.gain.setTargetAtTime(1-RM.dw,AC.currentTime,0.02);}});
+initTog(document.getElementById('rm-enable'),on=>{disp('rm-enable-v',on?'ON':'OFF');rmEnable(on);});
+document.getElementById('rm-lrate').addEventListener('kc',e=>{RM.lrate=e.detail;disp('rm-lrate-v',e.detail.toFixed(1));if(RM.lfo)RM.lfo.frequency.setTargetAtTime(e.detail,AC.currentTime,0.02);else if(e.detail>0){const ac=getAC();rmInit();RM.lfo=ac.createOscillator();RM.lfoG=ac.createGain();RM.lfo.frequency.value=e.detail;RM.lfoG.gain.value=RM.ldepth||0;RM.lfo.connect(RM.lfoG);RM.lfoG.connect(RM.car.frequency);RM.lfo.start();}});
+document.getElementById('rm-ldepth').addEventListener('kc',e=>{RM.ldepth=e.detail;disp('rm-ldepth-v',Math.round(e.detail)+'');if(RM.lfoG)RM.lfoG.gain.setTargetAtTime(e.detail,AC.currentTime,0.02);});
+
+// ════════════════════════════════════════════════
+//  DELAY
+// ════════════════════════════════════════════════
+const DEL={enabled:false,node:null,fb:null,dry:null,wet:null,damp:null,inG:null,analyser:null,time:0.35,feedback:0.4,mix:0.3,dampFreq:5000,taps:[]};
+function delInit(){
+  const ac=getAC();initMaster();if(DEL.analyser)return;
+  DEL.analyser=ac.createAnalyser();DEL.analyser.fftSize=512;
+  DEL.inG=ac.createGain();
+  DEL.node=ac.createDelay(2.0);DEL.node.delayTime.value=DEL.time;
+  DEL.damp=ac.createBiquadFilter();DEL.damp.type='lowpass';DEL.damp.frequency.value=DEL.dampFreq;
+  DEL.fb=ac.createGain();DEL.fb.gain.value=DEL.feedback;
+  DEL.dry=ac.createGain();DEL.dry.gain.value=1-DEL.mix;
+  DEL.wet=ac.createGain();DEL.wet.gain.value=DEL.mix;
+  DEL.inG.connect(DEL.dry);DEL.inG.connect(DEL.node);
+  DEL.node.connect(DEL.damp);DEL.damp.connect(DEL.fb);DEL.fb.connect(DEL.node);
+  DEL.damp.connect(DEL.wet);
+  DEL.dry.connect(DEL.analyser);DEL.wet.connect(DEL.analyser);DEL.analyser.connect(masterComp);
+}
+function delEnable(on){
+  DEL.enabled=on;delInit();
+  document.getElementById('del-led').classList.toggle('on',on);
+  disp('del-enable-v',on?'ON':'OFF');
+  droneRoute();keysRoute();
+}
+document.getElementById('del-time').addEventListener('kc',e=>{DEL.time=e.detail;const ms=Math.round(e.detail*1000);disp('del-time-v',ms+'ms');disp('del-disp',ms+' ms');if(DEL.node)DEL.node.delayTime.setTargetAtTime(DEL.time,AC.currentTime,0.02);});
+document.getElementById('del-fb').addEventListener('kc',e=>{DEL.feedback=e.detail;disp('del-fb-v',e.detail.toFixed(2));if(DEL.fb)DEL.fb.gain.setTargetAtTime(DEL.feedback,AC.currentTime,0.02);});
+document.getElementById('del-mix').addEventListener('kc',e=>{DEL.mix=e.detail;disp('del-mix-v',e.detail.toFixed(2));if(DEL.wet){DEL.wet.gain.setTargetAtTime(DEL.mix,AC.currentTime,0.02);DEL.dry.gain.setTargetAtTime(1-DEL.mix,AC.currentTime,0.02);}});
+document.getElementById('del-damp').addEventListener('kc',e=>{DEL.dampFreq=e.detail;disp('del-damp-v',e.detail>=1000?(e.detail/1000).toFixed(1)+'k':Math.round(e.detail)+'');if(DEL.damp)DEL.damp.frequency.setTargetAtTime(DEL.dampFreq,AC.currentTime,0.02);});
+initTog(document.getElementById('del-enable'),on=>{delEnable(on);});
+document.getElementById('del-width').addEventListener('kc',e=>{DEL.width=e.detail;disp('del-width-v',e.detail.toFixed(2));if(DEL.merger&&DEL.node){DEL.node.disconnect();if(e.detail>0.05){if(!DEL.merger){const ac=getAC();DEL.merger=ac.createChannelMerger(2);}DEL.node.connect(DEL.merger,0,0);DEL.node.connect(DEL.merger,0,1);DEL.merger.connect(DEL.wet);}else{DEL.node.connect(DEL.wet);}}});
+document.getElementById('del-tap').addEventListener('click',()=>{
+  getAC();const now=performance.now();DEL.taps.push(now);if(DEL.taps.length>4)DEL.taps.shift();
+  if(DEL.taps.length>=2){
+    const diffs=[];for(let i=1;i<DEL.taps.length;i++)diffs.push(DEL.taps[i]-DEL.taps[i-1]);
+    const avg=diffs.reduce((a,b)=>a+b)/diffs.length;
+    DEL.time=Math.max(0.01,Math.min(1.2,avg/1000));
+    disp('del-disp',Math.round(DEL.time*1000)+' ms');disp('del-time-v',Math.round(DEL.time*1000)+'ms');
+    if(DEL.node)DEL.node.delayTime.setTargetAtTime(DEL.time,AC.currentTime,0.05);
+    setKnobVal('del-time',DEL.time);
+  }
+  document.getElementById('del-led').classList.add('on');setTimeout(()=>document.getElementById('del-led').classList.remove('on'),120);
+});
+
+// ════════════════════════════════════════════════
+//  CHIP OSC (NES-style with pulse width + arpeggio + vibrato)
+// ════════════════════════════════════════════════
+const CHIP={osc:null,gain:null,analyser:null,lfo:null,lfoG:null,running:false,wave:'pulse',freq:220,vol:0.5,pw:0.5,arpOn:false,arpSpeed:8,vRate:6,vDepth:0,arpTimer:null,arpNotes:[0,4,7,12],arpIdx:0};
+function chipMakeWave(pw){
+  if(!AC)return'square';
+  if(CHIP.wave==='pulse'){
+    const n=256,real=new Float32Array(n),imag=new Float32Array(n);
+    for(let k=1;k<n;k++){imag[k]=(2/(k*Math.PI))*(Math.sin(k*Math.PI*pw)-Math.sin(k*Math.PI*(1-pw)));}
+    const wave=AC.createPeriodicWave(real,imag,{disableNormalization:false});
+    CHIP.osc.setPeriodicWave(wave);return null;
+  }
+  return CHIP.wave==='dpcm'?'sawtooth':CHIP.wave;
+}
+function chipStart(){
+  const ac=getAC();initMaster();
+  CHIP.analyser=ac.createAnalyser();CHIP.analyser.fftSize=512;
+  CHIP.gain=ac.createGain();CHIP.gain.gain.value=CHIP.vol;
+  CHIP.osc=ac.createOscillator();CHIP.osc.frequency.value=CHIP.freq;
+  CHIP.lfo=ac.createOscillator();CHIP.lfo.frequency.value=CHIP.vRate;
+  CHIP.lfoG=ac.createGain();CHIP.lfoG.gain.value=CHIP.freq*CHIP.vDepth;
+  CHIP.lfo.connect(CHIP.lfoG);CHIP.lfoG.connect(CHIP.osc.frequency);
+  const t=chipMakeWave(CHIP.pw);if(t)CHIP.osc.type=t;
+  CHIP.osc.connect(CHIP.gain);CHIP.gain.connect(CHIP.analyser);
+  const next=DEL.enabled&&DEL.inG?DEL.inG:masterComp;CHIP.analyser.connect(next);
+  CHIP.osc.start();CHIP.lfo.start();
+  CHIP.running=true;document.getElementById('chip-led').classList.add('on');
+  if(CHIP.arpOn)chipArpStart();
+}
+function chipStop(){
+  if(!CHIP.running)return;
+  chipArpStop();
+  CHIP.gain.gain.setTargetAtTime(0,AC.currentTime,0.05);
+  setTimeout(()=>{try{CHIP.osc.stop();CHIP.lfo.stop();}catch(e){}CHIP.osc=CHIP.gain=CHIP.analyser=CHIP.lfo=CHIP.lfoG=null;CHIP.running=false;},200);
+  document.getElementById('chip-led').classList.remove('on');
+}
+function chipArpStart(){
+  chipArpStop();CHIP.arpIdx=0;
+  const step=()=>{
+    if(!CHIP.running||!CHIP.arpOn)return;
+    const semi=CHIP.arpNotes[CHIP.arpIdx%CHIP.arpNotes.length];
+    const f=CHIP.freq*Math.pow(2,semi/12);
+    if(CHIP.osc)CHIP.osc.frequency.setTargetAtTime(f,AC.currentTime,0.01);
+    CHIP.arpIdx++;document.getElementById('chip-arp-led').classList.toggle('on',CHIP.arpIdx%2===0);
+    CHIP.arpTimer=setTimeout(step,1000/CHIP.arpSpeed);
+  };
+  step();
+}
+function chipArpStop(){clearTimeout(CHIP.arpTimer);CHIP.arpTimer=null;document.getElementById('chip-arp-led').classList.remove('on');}
+document.getElementById('chip-freq').addEventListener('kc',e=>{CHIP.freq=e.detail;disp('chip-freq-v',Math.round(e.detail)+'');disp('chip-disp',Math.round(e.detail)+' HZ');if(CHIP.osc&&!CHIP.arpOn)CHIP.osc.frequency.setTargetAtTime(CHIP.freq,AC.currentTime,0.02);if(CHIP.lfoG)CHIP.lfoG.gain.value=CHIP.freq*CHIP.vDepth;});
+document.getElementById('chip-pw').addEventListener('kc',e=>{CHIP.pw=e.detail;disp('chip-pw-v',e.detail.toFixed(2));if(CHIP.osc&&CHIP.running)chipMakeWave(CHIP.pw);});
+document.getElementById('chip-vol').addEventListener('kc',e=>{CHIP.vol=e.detail;disp('chip-vol-v',e.detail.toFixed(2));if(CHIP.gain)CHIP.gain.gain.setTargetAtTime(CHIP.vol,AC.currentTime,0.02);});
+document.getElementById('chip-oct').addEventListener('kc',e=>{CHIP.oct=Math.round(e.detail);disp('chip-oct-v',CHIP.oct+'');if(CHIP.osc)CHIP.osc.frequency.setTargetAtTime(CHIP.freq*Math.pow(2,CHIP.oct-4),AC.currentTime,0.02);});
+document.getElementById('chip-glide').addEventListener('kc',e=>{CHIP.glide=e.detail;disp('chip-glide-v',e.detail===0?'0':e.detail.toFixed(2));});
+document.getElementById('chip-aspd').addEventListener('kc',e=>{CHIP.arpSpeed=Math.round(e.detail);disp('chip-aspd-v',CHIP.arpSpeed+'');});
+document.getElementById('chip-vrate').addEventListener('kc',e=>{CHIP.vRate=e.detail;disp('chip-vrate-v',e.detail.toFixed(1));if(CHIP.lfo)CHIP.lfo.frequency.setTargetAtTime(e.detail,AC.currentTime,0.02);});
+document.getElementById('chip-vdepth').addEventListener('kc',e=>{CHIP.vDepth=e.detail;disp('chip-vdepth-v',e.detail.toFixed(3));if(CHIP.lfoG)CHIP.lfoG.gain.value=CHIP.freq*CHIP.vDepth;});
+initTog(document.getElementById('chip-arp'),on=>{CHIP.arpOn=on;disp('chip-arp-v',on?'ON':'OFF');if(on&&CHIP.running)chipArpStart();else chipArpStop();});
+initTog(document.getElementById('chip-power'),on=>{disp('chip-power-v',on?'ON':'OFF');on?chipStart():chipStop();});
+document.getElementById('chip-wave-sel').querySelectorAll('.wave-btn').forEach(b=>{b.addEventListener('click',()=>{getAC();initMaster();document.getElementById('chip-wave-sel').querySelectorAll('.wave-btn').forEach(x=>{x.classList.remove('active');x.style.borderColor='';x.style.color='';});b.classList.add('active');b.style.borderColor='#ff2d9b';b.style.color='#ff2d9b';CHIP.wave=b.dataset.wave;if(CHIP.osc&&CHIP.running){const t=chipMakeWave(CHIP.pw);if(t)CHIP.osc.type=t;}});});
+
+// ════════════════════════════════════════════════
+//  BITCRUSHER (ScriptProcessor for actual bit reduction)
+// ════════════════════════════════════════════════
+const BC={enabled:false,proc:null,analyserIn:null,analyserOut:null,bits:16,rateMul:1,mix:1,dryGain:null,wetGain:null};
+function bcInit(){
+  const ac=getAC();initMaster();if(BC.proc)return;
+  BC.analyserIn=ac.createAnalyser();BC.analyserIn.fftSize=512;
+  BC.analyserOut=ac.createAnalyser();BC.analyserOut.fftSize=512;
+  const bufSize=4096;
+  BC.proc=ac.createScriptProcessor(bufSize,1,1);
+  let phase=0;let lastVal=0;
+  BC.proc.onaudioprocess=e=>{
+    const inp=e.inputBuffer.getChannelData(0);
+    const out=e.outputBuffer.getChannelData(0);
+    const step=2/Math.pow(2,BC.bits);
+    const phaseMul=1/BC.rateMul;
+    for(let i=0;i<bufSize;i++){
+      phase+=phaseMul;
+      if(phase>=1){phase-=1;lastVal=step*Math.floor(inp[i]/step+0.5);}
+      out[i]=lastVal*BC.mix+inp[i]*(1-BC.mix);
+    }
+  };
+  BC.dryGain=ac.createGain();BC.dryGain.gain.value=0;
+  BC.wetGain=ac.createGain();BC.wetGain.gain.value=0;
+  BC.analyserIn.connect(BC.proc);BC.proc.connect(BC.analyserOut);BC.analyserOut.connect(masterComp);
+}
+function bcEnable(on){
+  BC.enabled=on;bcInit();
+  BC.wetGain.gain.setTargetAtTime(on?1:0,AC.currentTime,0.05);
+  document.getElementById('bc-led').classList.toggle('on',on);
+  disp('bc-enable-v',on?'ON':'OFF');disp('bc-disp',on?BC.bits+' BIT':'OFF');
+  if(on){if(D.analyser)D.analyser.connect(BC.analyserIn);if(K.analyser)K.analyser.connect(BC.analyserIn);}
+}
+document.getElementById('bc-bits').addEventListener('kc',e=>{BC.bits=Math.round(e.detail);disp('bc-bits-v',BC.bits+'');disp('bc-disp',BC.bits+' BIT');});
+document.getElementById('bc-rate').addEventListener('kc',e=>{BC.rateMul=Math.round(e.detail);disp('bc-rate-v',BC.rateMul+'x');});
+document.getElementById('bc-mix').addEventListener('kc',e=>{BC.mix=e.detail;disp('bc-mix-v',e.detail.toFixed(2));});
+document.getElementById('bc-vol').addEventListener('kc',e=>{BC.vol=e.detail;disp('bc-vol-v',e.detail.toFixed(2));if(BC.out)BC.out.gain.setTargetAtTime(e.detail,AC.currentTime,0.01);});
+initTog(document.getElementById('bc-enable'),on=>{bcEnable(on);});
+
+// ════════════════════════════════════════════════
+//  3-BAND EQ + MASTER FILTER
+// ════════════════════════════════════════════════
+const EQ={enabled:false,lo:null,mid:null,hi:null,mf:null,analyser:null,loG:0,midG:0,hiG:0,fc:20000,q:0.7,ftype:'lowpass'};
+function eqInit(){
+  const ac=getAC();initMaster();if(EQ.analyser)return;
+  EQ.analyser=ac.createAnalyser();EQ.analyser.fftSize=512;
+  EQ.lo=ac.createBiquadFilter();EQ.lo.type='lowshelf';EQ.lo.frequency.value=250;EQ.lo.gain.value=0;
+  EQ.mid=ac.createBiquadFilter();EQ.mid.type='peaking';EQ.mid.frequency.value=1000;EQ.mid.Q.value=1;EQ.mid.gain.value=0;
+  EQ.hi=ac.createBiquadFilter();EQ.hi.type='highshelf';EQ.hi.frequency.value=4000;EQ.hi.gain.value=0;
+  EQ.mf=ac.createBiquadFilter();EQ.mf.type=EQ.ftype;EQ.mf.frequency.value=EQ.fc;EQ.mf.Q.value=EQ.q;
+  EQ.lo.connect(EQ.mid);EQ.mid.connect(EQ.hi);EQ.hi.connect(EQ.mf);EQ.mf.connect(EQ.analyser);EQ.analyser.connect(masterComp);
+}
+function eqEnable(on){
+  EQ.enabled=on;eqInit();
+  document.getElementById('eq-led').classList.toggle('on',on);
+  disp('eq-enable-v',on?'ON':'OFF');disp('eq-disp',on?'ON':'FLAT');
+  if(on){if(D.analyser)try{D.analyser.connect(EQ.lo);}catch(e){}if(K.analyser)try{K.analyser.connect(EQ.lo);}catch(e){}}
+}
+document.getElementById('eq-lo').addEventListener('kc',e=>{EQ.loG=e.detail;disp('eq-lo-v',(e.detail>=0?'+':'')+Math.round(e.detail)+'dB');if(EQ.lo)EQ.lo.gain.setTargetAtTime(e.detail,AC.currentTime,0.02);disp('eq-disp',EQ.enabled?'EQ ON':'FLAT');});
+document.getElementById('eq-mid').addEventListener('kc',e=>{EQ.midG=e.detail;disp('eq-mid-v',(e.detail>=0?'+':'')+Math.round(e.detail)+'dB');if(EQ.mid)EQ.mid.gain.setTargetAtTime(e.detail,AC.currentTime,0.02);});
+document.getElementById('eq-hi').addEventListener('kc',e=>{EQ.hiG=e.detail;disp('eq-hi-v',(e.detail>=0?'+':'')+Math.round(e.detail)+'dB');if(EQ.hi)EQ.hi.gain.setTargetAtTime(e.detail,AC.currentTime,0.02);});
+document.getElementById('eq-fc').addEventListener('kc',e=>{EQ.fc=e.detail;disp('eq-fc-v',e.detail>=1000?(e.detail/1000).toFixed(1)+'k':Math.round(e.detail)+'');if(EQ.mf)EQ.mf.frequency.setTargetAtTime(e.detail,AC.currentTime,0.02);});
+document.getElementById('eq-q').addEventListener('kc',e=>{EQ.q=e.detail;disp('eq-q-v',e.detail.toFixed(1));if(EQ.mf)EQ.mf.Q.setTargetAtTime(e.detail,AC.currentTime,0.02);});
+initTog(document.getElementById('eq-ftype'),on=>{EQ.ftype=on?'highpass':'lowpass';disp('eq-ftype-v',on?'HP':'LP');if(EQ.mf)EQ.mf.type=EQ.ftype;});
+initTog(document.getElementById('eq-enable'),on=>{eqEnable(on);});
+document.getElementById('eq-midfreq').addEventListener('kc',e=>{EQ.midFreq=e.detail;disp('eq-midfreq-v',e.detail>=1000?(e.detail/1000).toFixed(1)+'k':Math.round(e.detail)+'');if(EQ.mid)EQ.mid.frequency.setTargetAtTime(e.detail,AC.currentTime,0.02);});
+document.getElementById('eq-vol').addEventListener('kc',e=>{EQ.vol=e.detail;disp('eq-vol-v',e.detail.toFixed(2));if(EQ.out)EQ.out.gain.setTargetAtTime(e.detail,AC.currentTime,0.01);});
+
+// ════════════════════════════════════════════════
+//  WAVESHAPER DISTORTION
+// ════════════════════════════════════════════════
+const WS={enabled:false,shaper:null,tone:null,dryG:null,wetG:null,analyser:null,drive:1,mix:0.5,toneFreq:4000,type:'hard'};
+function wsMakeCurve(drive,type){
+  const n=256,curve=new Float32Array(n);
+  for(let i=0;i<n;i++){
+    const x=i*2/n-1;
+    if(type==='soft')curve[i]=x*(3+drive)/(1+Math.abs(x)*drive)*0.33;
+    else if(type==='hard'){const k=drive;curve[i]=Math.max(-1,Math.min(1,x*k));}
+    else if(type==='fold'){let v=x*drive;while(Math.abs(v)>1)v=v>1?2-v:v<-1?-2-v:v;curve[i]=v;}
+    else{curve[i]=(3+drive)*x*20*Math.PI/180/(Math.PI+drive*Math.abs(x));}
+  }
+  return curve;
+}
+function wsInit(){
+  const ac=getAC();initMaster();if(WS.analyser)return;
+  WS.analyser=ac.createAnalyser();WS.analyser.fftSize=512;
+  WS.shaper=ac.createWaveShaper();WS.shaper.curve=wsMakeCurve(WS.drive,WS.type);WS.shaper.oversample='4x';
+  WS.tone=ac.createBiquadFilter();WS.tone.type='lowpass';WS.tone.frequency.value=WS.toneFreq;
+  WS.dryG=ac.createGain();WS.dryG.gain.value=1-WS.mix;
+  WS.wetG=ac.createGain();WS.wetG.gain.value=WS.mix;
+  WS.shaper.connect(WS.tone);WS.tone.connect(WS.wetG);
+  WS.dryG.connect(WS.analyser);WS.wetG.connect(WS.analyser);WS.analyser.connect(masterComp);
+}
+function wsEnable(on){
+  WS.enabled=on;wsInit();
+  document.getElementById('ws-led').classList.toggle('on',on);
+  disp('ws-enable-v',on?'ON':'OFF');disp('ws-disp',on?WS.type.toUpperCase():'CLEAN');
+  if(on){if(D.analyser)try{D.analyser.connect(WS.shaper);D.analyser.connect(WS.dryG);}catch(e){}if(K.analyser)try{K.analyser.connect(WS.shaper);K.analyser.connect(WS.dryG);}catch(e){}}
+}
+document.getElementById('ws-drive').addEventListener('kc',e=>{WS.drive=e.detail;disp('ws-drive-v',Math.round(e.detail)+'');if(WS.shaper)WS.shaper.curve=wsMakeCurve(WS.drive,WS.type);});
+document.getElementById('ws-tone').addEventListener('kc',e=>{WS.toneFreq=e.detail;disp('ws-tone-v',e.detail>=1000?(e.detail/1000).toFixed(1)+'k':Math.round(e.detail)+'');if(WS.tone)WS.tone.frequency.setTargetAtTime(e.detail,AC.currentTime,0.02);});
+document.getElementById('ws-mix').addEventListener('kc',e=>{WS.mix=e.detail;disp('ws-mix-v',e.detail.toFixed(2));if(WS.wetG){WS.wetG.gain.setTargetAtTime(WS.mix,AC.currentTime,0.02);WS.dryG.gain.setTargetAtTime(1-WS.mix,AC.currentTime,0.02);}});
+initTog(document.getElementById('ws-enable'),on=>{wsEnable(on);});
+document.getElementById('ws-vol').addEventListener('kc',e=>{WS.vol=e.detail;disp('ws-vol-v',e.detail.toFixed(2));if(WS.out)WS.out.gain.setTargetAtTime(e.detail,AC.currentTime,0.01);});
+document.getElementById('ws-type-sel').querySelectorAll('.wave-btn').forEach(b=>{b.addEventListener('click',()=>{document.getElementById('ws-type-sel').querySelectorAll('.wave-btn').forEach(x=>{x.classList.remove('active');x.style.borderColor='';});b.classList.add('active');b.style.borderColor='#ffe600';WS.type=b.dataset.ws;if(WS.shaper)WS.shaper.curve=wsMakeCurve(WS.drive,WS.type);disp('ws-disp',WS.enabled?WS.type.toUpperCase():'CLEAN');});});
+
+
+// ════════════════════════════════════════════════
+let visAnalyser = null;
+function getVisAnalyser(){
+  if(visAnalyser) return visAnalyser;
+  const ac = getAC(); initMaster();
+  visAnalyser = ac.createAnalyser();
+  visAnalyser.fftSize = 2048;
+  visAnalyser.smoothingTimeConstant = 0.82;
+  masterGain.connect(visAnalyser); // tap off master output
+  return visAnalyser;
+}
+
+// shared state for vis window
+window._synthVis = {
+  getAnalyser: getVisAnalyser,
+  getAC: getAC,
+  noteEvent: null,   // {freq, name, time} — set on noteOn
+  seqStep: 0,
+  droneFreq: ()=> D.freq,
+  keysActive: ()=> Object.keys(K.voices).length > 0,
+  droneActive: ()=> D.running,
+};
+
+// ════════════════════════════════════════════════
+//  RENDER LOOP
+// ════════════════════════════════════════════════
+function loop(){
+  drawScope(document.getElementById('d-scope'),D.analyser,'#ff2d9b');
+  drawScope(document.getElementById('k-scope'),K.analyser,'#00f5ff');
+  drawScope(document.getElementById('rm-scope'),RM.analyser,'#39ff14');
+  drawScope(document.getElementById('del-scope'),DEL.analyser,'#ffe600');
+  drawScope(document.getElementById('chip-scope'),CHIP.analyser,'#ff2d9b');
+  drawScope(document.getElementById('bc-scope'),BC.analyserOut,'#6b21ff');
+  drawScope(document.getElementById('eq-scope'),EQ.analyser,'#39ff14');
+  drawScope(document.getElementById('ws-scope'),WS.analyser,'#ffe600');
+  drawScope(document.getElementById('dr-scope'),DR.analyser,'#cc44ff');
+  drawScope(document.getElementById('pn-scope'),PN.analyser,'#00f5ff');
+  requestAnimationFrame(loop);
+}
+
+
+// ════════════════════════════════════════════════
+//  VISUALS POPUP — 3 DEEP MODES
+// ════════════════════════════════════════════════
+let visWin = null;
+
+function openVisuals(){
+  getAC(); initMaster(); getVisAnalyser();
+  if(visWin && !visWin.closed){ visWin.focus(); return; }
+
+  visWin = window.open('about:blank','visuals','width=1280,height=800,resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no');
+  if(!visWin){ alert('Allow popups for this page to open the visuals window.'); return; }
+
+  // Write a minimal shell — just a canvas and a hook for us to call into
+  visWin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>VISUALS</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">' +
+    '<style>*{margin:0;padding:0;box-sizing:border-box;}html,body{width:100%;height:100%;background:#000;overflow:hidden;}' +
+    'canvas{position:absolute;inset:0;display:block;}' +
+    '#sl{position:fixed;inset:0;pointer-events:none;z-index:9000;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);}' +
+    '#vg{position:fixed;inset:0;pointer-events:none;z-index:8999;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,0.65) 100%);}' +
+    '#ui{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;align-items:center;gap:6px;padding:8px 16px 10px;' +
+    'background:linear-gradient(transparent,rgba(0,0,8,0.98));border-top:2px solid #ff2d9b;opacity:0;transition:opacity 0.2s;}' +
+    'body:hover #ui{opacity:1;}' +
+    '.mb{font-family:"Press Start 2P",monospace;font-size:7px;letter-spacing:0.1em;background:#050510;color:#3a3a5a;border:2px solid #1a1a38;padding:6px 14px;cursor:pointer;}' +
+    '.mb.on{color:#ff2d9b;border-color:#ff2d9b;background:#180010;box-shadow:0 0 12px rgba(255,45,155,0.6);}' +
+    '#mn{margin-left:auto;font-family:"Press Start 2P",monospace;font-size:6px;color:#ff2d9b44;letter-spacing:0.2em;}' +
+    '</style></head><body>' +
+    '<canvas id="c"></canvas><div id="sl"></div><div id="vg"></div>' +
+    '<div id="ui"><button class="mb on" id="m0">TUNNEL</button><button class="mb" id="m1">SPECTRUM</button><button class="mb" id="m2">RORSCHACH</button><span id="mn">TUNNEL</span></div>' +
+    '</body></html>');
+  visWin.document.close();
+
+  // Inject the render engine after the document is written
+  // We pass the analyser directly as a JS object reference — same process, no origin issues
+  const an = visAnalyser;
+  visWin._startVisuals = function(analyser) {
+    'use strict';
+    const cv = visWin.document.getElementById('c');
+    const cx = cv.getContext('2d');
+    let W, H;
+    function rsz(){ W=cv.width=visWin.innerWidth; H=cv.height=visWin.innerHeight; }
+    visWin.addEventListener('resize', rsz); rsz();
+
+    const TB=new Uint8Array(2048), FB=new Uint8Array(2048);
+    function rd(){ if(!analyser)return; analyser.getByteTimeDomainData(TB); analyser.getByteFrequencyData(FB); }
+
+    const R={rms:0,bass:0,mid:0,hi:0,kick:0,snare:0,flux:0,energy:0};
+    let _pr=0,_pkick=0,_kick=0;
+    function calcAudio(){
+      let s=0; for(let i=0;i<TB.length;i++){const v=TB[i]/128-1;s+=v*v;}
+      const rms=Math.sqrt(s/TB.length);
+      let bass=0;for(let i=1;i<12;i++)bass+=FB[i];bass/=11*255;
+      let mid=0;for(let i=12;i<90;i++)mid+=FB[i];mid/=78*255;
+      let hi=0;for(let i=90;i<220;i++)hi+=FB[i];hi/=130*255;
+      let kick=bass*9, snare=0;for(let i=20;i<60;i++)snare+=FB[i];snare/=40*255;snare*=7;
+      const flux=Math.abs(rms-_pr)*30;_pr=rms;
+      const lp=(a,b,atk,dec)=>a+(b-a)*(b>a?atk:dec);
+      R.rms=lp(R.rms,Math.min(1,rms*6),0.6,0.07);R.bass=lp(R.bass,Math.min(1,bass),0.7,0.06);
+      R.mid=lp(R.mid,Math.min(1,mid),0.5,0.06);R.hi=lp(R.hi,Math.min(1,hi),0.45,0.05);
+      R.kick=lp(R.kick,Math.min(1,kick),0.85,0.09);R.snare=lp(R.snare,Math.min(1,snare),0.75,0.08);
+      R.flux=lp(R.flux,Math.min(1,flux),0.5,0.1);R.energy=lp(R.energy,(R.bass+R.mid+R.hi)/3,0.4,0.05);
+      if(R.kick>0.5&&_pkick<0.5)_kick=1; _pkick=R.kick;
+    }
+
+    let T=0, mode=0, tunnelZ=0;
+    const TRINGS=40;
+
+    function drawTunnel(dt){
+      T+=dt; tunnelZ+=dt*(0.55+R.bass*2.8+R.kick*4);
+      cx.fillStyle=`rgba(2,0,8,${0.18+R.hi*0.06})`; cx.fillRect(0,0,W,H);
+      const cx2=W/2,cy2=H/2,maxR=Math.sqrt(cx2*cx2+cy2*cy2)*1.05;
+      for(let ri=TRINGS-1;ri>=0;ri--){
+        const z=(ri/TRINGS+tunnelZ%1)*TRINGS, zn=z/TRINGS, depth=1-zn, r=maxR*depth*(0.95+R.bass*0.12);
+        if(r<1)continue;
+        const hue=((T*28+zn*180+R.bass*60+ri*7)%360+360)%360;
+        const sat=55+R.rms*35, lit=Math.floor(8+depth*depth*(22+R.rms*25));
+        const alpha=depth*depth*(0.6+R.energy*0.3);
+        const segs=Math.max(16,Math.floor(r*0.55)), angOff=T*0.18+ri*0.04+R.mid*0.5, pw=Math.max(2,Math.floor(3*depth));
+        cx.strokeStyle=`hsla(${hue},${sat}%,${lit}%,${alpha})`; cx.lineWidth=pw*2;
+        cx.shadowColor=`hsl(${hue},${sat}%,60%)`; cx.shadowBlur=depth>0.7?8+R.rms*20:0;
+        cx.beginPath();
+        for(let si=0;si<=segs;si++){
+          const a=si/segs*Math.PI*2+angOff, w=1+Math.sin(a*3+T*2.2+ri*0.3)*(0.04+R.mid*0.12);
+          const px=cx2+Math.cos(a)*r*w*(1+R.bass*0.08), py=cy2+Math.sin(a)*r*w*(0.72+R.hi*0.12);
+          si===0?cx.moveTo(px,py):cx.lineTo(px,py);
+        }
+        cx.closePath(); cx.stroke(); cx.shadowBlur=0;
+      }
+      if(_kick>0.1){
+        const g=cx.createRadialGradient(cx2,cy2,0,cx2,cy2,maxR*_kick*0.6);
+        g.addColorStop(0,`rgba(255,255,255,${_kick*0.7})`); g.addColorStop(0.4,`rgba(255,45,155,${_kick*0.4})`); g.addColorStop(1,'transparent');
+        cx.fillStyle=g; cx.fillRect(0,0,W,H); _kick=Math.max(0,_kick-dt*7);
+      }
+      cx.strokeStyle=`rgba(255,255,255,${0.35+R.rms*0.5})`; cx.lineWidth=2; cx.shadowColor='#fff'; cx.shadowBlur=R.rms*12;
+      cx.beginPath();
+      for(let i=0;i<TB.length;i+=4){const x=i/TB.length*W,y=cy2+(TB[i]/128-1)*(H*0.18+R.rms*H*0.18);i===0?cx.moveTo(x,y):cx.lineTo(x,y);}
+      cx.stroke(); cx.shadowBlur=0;
+      for(let i=0;i<128;i++){
+        const v=(FB[Math.floor(i/128*200)]||0)/255; if(v<0.04)continue;
+        const a=i/128*Math.PI*2-Math.PI/2, r0=Math.min(W,H)*0.42, r1=r0+v*Math.min(W,H)*0.1*(1+R.rms);
+        const hue2=((i/128*360+T*45)%360+360)%360;
+        cx.strokeStyle=`hsl(${hue2},100%,65%)`; cx.lineWidth=Math.max(1,W/128*0.7);
+        cx.beginPath(); cx.moveTo(cx2+Math.cos(a)*r0,cy2+Math.sin(a)*r0); cx.lineTo(cx2+Math.cos(a)*r1,cy2+Math.sin(a)*r1); cx.stroke();
+      }
+    }
+
+    const SC_PARTS=[], SC_STARS=Array.from({length:300},()=>({x:Math.random(),y:Math.random()*0.55,s:Math.random()*2+0.5,t:Math.random()*6.28}));
+    let scT=0; const SC_COLS=[];
+    function scInit(){SC_COLS.length=0;const n=Math.floor(W/3)+2;for(let i=0;i<n;i++)SC_COLS.push({base:0.2+Math.random()*0.45,w:2+Math.floor(Math.random()*3),hue:(i*17+70)%360});}
+    scInit();
+    function drawSpectrum(dt){
+      scT+=dt; T+=dt;
+      cx.fillStyle=`rgba(0,0,4,${0.25+R.hi*0.08})`; cx.fillRect(0,0,W,H);
+      const gY=H*0.72;
+      SC_STARS.forEach(s=>{s.t+=dt*0.4;const tw=0.5+Math.sin(s.t)*0.5;cx.fillStyle=`rgba(180,200,255,${tw*0.7})`;cx.fillRect(s.x*W|0,s.y*H|0,s.s|0,s.s|0);});
+      if(R.rms>0.08&&Math.random()<0.3)SC_PARTS.push({x:Math.random()*W,y:gY,vx:(Math.random()-0.5)*2,vy:-(1+Math.random()*4+R.bass*6),life:1,hue:(scT*60+Math.random()*60)%360,s:1+Math.random()*3});
+      for(let i=SC_PARTS.length-1;i>=0;i--){const p=SC_PARTS[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.08;p.life-=dt*1.2;if(p.life<=0){SC_PARTS.splice(i,1);continue;}cx.fillStyle=`hsla(${p.hue},100%,75%,${p.life})`;cx.fillRect(p.x|0,p.y|0,p.s|0,p.s|0);}
+      const n=SC_COLS.length;
+      for(let i=0;i<n;i++){
+        const col=SC_COLS[i],fv=(FB[Math.floor(i/n*180)]||0)/255,bh=(col.base+fv*0.35*(1+R.bass*0.5))*H*0.65;
+        const bx=i/n*W,bw=col.w*W/n,hue=col.hue+scT*8;
+        cx.fillStyle=`hsl(${hue},${40+fv*50}%,${5+fv*18}%)`; cx.fillRect(bx,gY-bh,bw-1,bh);
+        const ww=Math.max(2,bw*0.25|0),wh=Math.max(2,bw*0.35|0);
+        for(let wy=gY-bh+4;wy<gY-4;wy+=wh+3)if(Math.random()<0.6+fv*0.3){cx.fillStyle=`hsla(${hue+30},80%,${35+fv*55}%,${0.6+fv*0.4})`;cx.fillRect(bx+2,wy,ww,wh);}
+        cx.fillStyle=`hsla(${hue},${40+fv*50}%,${3+fv*10}%,0.4)`;cx.fillRect(bx,gY,bw-1,H-gY);
+      }
+      cx.strokeStyle=`rgba(0,245,255,${0.12+R.rms*0.2})`; cx.lineWidth=1; cx.beginPath();
+      for(let i=0;i<TB.length;i+=3){const x=i/TB.length*W,y=gY+(TB[i]/128-1)*40;i===0?cx.moveTo(x,y):cx.lineTo(x,y);} cx.stroke();
+      if(_kick>0.1){const hk=(scT*40)%360|0;cx.strokeStyle=`hsla(${hk},100%,70%,${_kick*0.8})`;cx.lineWidth=2+_kick*3;cx.beginPath();cx.moveTo(0,gY);cx.lineTo(W,gY);cx.stroke();_kick=Math.max(0,_kick-dt*6);}
+    }
+
+    const RK_N=32, RK_NODES=Array.from({length:32},(_,i)=>({a:i/32*Math.PI,r:80,vr:0,va:0,phase:Math.random()*6.28}));
+    const RK_TEND=[]; let rkT=0;
+    function drawRorschach(dt){
+      rkT+=dt; T+=dt;
+      cx.fillStyle=`rgba(2,0,6,${0.055+R.hi*0.025})`; cx.fillRect(0,0,W,H);
+      const CX=W/2,CY=H/2;
+      for(let i=0;i<RK_N;i++){
+        const nd=RK_NODES[i],fv=(FB[Math.floor(i/RK_N*180)]||0)/255;
+        const tr=60+fv*(Math.min(W,H)*0.35)*(1+R.rms*0.5);
+        nd.vr+=(tr-nd.r)*0.12; nd.vr*=0.72; nd.r+=nd.vr;
+        nd.va+=Math.sin(rkT*0.3+nd.phase+i*0.2)*0.004; nd.va*=0.92; nd.a+=nd.va;
+      }
+      for(const [sx,sy] of [[1,1],[-1,1],[1,-1],[-1,-1]]){
+        cx.save(); cx.translate(CX,CY); cx.scale(sx,sy);
+        const hb=((rkT*22)%360+360)%360;
+        cx.beginPath();
+        for(let i=0;i<=RK_N;i++){const nd=RK_NODES[i%RK_N];i===0?cx.moveTo(Math.cos(nd.a)*nd.r,Math.sin(nd.a)*nd.r*0.65):cx.lineTo(Math.cos(nd.a)*nd.r,Math.sin(nd.a)*nd.r*0.65);}
+        cx.closePath();
+        const g=cx.createRadialGradient(0,0,0,0,0,Math.min(W,H)*0.35);
+        g.addColorStop(0,`hsla(${hb},${60+R.rms*30}%,${12+R.bass*18}%,0.85)`);
+        g.addColorStop(0.5,`hsla(${(hb+40)%360},${55+R.energy*30}%,${8+R.mid*14}%,0.6)`);
+        g.addColorStop(1,`hsla(${(hb+80)%360},60%,5%,0)`);
+        cx.fillStyle=g; cx.fill();
+        cx.strokeStyle=`hsla(${(hb+120)%360},100%,${55+R.rms*35}%,${0.4+R.energy*0.4})`; cx.lineWidth=1.5+R.rms*3;
+        cx.shadowColor=`hsl(${(hb+120)%360},100%,65%)`; cx.shadowBlur=8+R.rms*20; cx.stroke(); cx.shadowBlur=0;
+        cx.restore();
+      }
+      if(R.rms>0.25&&Math.random()<R.rms*0.35){
+        const a=Math.random()*Math.PI*2,r2=60+Math.random()*80;
+        [[CX+Math.cos(a)*r2,CY+Math.sin(a)*r2*0.6,a],[CX-Math.cos(a)*r2,CY+Math.sin(a)*r2*0.6,Math.PI-a],[CX+Math.cos(a)*r2,CY-Math.sin(a)*r2*0.6,-a],[CX-Math.cos(a)*r2,CY-Math.sin(a)*r2*0.6,Math.PI+a]]
+        .forEach(([x,y,ang])=>RK_TEND.push({x,y,vx:Math.cos(ang)*2.5,vy:Math.sin(ang)*2.5,life:1,hue:(rkT*40+ang*57)%360,size:2}));
+      }
+      for(let i=RK_TEND.length-1;i>=0;i--){
+        const p=RK_TEND[i]; p.x+=p.vx; p.y+=p.vy; p.vx*=0.97; p.vy*=0.97; p.life-=dt*1.4;
+        if(p.life<=0){RK_TEND.splice(i,1);continue;}
+        cx.globalAlpha=p.life*p.life*0.85; cx.fillStyle=`hsl(${p.hue},100%,70%)`;
+        cx.fillRect(p.x-1,p.y-1,2,2); cx.fillRect(W-p.x-1,p.y-1,2,2);
+        cx.fillRect(p.x-1,H-p.y-1,2,2); cx.fillRect(W-p.x-1,H-p.y-1,2,2);
+      }
+      cx.globalAlpha=1;
+      if(_kick>0.1){
+        const hk=((rkT*40)%360|0);
+        for(let k=0;k<6;k++){const kr=(k+1)*Math.min(W,H)*0.06*(1+_kick*0.5);cx.strokeStyle=`hsla(${(hk+k*25)%360},100%,75%,${_kick*(0.7-k*0.1)})`;cx.lineWidth=2;cx.beginPath();cx.ellipse(CX,CY,kr,kr*0.6,0,0,Math.PI*2);cx.stroke();}
+        _kick=Math.max(0,_kick-dt*6);
+      }
+      for(let pi=0;pi<16;pi++){
+        const a=pi/16*Math.PI*2+rkT*0.08,v=(FB[Math.floor(pi/16*128)]||0)/255,hp=((pi/16*360+rkT*30)%360|0);
+        const r0=Math.min(W,H)*(0.38+R.energy*0.04),r1=r0+v*Math.min(W,H)*0.12*(1+R.rms*0.4);
+        cx.strokeStyle=`hsla(${hp},100%,${50+v*35}%,${0.3+v*0.5})`; cx.lineWidth=Math.max(1.5,v*5);
+        cx.shadowColor=`hsl(${hp},100%,60%)`; cx.shadowBlur=v*12;
+        cx.beginPath(); cx.moveTo(CX+Math.cos(a)*r0,CY+Math.sin(a)*r0*0.7); cx.lineTo(CX+Math.cos(a)*r1,CY+Math.sin(a)*r1*0.7); cx.stroke(); cx.shadowBlur=0;
+      }
+      if(R.snare>0.5){cx.fillStyle=`hsla(${((rkT*60)%360|0)},100%,65%,${(R.snare-0.5)*0.3})`;cx.fillRect(0,0,W,H);}
+    }
+
+    // Mode buttons
+    const btns = [visWin.document.getElementById('m0'),visWin.document.getElementById('m1'),visWin.document.getElementById('m2')];
+    const mn = visWin.document.getElementById('mn');
+    const names = ['TUNNEL','SPECTRUM','RORSCHACH'];
+    btns.forEach((b,i)=>{
+      b.addEventListener('click',()=>{
+        mode=i; T=0;
+        btns.forEach((x,j)=>x.classList.toggle('on',j===i));
+        mn.textContent=names[i];
+      });
+    });
+
+    let lastT=0;
+    function frame(ts){
+      visWin.requestAnimationFrame(frame);
+      const dt=Math.min(0.05,(ts-lastT)/1000); lastT=ts;
+      rd(); calcAudio();
+      if(mode===0)drawTunnel(dt);
+      else if(mode===1)drawSpectrum(dt);
+      else if(mode===2)drawRorschach(dt);
+    }
+    visWin.requestAnimationFrame(frame);
+  };
+
+  // Call it immediately — same JS heap, no async needed
+  visWin._startVisuals(an);
+}
+
+
+// ── VISUALS BUTTON in synth UI ──
+(function addVisBtn(){
+  const btn = document.createElement('button');
+  btn.id = 'vis-btn';
+  btn.textContent = '◈ VISUALS';
+  btn.style.cssText = `
+    position:fixed;bottom:14px;right:16px;z-index:200;
+    font-family:'Press Start 2P',monospace;font-size:7px;letter-spacing:0.18em;text-transform:uppercase;
+    background:#08080f;color:#6b21ff;
+    border:2px solid #6b21ff;padding:7px 14px;cursor:pointer;border-radius:0;
+    box-shadow:0 0 8px rgba(107,33,255,0.4);
+    transition:all 0.05s steps(1);
+  `;
+  btn.addEventListener('mouseenter',()=>{btn.style.color='#0a0a0f';btn.style.background='#6b21ff';btn.style.boxShadow='0 0 16px rgba(107,33,255,0.8)';});
+  btn.addEventListener('mouseleave',()=>{btn.style.color='#6b21ff';btn.style.background='#08080f';btn.style.boxShadow='0 0 8px rgba(107,33,255,0.4)';});
+  btn.addEventListener('click', openVisuals);
+  document.body.appendChild(btn);
+})();
+
+// ════════════════════════════════════════════════
+//  8-BIT ROBOT DANCER (bottom strip of rack)
+// ════════════════════════════════════════════════
+(function initRobotDancer(){
+  const rc = document.createElement('canvas');
+  rc.id = 'synthRobotCanvas';
+  rc.width = 800; rc.height = 28;
+  rc.style.cssText='position:fixed;bottom:0;left:0;right:0;width:100%;height:56px;z-index:150;image-rendering:pixelated;border-top:2px solid #ff2d9b;background:#050510;';
+  document.body.appendChild(rc);
+  const rx = rc.getContext('2d');
+  rx.imageSmoothingEnabled = false;
+  const RW=rc.width, RH=28, PS=4;
+  const _=null,K='#111122',RT='#00ccff',RTD='#0088aa',RH2='#ffe600',RL='#dddddd',W2='#ffffff';
+  function rPx(x,y,c){if(!c||x<0||y<0||x>=RW/PS||y>=RH/PS)return;rx.fillStyle=c;rx.fillRect(x*PS,y*PS,PS,PS);}
+  function rRow(x,y,cols){cols.forEach((c,i)=>rPx(x+i,y,c));}
+  function drawBot(cx,frame,flash){
+    const hc=flash?RH2:RT;
+    rRow(cx-3,0,[K,hc,hc,hc,hc,hc,K]);rRow(cx-3,1,[K,hc,RH2,RH2,RH2,hc,K]);
+    rRow(cx-3,2,[K,hc,RH2,W2,RH2,hc,K]);rRow(cx-3,3,[K,hc,RH2,RH2,RH2,hc,K]);
+    rRow(cx-3,4,[K,hc,hc,hc,hc,hc,K]);rRow(cx-3,5,[_,K,RT,RT,RT,K,_]);
+    rRow(cx-3,6,[K,RT,RT,RT,RT,RT,K]);rRow(cx-3,7,[K,RTD,RT,RT,RT,RTD,K]);
+    rRow(cx-3,8,[K,RTD,RT,RT,RT,RTD,K]);rRow(cx-3,9,[K,RT,RT,RT,RT,RT,K]);
+    rRow(cx-2,10,[K,RH2,RH2,RH2,RH2,K]);
+    if(frame===0){[0,1,2,3].forEach(i=>rPx(cx+3+i,7,RT));[0,1,2,3].forEach(i=>rPx(cx-4-i+3,7,RT));}
+    else if(frame===1){[0,1,2,3].forEach(i=>rPx(cx+3,6-i,RT));[0,1,2,3].forEach(i=>rPx(cx-3,7+i,RT));}
+    else if(frame===2){[0,1,2,3].forEach(i=>rPx(cx+3+i,8,RT));[0,1,2,3].forEach(i=>rPx(cx-4-i+3,8,RT));}
+    else{[0,1,2,3].forEach(i=>rPx(cx-3,6-i,RT));[0,1,2,3].forEach(i=>rPx(cx+3,7+i,RT));}
+    rRow(cx-2,11,[K,RT,RT,RT,RT,K]);rRow(cx-2,12,[K,RT,RT,RT,RT,K]);
+    if(frame===1){rPx(cx-2,13,RT);rPx(cx-2,14,RT);rPx(cx-3,15,RL);rPx(cx-2,15,RL);rPx(cx+1,13,RT);rPx(cx+1,14,RT);rPx(cx+2,15,RL);rPx(cx+1,15,RL);}
+    else if(frame===3){rPx(cx-1,13,RT);rPx(cx-1,14,RT);rPx(cx-2,15,RL);rPx(cx-1,15,RL);rPx(cx+2,13,RT);rPx(cx+2,14,RT);rPx(cx+3,15,RL);rPx(cx+2,15,RL);}
+    else{rPx(cx-1,13,RT);rPx(cx-1,14,RT);rPx(cx-2,15,RL);rPx(cx-1,15,RL);rPx(cx+1,13,RT);rPx(cx+1,14,RT);rPx(cx+2,15,RL);rPx(cx+1,15,RL);}
+  }
+  let rbFrame=0,rbTick=0,rbCount=0;
+  function rbLoop(){
+    rx.fillStyle='#050510';rx.fillRect(0,0,RW,RH*PS);
+    // checkerboard floor strip
+    for(let tx=0;tx<RW/PS;tx++)for(let ty=RH/PS-2;ty<RH/PS;ty++){rx.fillStyle=(tx+ty)%2===0?'#1a0a2e':'#0a0520';rx.fillRect(tx*PS,ty*PS,PS,PS);}
+    // sparkle stars
+    for(let i=0;i<6;i++){const sx=((i*19+rbCount*2)%(RW/PS-2));const sy=((i*7+rbCount)%(RH/PS-4));rx.fillStyle=['#ff2d9b44','#00f5ff44','#ffe60044'][i%3];rx.fillRect(sx*PS,sy*PS,PS,PS);}
+    // draw 8 robots spread across width
+    const cols=Math.floor(RW/PS/14);
+    for(let i=0;i<cols;i++){
+      const cx=Math.round((i+0.5)*(RW/PS/cols));
+      drawBot(cx,(rbFrame+(i%4))%4,rbTick<2&&i===Math.floor(cols/2));
+    }
+    rbTick++;rbCount++;
+    if(rbTick>=(masterGain?6:16)){rbTick=0;rbFrame=(rbFrame+1)%4;}
+    requestAnimationFrame(rbLoop);
+  }
+  rbLoop();
+})();
+
+// ════════════════════════════════════════════════
+//  MONEY RAIN
+// ════════════════════════════════════════════════
+(function initMoney(){
+  const mc=document.getElementById('moneyCanvas');
+  const mx=mc.getContext('2d');
+  mc.width=window.innerWidth;mc.height=window.innerHeight;
+  window.addEventListener('resize',()=>{mc.width=window.innerWidth;mc.height=window.innerHeight;});
+  const BG='#1a7a1a',BGD='#0d4d0d',BGL='#39cc39',BW='#e8f5d0',BY='#ffe600',BK='#000a00';
+  const BILL=[[BGD,BG,BG,BG,BG,BG,BG,BG,BGD],[BG,BW,BG,BY,BG,BY,BG,BW,BG],[BG,BGL,BK,BK,BK,BK,BK,BGL,BG],[BG,BW,BG,BY,BG,BY,BG,BW,BG],[BGD,BG,BG,BG,BG,BG,BG,BG,BGD]];
+  const bills=[];
+  for(let i=0;i<28;i++)bills.push({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,spd:1.2+Math.random()*2.2,wp:Math.random()*Math.PI*2,ws:0.03+Math.random()*0.04,rot:(Math.random()-0.5)*0.6,sp:(Math.random()-0.5)*0.04,sc:2+Math.floor(Math.random()*3)});
+  function mLoop(){
+    mx.clearRect(0,0,mc.width,mc.height);
+    bills.forEach(b=>{
+      b.y+=b.spd;b.x+=Math.sin(b.wp)*1.2;b.wp+=b.ws;b.rot+=b.sp;
+      if(b.y>mc.height+30){b.y=-20;b.x=Math.random()*mc.width;b.rot=(Math.random()-0.5)*0.6;}
+      const ps=b.sc,bw=9*ps,bh=5*ps;
+      mx.save();mx.translate(b.x,b.y);mx.rotate(b.rot);
+      BILL.forEach((row,ry)=>row.forEach((c,cx)=>{mx.fillStyle=c;mx.fillRect(cx*ps-bw/2,ry*ps-bh/2,ps,ps);}));
+      mx.fillStyle=BY;mx.font=`bold ${ps*2}px monospace`;mx.textAlign='center';mx.textBaseline='middle';mx.fillText('$',0,0);
+      mx.restore();
+    });
+    requestAnimationFrame(mLoop);
+  }
+  mLoop();
+})();
+
+// ════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════
+//  DRUM MACHINE
+// ════════════════════════════════════════════════
+const DR_NAMES=['KICK','SNARE','CLAP','HH CL','HH OP','BONG H','BONG L','CONGA','RIMSHOT','CYMBAL'];
+const DR_STEPS=8;
+const DR={
+  playing:false,cur:0,bpm:120,swing:0,vol:0.8,timer:null,
+  gain:null,analyser:null,
+  pats:DR_NAMES.map(()=>Array(DR_STEPS).fill(false)),
+  vels:DR_NAMES.map(()=>Array(DR_STEPS).fill(1)),
+};
+
+// Synthesize drum sounds via Web Audio
+function drSound(type){
+  const ac=getAC();initMaster();
+  const g=ac.createGain();
+  g.connect(DR.analyser||masterComp);
+  const now=ac.currentTime;
+  const vol=DR.vol;
+
+  if(type==='KICK'){
+    const osc=ac.createOscillator();osc.connect(g);
+    osc.frequency.setValueAtTime(150,now);
+    osc.frequency.exponentialRampToValueAtTime(0.001,now+0.5);
+    g.gain.setValueAtTime(vol*1.8,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.5);
+    osc.start(now);osc.stop(now+0.5);
+  } else if(type==='SNARE'){
+    // noise burst
+    const buf=ac.createBuffer(1,ac.sampleRate*0.2,ac.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);
+    const src=ac.createBufferSource();src.buffer=buf;
+    const flt=ac.createBiquadFilter();flt.type='bandpass';flt.frequency.value=1800;flt.Q.value=0.8;
+    src.connect(flt);flt.connect(g);
+    // body tone
+    const osc=ac.createOscillator();const og=ac.createGain();osc.connect(og);og.connect(g);
+    osc.frequency.value=220;og.gain.setValueAtTime(vol*0.5,now);og.gain.exponentialRampToValueAtTime(0.001,now+0.15);
+    g.gain.setValueAtTime(vol*1.2,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.22);
+    src.start(now);src.stop(now+0.22);osc.start(now);osc.stop(now+0.15);
+  } else if(type==='CLAP'){
+    for(let i=0;i<3;i++){
+      const t=now+i*0.012;
+      const buf=ac.createBuffer(1,ac.sampleRate*0.05,ac.sampleRate);
+      const d=buf.getChannelData(0);for(let j=0;j<d.length;j++)d[j]=(Math.random()*2-1);
+      const src=ac.createBufferSource();src.buffer=buf;
+      const flt=ac.createBiquadFilter();flt.type='bandpass';flt.frequency.value=1200;flt.Q.value=0.5;
+      src.connect(flt);flt.connect(g);
+      const cg=ac.createGain();cg.gain.setValueAtTime(vol*1.1,t);cg.gain.exponentialRampToValueAtTime(0.001,t+0.08);
+      flt.connect(cg);cg.connect(masterComp);
+      src.start(t);src.stop(t+0.1);
+    }
+    g.gain.value=0;
+  } else if(type==='HH CL'){
+    const buf=ac.createBuffer(1,ac.sampleRate*0.06,ac.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);
+    const src=ac.createBufferSource();src.buffer=buf;
+    const flt=ac.createBiquadFilter();flt.type='highpass';flt.frequency.value=7000;
+    src.connect(flt);flt.connect(g);
+    g.gain.setValueAtTime(vol*0.9,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.07);
+    src.start(now);src.stop(now+0.07);
+  } else if(type==='HH OP'){
+    const buf=ac.createBuffer(1,ac.sampleRate*0.4,ac.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);
+    const src=ac.createBufferSource();src.buffer=buf;
+    const flt=ac.createBiquadFilter();flt.type='highpass';flt.frequency.value=5500;
+    src.connect(flt);flt.connect(g);
+    g.gain.setValueAtTime(vol*0.85,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.4);
+    src.start(now);src.stop(now+0.4);
+  } else if(type==='BONG H'||type==='BONG L'){
+    const freq=type==='BONG H'?480:280;
+    const osc=ac.createOscillator();osc.type='sine';osc.frequency.value=freq;
+    const osc2=ac.createOscillator();osc2.type='sine';osc2.frequency.value=freq*1.7;
+    const g2=ac.createGain();osc.connect(g);osc2.connect(g2);g2.connect(g);
+    g.gain.setValueAtTime(vol*1.1,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.35);
+    g2.gain.setValueAtTime(vol*0.3,now);g2.gain.exponentialRampToValueAtTime(0.001,now+0.08);
+    osc.start(now);osc.stop(now+0.35);osc2.start(now);osc2.stop(now+0.1);
+  } else if(type==='CONGA'){
+    const osc=ac.createOscillator();osc.type='sine';
+    osc.frequency.setValueAtTime(360,now);osc.frequency.exponentialRampToValueAtTime(200,now+0.1);
+    osc.connect(g);g.gain.setValueAtTime(vol*1.0,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.25);
+    osc.start(now);osc.stop(now+0.25);
+  } else if(type==='RIMSHOT'){
+    const osc=ac.createOscillator();osc.type='square';osc.frequency.value=800;
+    const buf=ac.createBuffer(1,ac.sampleRate*0.04,ac.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*0.5;
+    const src=ac.createBufferSource();src.buffer=buf;
+    osc.connect(g);src.connect(g);
+    g.gain.setValueAtTime(vol*0.9,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.08);
+    osc.start(now);osc.stop(now+0.06);src.start(now);src.stop(now+0.06);
+  } else if(type==='CYMBAL'){
+    const buf=ac.createBuffer(1,ac.sampleRate*0.9,ac.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);
+    const src=ac.createBufferSource();src.buffer=buf;
+    const flt=ac.createBiquadFilter();flt.type='bandpass';flt.frequency.value=9000;flt.Q.value=0.4;
+    const flt2=ac.createBiquadFilter();flt2.type='highpass';flt2.frequency.value=6000;
+    src.connect(flt);flt.connect(flt2);flt2.connect(g);
+    g.gain.setValueAtTime(vol*0.7,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.9);
+    src.start(now);src.stop(now+0.9);
+  }
+}
+
+function drInit(){
+  if(DR.analyser)return;
+  const ac=getAC();initMaster();
+  DR.analyser=ac.createAnalyser();DR.analyser.fftSize=512;
+  DR.analyser.connect(masterComp);
+  DR.gain=ac.createGain();DR.gain.gain.value=DR.vol;DR.gain.connect(DR.analyser);
+}
+
+function drTick(step){
+  DR_NAMES.forEach((name,row)=>{
+    if(DR.pats[row][step]){
+      drInit();drSound(name);
+      document.getElementById('dr-led1').classList.toggle('on',step%2===0);
+      document.getElementById('dr-led2').classList.toggle('on',step%4===0);
+    }
+  });
+  // highlight current step
+  document.querySelectorAll('.dr-step').forEach(el=>{el.classList.toggle('playing',parseInt(el.dataset.step)===step&&parseInt(el.dataset.row)>=0);});
+  // flash each active pad
+  DR_NAMES.forEach((name,row)=>{
+    if(DR.pats[row][step]){
+      const el=document.querySelector(`.dr-step[data-row="${row}"][data-step="${step}"]`);
+      if(el)el.classList.add('flash');setTimeout(()=>el&&el.classList.remove('flash'),80);
+    }
+  });
+  disp('dr-disp',['01','02','03','04','05','06','07','08'][step]);
+}
+
+function drSched(){
+  if(!DR.playing)return;
+  drTick(DR.cur);
+  const bps=DR.bpm/60;
+  const base=1000/(bps*2);
+  const swing=DR.cur%2===0?1+DR.swing:1-DR.swing;
+  DR.timer=setTimeout(()=>{DR.cur=(DR.cur+1)%DR_STEPS;drSched();},base*swing);
+}
+
+function drPlay(){
+  if(DR.playing)return;getAC();initMaster();drInit();
+  DR.playing=true;DR.cur=0;
+  document.getElementById('dr-play').classList.add('active');
+  disp('dr-disp','PLAY');drSched();
+}
+function drStop(){
+  DR.playing=false;clearTimeout(DR.timer);DR.cur=0;
+  document.querySelectorAll('.dr-step').forEach(el=>el.classList.remove('playing'));
+  document.getElementById('dr-play').classList.remove('active');
+  disp('dr-disp','STOP');
+  document.getElementById('dr-led1').classList.remove('on');
+  document.getElementById('dr-led2').classList.remove('on');
+}
+function drRand(){
+  const densities={KICK:0.3,SNARE:0.28,CLAP:0.22,['HH CL']:0.55,['HH OP']:0.12,['BONG H']:0.18,['BONG L']:0.15,CONGA:0.2,RIMSHOT:0.14,CYMBAL:0.1};
+  DR_NAMES.forEach((name,row)=>{
+    for(let s=0;s<DR_STEPS;s++){
+      DR.pats[row][s]=Math.random()<(densities[name]||0.2);
+    }
+  });
+  rebuildDrGrid();
+}
+function drClear(){DR.pats=DR_NAMES.map(()=>Array(DR_STEPS).fill(false));rebuildDrGrid();}
+
+const DR_COLORS={KICK:'#ff2d9b',SNARE:'#ffe600',CLAP:'#ff4500','HH CL':'#00f5ff','HH OP':'#39ff14','BONG H':'#cc44ff','BONG L':'#aa22ff',CONGA:'#ff8800',RIMSHOT:'#00ccff',CYMBAL:'#aaffee'};
+
+function rebuildDrGrid(){
+  const g=document.getElementById('dr-grid');
+  if(!g)return;
+  g.innerHTML='';
+  // header row
+  const hd=document.createElement('div');hd.style.cssText='font-size:5px;color:#3a4a5a;font-family:var(--font-mono);display:flex;align-items:center;padding:0 2px;';hd.textContent='';g.appendChild(hd);
+  for(let s=0;s<DR_STEPS;s++){
+    const sh=document.createElement('div');
+    sh.style.cssText=`font-size:5px;color:#2a3a5a;font-family:var(--font-mono);text-align:center;`;
+    sh.textContent=s+1;g.appendChild(sh);
+  }
+  // drum rows
+  DR_NAMES.forEach((name,row)=>{
+    const col=DR_COLORS[name]||'#cc44ff';
+    // label
+    const lbl=document.createElement('div');
+    lbl.style.cssText=`font-size:5px;color:${col};font-family:var(--font-mono);display:flex;align-items:center;overflow:hidden;white-space:nowrap;padding-right:3px;text-shadow:0 0 4px ${col};`;
+    lbl.textContent=name;
+    // click label = audition
+    lbl.style.cursor='pointer';
+    lbl.addEventListener('click',()=>{getAC();initMaster();drInit();drSound(name);});
+    g.appendChild(lbl);
+    // steps
+    for(let s=0;s<DR_STEPS;s++){
+      const btn=document.createElement('div');
+      btn.className='dr-step'+(DR.pats[row][s]?' on':'');
+      btn.dataset.row=row;btn.dataset.step=s;
+      btn.style.cssText=`height:14px;border:1px solid #1a1a38;background:${DR.pats[row][s]?col+'88':'#04040e'};cursor:pointer;border-radius:0;transition:all 0.05s steps(1);`;
+      if(DR.pats[row][s])btn.style.boxShadow=`0 0 4px ${col}`;
+      btn.addEventListener('click',()=>{
+        DR.pats[row][s]=!DR.pats[row][s];
+        btn.style.background=DR.pats[row][s]?col+'88':'#04040e';
+        btn.style.boxShadow=DR.pats[row][s]?`0 0 4px ${col}`:'none';
+        btn.classList.toggle('on',DR.pats[row][s]);
+        // immediate audition on activate
+        if(DR.pats[row][s]){getAC();initMaster();drInit();drSound(name);}
+      });
+      g.appendChild(btn);
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded',rebuildDrGrid);
+setTimeout(rebuildDrGrid,100);
+
+document.getElementById('dr-play').addEventListener('click',()=>{getAC();initMaster();drPlay();});
+document.getElementById('dr-stop').addEventListener('click',drStop);
+document.getElementById('dr-rand').addEventListener('click',()=>{drRand();});
+document.getElementById('dr-clear').addEventListener('click',drClear);
+document.getElementById('dr-bpm').addEventListener('kc',e=>{DR.bpm=Math.round(e.detail);disp('dr-bpm-v',DR.bpm+'');});
+document.getElementById('dr-swing').addEventListener('kc',e=>{DR.swing=e.detail;disp('dr-swing-v',Math.round(e.detail*100)+'%');});
+document.getElementById('dr-vol').addEventListener('kc',e=>{DR.vol=e.detail;disp('dr-vol-v',e.detail.toFixed(2));if(DR.gain)DR.gain.gain.setTargetAtTime(e.detail,AC.currentTime,0.02);});
+
+// ════════════════════════════════════════════════
+//  PIANO KEYBOARD MODULE
+// ════════════════════════════════════════════════
+const PN={
+  wave:'sine',atk:0.01,dec:0.1,sus:0.6,rel:0.3,vol:0.6,oct:4,poly:true,
+  voices:{},analyser:null,gain:null,
+};
+
+const PN_NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+function pnFreq(note,oct){return 440*Math.pow(2,(oct*12+PN_NOTES.indexOf(note)-57)/12);}
+function pnMidiFreq(midi){return 440*Math.pow(2,(midi-69)/12);}
+
+function pnInit(){
+  if(PN.analyser)return;
+  const ac=getAC();initMaster();
+  PN.analyser=ac.createAnalyser();PN.analyser.fftSize=512;
+  PN.gain=ac.createGain();PN.gain.gain.value=PN.vol;
+  PN.analyser.connect(masterComp);PN.gain.connect(PN.analyser);
+}
+
+function pnOscFromWave(ac,freq){
+  if(PN.wave==='organ'){
+    // organ = sum of harmonics
+    const osc1=ac.createOscillator(),osc2=ac.createOscillator(),osc3=ac.createOscillator();
+    const gm=ac.createGain();
+    osc1.type='sine';osc1.frequency.value=freq;
+    osc2.type='sine';osc2.frequency.value=freq*2;
+    osc3.type='sine';osc3.frequency.value=freq*3;
+    const g2=ac.createGain();g2.gain.value=0.5;
+    const g3=ac.createGain();g3.gain.value=0.25;
+    osc1.connect(gm);osc2.connect(g2);g2.connect(gm);osc3.connect(g3);g3.connect(gm);
+    return{node:gm,start:()=>{osc1.start();osc2.start();osc3.start();},stop:()=>{try{osc1.stop();osc2.stop();osc3.stop();}catch(e){}}};
+  } else if(PN.wave==='pulse'){
+    const n=128,real=new Float32Array(n),imag=new Float32Array(n);
+    const pw=0.3;
+    for(let k=1;k<n;k++){imag[k]=(2/(k*Math.PI))*(Math.sin(k*Math.PI*pw)-Math.sin(k*Math.PI*(1-pw)));}
+    const osc=ac.createOscillator();
+    osc.setPeriodicWave(ac.createPeriodicWave(real,imag));
+    osc.frequency.value=freq;
+    return{node:osc,start:()=>osc.start(),stop:()=>{try{osc.stop();}catch(e){}}};
+  } else {
+    const osc=ac.createOscillator();osc.type=PN.wave;osc.frequency.value=freq;
+    return{node:osc,start:()=>osc.start(),stop:()=>{try{osc.stop();}catch(e){}}};
+  }
+}
+
+function pnNoteOn(freq,id){
+  if(!PN.poly&&Object.keys(PN.voices).length>0){
+    // monophonic: stop all
+    Object.keys(PN.voices).forEach(k=>pnNoteOff(k));
+  }
+  if(PN.voices[id])pnNoteOff(id);
+  const ac=getAC();initMaster();pnInit();
+  const env=ac.createGain();env.gain.setValueAtTime(0,ac.currentTime);
+  env.gain.linearRampToValueAtTime(PN.vol,ac.currentTime+PN.atk);
+  env.gain.linearRampToValueAtTime(PN.sus*PN.vol,ac.currentTime+PN.atk+PN.dec);
+  env.connect(PN.gain);
+  const osc=pnOscFromWave(ac,freq);
+  osc.node.connect(env);
+  osc.start();
+  PN.voices[id]={osc,env};
+  document.getElementById('pn-led').classList.add('on');
+  disp('pn-disp',noteNameFromFreq(freq));
+  document.getElementById('pn-led2').classList.toggle('on',Object.keys(PN.voices).length>1);
+  pnHighlightKey(freq,true);
+}
+
+function pnNoteOff(id){
+  const v=PN.voices[id];if(!v)return;
+  const ac=getAC();
+  v.env.gain.cancelScheduledValues(ac.currentTime);
+  v.env.gain.setValueAtTime(v.env.gain.value,ac.currentTime);
+  v.env.gain.linearRampToValueAtTime(0,ac.currentTime+PN.rel);
+  const freq=v.osc.node.frequency?v.osc.node.frequency.value:0;
+  pnHighlightKey(freq,false);
+  setTimeout(()=>{try{v.osc.stop();}catch(e){}},PN.rel*1000+50);
+  delete PN.voices[id];
+  if(Object.keys(PN.voices).length===0){document.getElementById('pn-led').classList.remove('on');disp('pn-disp','READY');}
+  document.getElementById('pn-led2').classList.toggle('on',Object.keys(PN.voices).length>1);
+}
+
+function noteNameFromFreq(f){
+  const m=Math.round(69+12*Math.log2(f/440));
+  return PN_NOTES[((m%12)+12)%12]+(Math.floor(m/12)-1);
+}
+
+// ── PIANO KEYBOARD RENDERING ──
+const PN_OCTAVES=3;
+const PN_WHITE=['C','D','E','F','G','A','B'];
+const PN_BLACK={'C#':0,'D#':1,'F#':3,'G#':4,'A#':5};
+const pnKeyState={};
+let pnBaseOct=4;
+
+function renderPianoKeys(){
+  const wrap=document.getElementById('pn-keys-wrap');
+  const canvas=document.getElementById('pn-keys');
+  if(!wrap||!canvas)return;
+  const W=wrap.offsetWidth||360;
+  const H=80;
+  canvas.width=W;canvas.height=H;
+  canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+
+  const totalWhite=PN_OCTAVES*7;
+  const wW=Math.floor(W/totalWhite);
+  const wH=H;
+  const bW=Math.floor(wW*0.6);
+  const bH=Math.floor(wH*0.58);
+
+  // Draw white keys
+  for(let oct=0;oct<PN_OCTAVES;oct++){
+    PN_WHITE.forEach((note,i)=>{
+      const x=(oct*7+i)*wW;
+      const midiNote=PN_NOTES.indexOf(note)+(pnBaseOct+oct)*12;
+      const id='piano_'+midiNote;
+      const pressed=pnKeyState[id];
+      ctx.fillStyle=pressed?'#00f5ff':'#d8dde8';
+      ctx.fillRect(x+1,0,wW-2,wH-2);
+      ctx.strokeStyle='#0a0a14';ctx.lineWidth=1;
+      ctx.strokeRect(x+1,0,wW-2,wH-2);
+      if(pressed){ctx.fillStyle='rgba(0,245,255,0.3)';ctx.fillRect(x+1,0,wW-2,wH-2);}
+      // note label
+      if(note==='C'){
+        ctx.fillStyle=pressed?'#0a0a14':'#2a3a4a';
+        ctx.font=`${Math.max(5,wW*0.3)}px 'Press Start 2P',monospace`;
+        ctx.textAlign='center';
+        ctx.fillText(note+(pnBaseOct+oct),x+wW/2,wH-5);
+      }
+    });
+  }
+
+  // Draw black keys on top
+  for(let oct=0;oct<PN_OCTAVES;oct++){
+    Object.entries(PN_BLACK).forEach(([note,wIdx])=>{
+      const x=(oct*7+wIdx)*wW+wW-Math.floor(bW/2);
+      const midiNote=PN_NOTES.indexOf(note)+(pnBaseOct+oct)*12;
+      const id='piano_'+midiNote;
+      const pressed=pnKeyState[id];
+      ctx.fillStyle=pressed?'#00f5ff':'#0d0d18';
+      ctx.fillRect(x,0,bW,bH);
+      ctx.strokeStyle=pressed?'#00f5ff':'#2a2a4a';ctx.lineWidth=1;
+      ctx.strokeRect(x,0,bW,bH);
+      if(pressed){ctx.fillStyle='rgba(0,245,255,0.4)';ctx.fillRect(x,0,bW,bH);}
+    });
+  }
+}
+
+// Mouse / touch interaction on piano keys
+function pnGetNoteFromXY(x,y){
+  const canvas=document.getElementById('pn-keys');
+  const W=canvas.width,H=canvas.height;
+  const totalWhite=PN_OCTAVES*7;
+  const wW=W/totalWhite;
+  const bW=wW*0.6,bH=H*0.58;
+
+  // check black keys first (on top)
+  for(let oct=0;oct<PN_OCTAVES;oct++){
+    for(const [note,wIdx] of Object.entries(PN_BLACK)){
+      const bx=(oct*7+wIdx)*wW+wW-bW/2;
+      if(y<bH&&x>=bx&&x<bx+bW){
+        const midi=PN_NOTES.indexOf(note)+(pnBaseOct+oct)*12;
+        return{id:'piano_'+midi,freq:pnMidiFreq(midi),note:note+(pnBaseOct+oct)};
+      }
+    }
+  }
+  // white keys
+  const col=Math.floor(x/wW);
+  const oct=Math.floor(col/7);
+  const wi=col%7;
+  if(oct>=0&&oct<PN_OCTAVES){
+    const note=PN_WHITE[wi];
+    const midi=PN_NOTES.indexOf(note)+(pnBaseOct+oct)*12;
+    return{id:'piano_'+midi,freq:pnMidiFreq(midi),note:note+(pnBaseOct+oct)};
+  }
+  return null;
+}
+
+let pnMouseNote=null;
+(function setupPianoKeys(){
+  setTimeout(()=>{
+    const canvas=document.getElementById('pn-keys');
+    if(!canvas)return;
+    function getXY(e){const r=canvas.getBoundingClientRect();return{x:(e.touches?e.touches[0].clientX:e.clientX)-r.left,y:(e.touches?e.touches[0].clientY:e.clientY)-r.top};}
+    canvas.addEventListener('mousedown',e=>{
+      const p=getXY(e);const n=pnGetNoteFromXY(p.x*(canvas.width/canvas.offsetWidth),p.y*(canvas.height/canvas.offsetHeight));
+      if(n){pnMouseNote=n.id;pnKeyState[n.id]=true;pnNoteOn(n.freq,n.id);renderPianoKeys();}
+    });
+    canvas.addEventListener('mousemove',e=>{
+      if(!pnMouseNote)return;
+      const p=getXY(e);const n=pnGetNoteFromXY(p.x*(canvas.width/canvas.offsetWidth),p.y*(canvas.height/canvas.offsetHeight));
+      if(n&&n.id!==pnMouseNote){
+        pnKeyState[pnMouseNote]=false;pnNoteOff(pnMouseNote);
+        pnMouseNote=n.id;pnKeyState[n.id]=true;pnNoteOn(n.freq,n.id);renderPianoKeys();
+      }
+    });
+    canvas.addEventListener('mouseup',()=>{
+      if(pnMouseNote){pnKeyState[pnMouseNote]=false;pnNoteOff(pnMouseNote);pnMouseNote=null;renderPianoKeys();}
+    });
+    canvas.addEventListener('mouseleave',()=>{
+      if(pnMouseNote){pnKeyState[pnMouseNote]=false;pnNoteOff(pnMouseNote);pnMouseNote=null;renderPianoKeys();}
+    });
+    // touch
+    canvas.addEventListener('touchstart',e=>{e.preventDefault();
+      const p=getXY(e);const n=pnGetNoteFromXY(p.x*(canvas.width/canvas.offsetWidth),p.y*(canvas.height/canvas.offsetHeight));
+      if(n){pnMouseNote=n.id;pnKeyState[n.id]=true;pnNoteOn(n.freq,n.id);renderPianoKeys();}
+    },{passive:false});
+    canvas.addEventListener('touchend',e=>{e.preventDefault();
+      if(pnMouseNote){pnKeyState[pnMouseNote]=false;pnNoteOff(pnMouseNote);pnMouseNote=null;renderPianoKeys();}
+    },{passive:false});
+  },200);
+})();
+
+function pnHighlightKey(freq,on){
+  if(!freq)return;
+  const midi=Math.round(69+12*Math.log2(freq/440));
+  const id='piano_'+midi;
+  pnKeyState[id]=on;
+  renderPianoKeys();
+}
+
+// keyboard mapping for piano
+const PN_KB_WHITE='ASDFGHJK';
+const PN_KB_BLACK='WETYU';
+const pnKbActive={};
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  const key=e.key.toUpperCase();
+  // octave shift
+  if(key==='Z'){pnBaseOct=Math.max(1,pnBaseOct-1);disp('pn-oct-v',pnBaseOct);renderPianoKeys();return;}
+  if(key==='X'){pnBaseOct=Math.min(7,pnBaseOct+1);disp('pn-oct-v',pnBaseOct);renderPianoKeys();return;}
+  const wi=PN_KB_WHITE.indexOf(key);
+  const bi=PN_KB_BLACK.indexOf(key);
+  if(wi>=0&&!pnKbActive[key]){
+    const note=PN_WHITE[wi];const midi=PN_NOTES.indexOf(note)+pnBaseOct*12;
+    const id='piano_'+midi;pnKbActive[key]=id;
+    pnNoteOn(pnMidiFreq(midi),id);
+  } else if(bi>=0&&!pnKbActive[key]){
+    const blackNotes=['C#','D#','F#','G#','A#'];
+    const note=blackNotes[bi];const midi=PN_NOTES.indexOf(note)+pnBaseOct*12;
+    const id='piano_'+midi;pnKbActive[key]=id;
+    pnNoteOn(pnMidiFreq(midi),id);
+  }
+});
+document.addEventListener('keyup',e=>{
+  const key=e.key.toUpperCase();
+  const id=pnKbActive[key];if(!id)return;
+  pnNoteOff(id);delete pnKbActive[key];
+});
+
+// knob listeners
+document.getElementById('pn-atk').addEventListener('kc',e=>{PN.atk=e.detail;const ms=e.detail<1?Math.round(e.detail*1000)+'ms':(e.detail.toFixed(1)+'s');disp('pn-atk-v',ms);});
+document.getElementById('pn-dec').addEventListener('kc',e=>{PN.dec=e.detail;const ms=e.detail<1?Math.round(e.detail*1000)+'ms':(e.detail.toFixed(1)+'s');disp('pn-dec-v',ms);});
+document.getElementById('pn-sus').addEventListener('kc',e=>{PN.sus=e.detail;disp('pn-sus-v',e.detail.toFixed(2));});
+document.getElementById('pn-rel').addEventListener('kc',e=>{PN.rel=e.detail;const ms=e.detail<1?Math.round(e.detail*1000)+'ms':(e.detail.toFixed(1)+'s');disp('pn-rel-v',ms);});
+document.getElementById('pn-oct').addEventListener('kc',e=>{PN.oct=Math.round(e.detail);pnBaseOct=PN.oct;disp('pn-oct-v',PN.oct);renderPianoKeys();});
+document.getElementById('pn-filt').addEventListener('kc',e=>{PN.filtFreq=e.detail;disp('pn-filt-v',e.detail>=1000?(e.detail/1000).toFixed(1)+'k':Math.round(e.detail)+'');if(PN.filter)PN.filter.frequency.setTargetAtTime(e.detail,AC.currentTime,0.02);});
+document.getElementById('pn-detune').addEventListener('kc',e=>{PN.detune=e.detail;disp('pn-detune-v',Math.round(e.detail)+'');Object.values(PN.voices).forEach(v=>{if(v.osc)v.osc.detune.setTargetAtTime(e.detail,AC.currentTime,0.02);});});
+document.getElementById('pn-vol').addEventListener('kc',e=>{PN.vol=e.detail;disp('pn-vol-v',e.detail.toFixed(2));if(PN.gain)PN.gain.gain.setTargetAtTime(e.detail,AC.currentTime,0.02);});
+initTog(document.getElementById('pn-poly'),on=>{PN.poly=on;disp('pn-poly-v',on?'ON':'OFF');});
+
+document.getElementById('pn-wave-sel').querySelectorAll('.wave-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    getAC();initMaster();
+    document.getElementById('pn-wave-sel').querySelectorAll('.wave-btn').forEach(x=>{x.classList.remove('active');x.style.borderColor='';x.style.color='';});
+    b.classList.add('active');b.style.borderColor='#00f5ff';b.style.color='#00f5ff';
+    PN.wave=b.dataset.pwave;
+  });
+});
+
+// resize piano keys on window resize
+window.addEventListener('resize',()=>{setTimeout(renderPianoKeys,100);});
+setTimeout(renderPianoKeys,300);
+
+//  INIT
+// ════════════════════════════════════════════════
+document.querySelectorAll('.knob').forEach(el=>{if(el.id)initKnob(el);});
+document.querySelectorAll('.knob').forEach(el=>{if(el.id)el.dispatchEvent(new CustomEvent('kc',{detail:+el.dataset.val,bubbles:true}));});
+buildSeqGrid();
+renderKeyboard();
+window.addEventListener('resize',()=>{renderKeyboard();goRow(curRow);setTimeout(renderPianoKeys,100);});
+
+// ── 8-BIT SCORE COUNTER ──
+let score=0;
+function addScore(n){
+  score=Math.min(999999,score+n);
+  const s=String(score).padStart(6,'0');
+  const el=document.getElementById('scoreDisp');
+  if(el)el.textContent='SCORE: '+s;
+}
+// score ticks up when audio plays
+setInterval(()=>{if(masterGain)addScore(10);},500);
+// extra points for key hits — hooked into noteOn
+const _origNoteOn=window.noteOn||(()=>{});
+document.addEventListener('keydown',e=>{if('ASDFGHJK'.includes(e.key.toUpperCase()))addScore(50);});
+// insert coin splash — init audio on first click
+(function(){
+  const ic = document.getElementById('insertCoin');
+  if(!ic) return;
+  function start(){
+    getAC(); initMaster();
+    ic.style.transition = 'opacity 0.3s';
+    ic.style.opacity = '0';
+    setTimeout(()=>{ ic.style.display='none'; }, 320);
+    ic.removeEventListener('click', start);
+    document.removeEventListener('click', start);
+  }
+  ic.addEventListener('click', start);
+  document.addEventListener('click', start, {once:true});
+})();
+
+// ════════════════════════════════════════════════
+//  COLOR PALETTES
+// ════════════════════════════════════════════════
+const PALETTES = [
+  { // 0 — NEON PUNK (original)
+    name:'NEON PUNK',
+    ink:'#0a0a0f',panel:'#0d0d18',border:'#2a2a4a',border2:'#1a1a30',
+    accent1:'#ff2d9b',accent2:'#00f5ff',accent3:'#6b21ff',accent4:'#39ff14',accent5:'#ffe600',
+    text:'#8a9ab0',textDim:'#3a4a5a',keyWhite:'#d8dde8',keyBlack:'#151820',
+    gridColor:'#1a1a2e',headerGlow:'rgba(255,45,155,0.3)',
+  },
+  { // 1 — GAMEBOY
+    name:'GAME BOY',
+    ink:'#071a07',panel:'#0d250d',border:'#1a4a1a',border2:'#0a2a0a',
+    accent1:'#9bbc0f',accent2:'#8bac0f',accent3:'#306230',accent4:'#0f380f',accent5:'#9bbc0f',
+    text:'#8bac0f',textDim:'#306230',keyWhite:'#9bbc0f',keyBlack:'#0f380f',
+    gridColor:'#0f380f',headerGlow:'rgba(155,188,15,0.3)',
+  },
+  { // 2 — AMBER CRT
+    name:'AMBER CRT',
+    ink:'#0d0600',panel:'#160b00',border:'#4a2800',border2:'#2a1500',
+    accent1:'#ff8800',accent2:'#ffcc44',accent3:'#ff5500',accent4:'#ffee00',accent5:'#ff3300',
+    text:'#cc7700',textDim:'#5a3300',keyWhite:'#ffcc88',keyBlack:'#1a0800',
+    gridColor:'#2a1200',headerGlow:'rgba(255,136,0,0.3)',
+  },
+  { // 3 — VOID PURPLE
+    name:'VOID PRPL',
+    ink:'#05000f',panel:'#0a0018',border:'#3a0066',border2:'#1e0038',
+    accent1:'#c800ff',accent2:'#ff00cc',accent3:'#7700ff',accent4:'#ff44ff',accent5:'#cc00ff',
+    text:'#9944cc',textDim:'#440066',keyWhite:'#cc88ff',keyBlack:'#0a0018',
+    gridColor:'#1a0030',headerGlow:'rgba(200,0,255,0.3)',
+  },
+  { // 4 — ICE COLD
+    name:'ICE  COLD',
+    ink:'#000d14',panel:'#001520',border:'#003355',border2:'#001a33',
+    accent1:'#00ffee',accent2:'#44ddff',accent3:'#0088ff',accent4:'#00ffcc',accent5:'#88eeff',
+    text:'#44aacc',textDim:'#1a4466',keyWhite:'#aaeeff',keyBlack:'#000d14',
+    gridColor:'#001a2a',headerGlow:'rgba(0,255,238,0.3)',
+  },
+];
+
+let currentPalette = 0;
+
+function applyPalette(idx){
+  const p = PALETTES[idx];
+  const r = document.documentElement.style;
+  r.setProperty('--ink', p.ink);
+  r.setProperty('--panel', p.panel);
+  r.setProperty('--border', p.border);
+  r.setProperty('--border2', p.border2);
+  r.setProperty('--accent1', p.accent1);
+  r.setProperty('--accent2', p.accent2);
+  r.setProperty('--accent3', p.accent3);
+  r.setProperty('--accent4', p.accent4);
+  r.setProperty('--accent5', p.accent5);
+  r.setProperty('--text', p.text);
+  r.setProperty('--text-dim', p.textDim);
+  r.setProperty('--key-white', p.keyWhite);
+  r.setProperty('--key-black', p.keyBlack);
+  // header glow
+  const hdr = document.getElementById('pixelHeader');
+  if(hdr) hdr.style.boxShadow = `0 0 20px ${p.headerGlow}`;
+  // grid bg color
+  document.querySelector('.grid-bg').style.backgroundImage =
+    `linear-gradient(${p.gridColor} 1px,transparent 1px),linear-gradient(90deg,${p.gridColor} 1px,transparent 1px)`;
+  // viewport glow
+  const vp = document.querySelector('.rack-viewport');
+  if(vp) vp.style.boxShadow = `0 0 0 2px #000,0 0 30px ${p.headerGlow},inset 0 0 60px rgba(0,0,0,0.8)`;
+  // update knob arc colors (live redraw)
+  Object.keys(KS).forEach(id=>{
+    const el = document.getElementById(id); if(!el) return;
+    const k = KS[id];
+    redrawKnob(el, el.querySelector('.knob-arc'), el.querySelector('.knob-dot'), k.val, k.min, k.max, k.curve);
+  });
+  // update MOD_COLORS dynamically
+  MOD_COLORS.drone   = p.accent1+'cc';
+  MOD_COLORS.keyboard= p.accent2+'cc';
+  MOD_COLORS.seqmod  = p.accent3+'cc';
+  MOD_COLORS.ringmod = p.accent4+'cc';
+  MOD_COLORS.delaymod= p.accent5+'cc';
+  // disp name
+  const scorel = document.getElementById('scoreDisp');
+  if(scorel){ scorel.style.color = p.accent5; scorel.style.textShadow = `0 0 6px ${p.accent5}`; }
+  currentPalette = idx;
+  document.querySelectorAll('.pal-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  // show palette name briefly
+  const el = document.createElement('div');
+  el.style.cssText=`position:fixed;top:42px;left:50%;transform:translateX(-50%);z-index:9999;
+    font-family:'Press Start 2P',monospace;font-size:7px;color:${p.accent1};
+    text-shadow:0 0 8px ${p.accent1};letter-spacing:0.15em;pointer-events:none;
+    animation:palFade 1.4s steps(2) forwards;`;
+  el.textContent = '◆ '+p.name+' ◆';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1500);
+}
+
+// inject fade keyframe
+const palStyle = document.createElement('style');
+palStyle.textContent = `@keyframes palFade{0%,60%{opacity:1}100%{opacity:0}}`;
+document.head.appendChild(palStyle);
+
+document.querySelectorAll('.pal-btn').forEach((b,i)=>{
+  b.addEventListener('click',()=>applyPalette(i));
+});
+
+
+loop();
+
+</script>
+
+<script type="text/plain" id="visuals-html-src">
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>VISUALS</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:'Press Start 2P',monospace;}
+canvas#c{position:absolute;inset:0;display:block;}
+body::before{content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);
+  pointer-events:none;z-index:9000;}
+body::after{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,0.65) 100%);
+  pointer-events:none;z-index:8999;}
+#ui{
+  position:fixed;bottom:0;left:0;right:0;z-index:200;
+  display:flex;align-items:center;gap:6px;padding:8px 16px 10px;
+  background:linear-gradient(transparent,rgba(0,0,8,0.98));
+  border-top:2px solid #ff2d9b;
+  opacity:0;transition:opacity 0.2s;
+}
+body:hover #ui{opacity:1;}
+.mb{
+  font-family:'Press Start 2P',monospace;font-size:7px;letter-spacing:0.1em;
+  background:#050510;color:#3a3a5a;border:2px solid #1a1a38;
+  padding:6px 14px;cursor:pointer;transition:all 0.05s steps(1);
+}
+.mb:hover{color:#00f5ff;border-color:#00f5ff;background:#001a1a;}
+.mb.on{color:#ff2d9b;border-color:#ff2d9b;background:#180010;box-shadow:0 0 12px rgba(255,45,155,0.6);}
+#mname{
+  margin-left:auto;font-size:6px;color:#ff2d9b44;
+  letter-spacing:0.2em;animation:nb 1.6s steps(2) infinite;
+}
+@keyframes nb{0%,100%{opacity:1}50%{opacity:0.15}}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="ui">
+  <button class="mb on" data-m="0">TUNNEL</button>
+  <button class="mb" data-m="1">SPECTRUM</button>
+  <button class="mb" data-m="2">RORSCHACH</button>
+  <span id="mname">TUNNEL</span>
+</div>
+<script>
+'use strict';
+const synth=window.opener&&window.opener._synthVis;
+if(!synth){document.body.innerHTML='<p style="color:#ff2d9b;padding:40px;font-family:monospace;font-size:14px">OPEN FROM SYNTH PAGE</p>';throw 0;}
+
+const cv=document.getElementById('c');
+const cx=cv.getContext('2d');
+let W,H;
+function rsz(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;cx.imageSmoothingEnabled=false;}
+window.addEventListener('resize',rsz);rsz();
+
+// ── AUDIO — direct access via window.opener ──
+let _an=null;
+const TB=new Uint8Array(2048),FB=new Uint8Array(2048);
+function ga(){if(!_an)_an=synth.getAnalyser();return _an;}
+function rd(){const a=ga();if(!a)return;a.getByteTimeDomainData(TB);a.getByteFrequencyData(FB);}
+
+const R={rms:0,bass:0,mid:0,hi:0,kick:0,snare:0,flux:0,energy:0};
+let _pr=0,_pkick=0;
+function calcAudio(){
+  let s=0;for(let i=0;i<TB.length;i++){const v=TB[i]/128-1;s+=v*v;}
+  const rms=Math.sqrt(s/TB.length);
+  let bass=0;for(let i=1;i<12;i++)bass+=FB[i];bass/=11*255;
+  let mid=0;for(let i=12;i<90;i++)mid+=FB[i];mid/=78*255;
+  let hi=0;for(let i=90;i<220;i++)hi+=FB[i];hi/=130*255;
+  let kick=bass*9; let snare=0;for(let i=20;i<60;i++)snare+=FB[i];snare/=40*255;snare*=7;
+  const flux=Math.abs(rms-_pr)*30;_pr=rms;
+  const lp=(a,b,atk,dec)=>a+(b-a)*(b>a?atk:dec);
+  R.rms  =lp(R.rms,Math.min(1,rms*6),0.6,0.07);
+  R.bass =lp(R.bass,Math.min(1,bass),0.7,0.06);
+  R.mid  =lp(R.mid, Math.min(1,mid), 0.5,0.06);
+  R.hi   =lp(R.hi,  Math.min(1,hi),  0.45,0.05);
+  R.kick =lp(R.kick,Math.min(1,kick),0.85,0.09);
+  R.snare=lp(R.snare,Math.min(1,snare),0.75,0.08);
+  R.flux =lp(R.flux, Math.min(1,flux), 0.5, 0.1);
+  R.energy=lp(R.energy,(R.bass+R.mid+R.hi)/3,0.4,0.05);
+  // kick impulse
+  if(R.kick>0.5&&_pkick<0.5) _kickImpulse=1;
+  _pkick=R.kick;
+}
+let _kickImpulse=0;
+
+let T=0,mode=0;
+
+// ═══════════════════════════════════════════════
+// MODE 0 — TUNNEL
+// Infinite pixelated tunnel with audio-reactive
+// rings, color shifts, and warp on beats
+// ═══════════════════════════════════════════════
+let tunnelZ=0;
+const TUNNEL_RINGS=40;
+
+function drawTunnel(dt){
+  T+=dt;
+  tunnelZ+=dt*(0.55+R.bass*2.8+R.kick*4);
+
+  // Dark persistence fade — creates trail
+  cx.fillStyle=`rgba(2,0,8,${0.18+R.hi*0.06})`;
+  cx.fillRect(0,0,W,H);
+
+  const cx2=W/2, cy2=H/2;
+  const maxR=Math.sqrt(cx2*cx2+cy2*cy2)*1.05;
+  const RINGS=TUNNEL_RINGS;
+
+  for(let ri=RINGS-1;ri>=0;ri--){
+    const z=(ri/RINGS+tunnelZ%1)*RINGS;
+    const zn=z/RINGS; // 0=close, 1=far
+    const depth=1-zn;
+    const r=maxR*depth*(0.95+R.bass*0.12);
+    if(r<1)continue;
+
+    // color: cycle through spectrum + bass shifts hue
+    const hue=((T*28+zn*180+R.bass*60+ri*7)%360+360)%360;
+    const sat=55+R.rms*35;
+    const lit=Math.floor(8+depth*depth*(22+R.rms*25));
+    const alpha=depth*depth*(0.6+R.energy*0.3);
+
+    // pixelate by drawing ring as pixel segments
+    const segs=Math.max(16,Math.floor(r*0.55));
+    const angOff=T*0.18+ri*0.04+R.mid*0.5;
+    const px2=Math.max(2,Math.floor(3*depth));
+
+    cx.strokeStyle=`hsla(${hue},${sat}%,${lit}%,${alpha})`;
+    cx.lineWidth=px2*2;
+    cx.shadowColor=`hsl(${hue},${sat}%,60%)`;
+    cx.shadowBlur=depth>0.7?8+R.rms*20:0;
+
+    cx.beginPath();
+    for(let si=0;si<=segs;si++){
+      const a=si/segs*Math.PI*2+angOff;
+      // warp shape: audio-driven oval + wobble
+      const wobble=1+Math.sin(a*3+T*2.2+ri*0.3)*(0.04+R.mid*0.12);
+      const rx3=r*wobble*(1+R.bass*0.08);
+      const ry3=r*wobble*(0.72+R.hi*0.12);
+      const px3=cx2+Math.cos(a)*rx3;
+      const py3=cy2+Math.sin(a)*ry3;
+      si===0?cx.moveTo(px3,py3):cx.lineTo(px3,py3);
+    }
+    cx.closePath();cx.stroke();
+    cx.shadowBlur=0;
+  }
+
+  // Bright center flash on kick
+  if(_kickImpulse>0.1){
+    const ki=_kickImpulse;
+    const g=cx.createRadialGradient(cx2,cy2,0,cx2,cy2,maxR*ki*0.6);
+    g.addColorStop(0,`rgba(255,255,255,${ki*0.7})`);
+    g.addColorStop(0.4,`rgba(255,45,155,${ki*0.4})`);
+    g.addColorStop(1,'transparent');
+    cx.fillStyle=g;cx.fillRect(0,0,W,H);
+    _kickImpulse=Math.max(0,_kickImpulse-dt*7);
+  }
+
+  // Waveform as tunnel spine — center horizontal
+  cx.strokeStyle=`rgba(255,255,255,${0.35+R.rms*0.5})`;
+  cx.lineWidth=2;cx.shadowColor='#fff';cx.shadowBlur=R.rms*12;
+  cx.beginPath();
+  const step=4;
+  for(let i=0;i<TB.length;i+=step){
+    const x=i/TB.length*W;
+    const y=cy2+(TB[i]/128-1)*(H*0.18+R.rms*H*0.18);
+    i===0?cx.moveTo(x,y):cx.lineTo(x,y);
+  }
+  cx.stroke();cx.shadowBlur=0;
+
+  // FFT bar ring — outer glow
+  const nBars=128;
+  for(let i=0;i<nBars;i++){
+    const v=(FB[Math.floor(i/nBars*200)]||0)/255;
+    if(v<0.04)continue;
+    const a=i/nBars*Math.PI*2-Math.PI/2;
+    const r0=Math.min(W,H)*0.42;
+    const r1=r0+v*Math.min(W,H)*0.1*(1+R.rms);
+    const hue2=((i/nBars*360+T*45)%360+360)%360;
+    cx.strokeStyle=`hsl(${hue2},100%,65%)`;
+    cx.lineWidth=Math.max(1,W/nBars*0.7);
+    cx.beginPath();
+    cx.moveTo(cx2+Math.cos(a)*r0,cy2+Math.sin(a)*r0);
+    cx.lineTo(cx2+Math.cos(a)*r1,cy2+Math.sin(a)*r1);
+    cx.stroke();
+  }
+
+  // Pixelated corner scanlines
+  if(R.rms>0.15){
+    const lines=Math.floor(R.rms*12);
+    for(let li=0;li<lines;li++){
+      const ly=Math.floor(Math.random()*H);
+      cx.fillStyle=`rgba(${Math.floor(Math.random()*100+155)},0,${Math.floor(Math.random()*255)},${Math.random()*0.08})`;
+      cx.fillRect(0,ly,W,2);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// MODE 1 — SPECTRUM CITY
+// 3D city skyline built from FFT bars
+// with particles, rain, aurora, reflections
+// ═══════════════════════════════════════════════
+const SC_PARTICLES=[];
+const SC_STARS=Array.from({length:300},()=>({x:Math.random(),y:Math.random()*0.55,s:Math.random()*2+0.5,t:Math.random()*6.28}));
+let scT=0,scScroll=0;
+const SC_BUILDING_COLS=[];
+
+function scInit(){
+  SC_BUILDING_COLS.length=0;
+  const n=Math.floor(W/3)+2;
+  for(let i=0;i<n;i++)SC_BUILDING_COLS.push({base:0.2+Math.random()*0.45,w:2+Math.floor(Math.random()*3),hue:(i*17+70)%360});
+}
+scInit();
+window.addEventListener('resize',scInit);
+
+function spawnSCParticle(){
+  SC_PARTICLES.push({
+    x:Math.random()*W,y:H*0.35+Math.random()*H*0.1,
+    vx:(Math.random()-0.5)*1.5,vy:-1.5-Math.random()*3.5,
+    life:1,size:1+Math.random()*2,
+    col:`hsl(${(Math.random()*360)|0},100%,70%)`
+  });
+}
+
+function drawSpectrum(dt){
+  scT+=dt;scScroll+=dt*12*(1+R.bass*1.5);
+  T+=dt;
+
+  // Sky gradient
+  const sky=cx.createLinearGradient(0,0,0,H*0.62);
+  const skyH=((scT*8)%360|0);
+  sky.addColorStop(0,`hsl(${skyH},${40+R.energy*25}%,${4+R.energy*8}%)`);
+  sky.addColorStop(0.6,`hsl(${(skyH+40)%360},${30+R.bass*20}%,${8+R.bass*10}%)`);
+  sky.addColorStop(1,'#000');
+  cx.fillStyle=sky;cx.fillRect(0,0,W,H);
+
+  // Aurora borealis (mid freq)
+  if(R.mid>0.05){
+    for(let ai=0;ai<5;ai++){
+      const ay=H*(0.12+ai*0.04+Math.sin(scT*0.4+ai)*0.03);
+      const ag=cx.createLinearGradient(0,ay,0,ay+H*0.12);
+      const ah=((scT*15+ai*72)%360)|0;
+      ag.addColorStop(0,'transparent');
+      ag.addColorStop(0.4,`hsla(${ah},100%,55%,${R.mid*0.35})`);
+      ag.addColorStop(1,'transparent');
+      cx.fillStyle=ag;
+      cx.beginPath();
+      cx.moveTo(0,ay);
+      for(let x=0;x<=W;x+=4){
+        const wy=ay+Math.sin(x*0.012+scT*0.9+ai*1.1)*H*0.06*R.mid+Math.sin(x*0.006+scT*0.5)*H*0.03;
+        cx.lineTo(x,wy);
+      }
+      cx.lineTo(W,ay+H*0.15);cx.lineTo(0,ay+H*0.15);cx.closePath();
+      cx.fill();
+    }
+  }
+
+  // Stars
+  SC_STARS.forEach(s=>{
+    const twinkle=0.4+0.6*Math.abs(Math.sin(s.t+scT*1.5));
+    cx.fillStyle=`rgba(255,255,255,${twinkle*0.9})`;
+    cx.fillRect(s.x*W,s.y*H,s.s,s.s);
+  });
+
+  // Ground reflection plane
+  const groundY=H*0.62;
+  cx.fillStyle='#050510';cx.fillRect(0,groundY,W,H-groundY);
+
+  // Building silhouettes from FFT
+  const bCount=Math.floor(W/2.5);
+  for(let bi=0;bi<bCount;bi++){
+    const fftIdx=Math.floor(bi/bCount*180);
+    const v=(FB[fftIdx]||0)/255;
+    const bh=(v*H*0.52+SC_BUILDING_COLS[bi%SC_BUILDING_COLS.length].base*H*0.15)*(1+R.bass*0.25);
+    const bx=bi*2.5;
+    const bw=2;
+    const bHue=((scT*20+bi*4)%360)|0;
+
+    // Building body
+    cx.fillStyle=`hsl(${bHue},${20+R.energy*30}%,${7+R.energy*8}%)`;
+    cx.fillRect(bx,groundY-bh,bw,bh);
+
+    // Window lights — random flicker
+    if(v>0.08){
+      const nWin=Math.floor(bh/6);
+      for(let wi=0;wi<nWin;wi++){
+        if(Math.sin(bi*13+wi*7+scT*2)<(0.3-R.rms*0.1))continue;
+        const wh=((bi*7+wi*3)%360)|0;
+        cx.fillStyle=`hsl(${wh},100%,${65+R.hi*25}%)`;
+        cx.fillRect(bx,groundY-bh+wi*6+2,1,2);
+      }
+    }
+
+    // Roof glow on tallest buildings
+    if(v>0.45){
+      cx.shadowColor=`hsl(${bHue},100%,65%)`;
+      cx.shadowBlur=8+R.rms*15;
+      cx.fillStyle=`hsl(${bHue},100%,${50+R.rms*30}%)`;
+      cx.fillRect(bx,groundY-bh-1,bw,2);
+      cx.shadowBlur=0;
+    }
+
+    // Ground reflection
+    const refAlpha=0.25+R.bass*0.2;
+    cx.fillStyle=`hsla(${bHue},60%,${15+R.energy*20}%,${refAlpha})`;
+    cx.fillRect(bx,groundY,bw,bh*0.35*(1-bi/bCount*0.3));
+  }
+
+  // Waveform river on ground
+  cx.strokeStyle=`rgba(0,245,255,${0.5+R.rms*0.4})`;
+  cx.lineWidth=1.5;cx.shadowColor='#00f5ff';cx.shadowBlur=R.rms*16;
+  cx.beginPath();
+  for(let i=0;i<TB.length;i+=3){
+    const x=i/TB.length*W;
+    const y=groundY+3+(TB[i]/128-1)*(H*0.045+R.rms*H*0.06);
+    i===0?cx.moveTo(x,y):cx.lineTo(x,y);
+  }
+  cx.stroke();cx.shadowBlur=0;
+
+  // Particles on kick
+  if(_kickImpulse>0.3){for(let i=0;i<Math.floor(_kickImpulse*18);i++)spawnSCParticle();}
+  _kickImpulse=Math.max(0,_kickImpulse-dt*6);
+
+  for(let i=SC_PARTICLES.length-1;i>=0;i--){
+    const p=SC_PARTICLES[i];
+    p.x+=p.vx;p.y+=p.vy;p.vy+=0.06;p.life-=dt*2;
+    if(p.life<=0){SC_PARTICLES.splice(i,1);continue;}
+    cx.globalAlpha=p.life*p.life;
+    cx.fillStyle=p.col;
+    cx.fillRect(p.x,p.y,p.size,p.size);
+  }
+  cx.globalAlpha=1;
+
+  // FFT frequency ring above city center
+  const rcx=W/2,rcy=groundY*0.35;
+  const rbase=Math.min(W,H)*0.07*(1+R.energy*0.5);
+  for(let i=0;i<256;i++){
+    const v2=(FB[i]||0)/255;
+    const a=i/256*Math.PI*2-Math.PI/2;
+    const r0=rbase,r1=rbase+v2*rbase*2.8*(1+R.rms*0.5);
+    const hue3=((i/256*360+scT*60)%360)|0;
+    cx.strokeStyle=`hsla(${hue3},100%,${40+v2*40}%,${0.55+v2*0.4})`;
+    cx.lineWidth=Math.max(1,W/512);
+    cx.beginPath();cx.moveTo(rcx+Math.cos(a)*r0,rcy+Math.sin(a)*r0);cx.lineTo(rcx+Math.cos(a)*r1,rcy+Math.sin(a)*r1);cx.stroke();
+  }
+  // Ring center glow
+  if(R.energy>0.05){
+    const rg=cx.createRadialGradient(rcx,rcy,0,rcx,rcy,rbase);
+    rg.addColorStop(0,`rgba(255,255,255,${R.energy*0.3})`);
+    rg.addColorStop(1,'transparent');
+    cx.fillStyle=rg;cx.beginPath();cx.arc(rcx,rcy,rbase,0,Math.PI*2);cx.fill();
+  }
+
+  // Screen flash on snare
+  if(R.snare>0.55){
+    cx.fillStyle=`rgba(0,245,255,${(R.snare-0.55)*0.22})`;
+    cx.fillRect(0,0,W,H);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// MODE 2 — RORSCHACH
+// Symmetric ink-blot driven by audio
+// Particle tendrils, bilateral symmetry,
+// color pulses, waveform mirror
+// ═══════════════════════════════════════════════
+const RK_TENDRILS=[];
+let rkT=0;
+const RK_HISTORY=[];
+const RK_HISTLEN=120;
+const RK_NODES=[];
+const RK_N=64;
+
+function rkInit(){
+  RK_NODES.length=0;
+  for(let i=0;i<RK_N;i++){
+    const a=i/RK_N*Math.PI; // half-circle, then mirrored
+    RK_NODES.push({a,r:80+Math.random()*60,vr:0,va:0,phase:Math.random()*6.28});
+  }
+}
+rkInit();
+
+function spawnTendril(x,y,angle){
+  RK_TENDRILS.push({x,y,vx:Math.cos(angle)*2.5,vy:Math.sin(angle)*2.5,life:1,hue:(rkT*40+angle*57)%360,size:2});
+}
+
+function drawRorschach(dt){
+  rkT+=dt;T+=dt;
+
+  // Very slow fade — ink accumulation effect
+  cx.fillStyle=`rgba(2,0,6,${0.055+R.hi*0.025})`;
+  cx.fillRect(0,0,W,H);
+
+  const CX=W/2,CY=H/2;
+
+  // Update nodes — audio drives radius oscillation
+  for(let i=0;i<RK_N;i++){
+    const nd=RK_NODES[i];
+    const fftV=(FB[Math.floor(i/RK_N*180)]||0)/255;
+    // Target radius from FFT
+    const targetR=60+fftV*(Math.min(W,H)*0.35)*(1+R.rms*0.5);
+    nd.vr+=(targetR-nd.r)*0.12;nd.vr*=0.72;
+    nd.r+=nd.vr;
+    // Slow angular drift
+    nd.va+=(Math.sin(rkT*0.3+nd.phase+i*0.2)*0.004);nd.va*=0.92;nd.a+=nd.va;
+  }
+
+  // Draw bilateral symmetric shape — 4-fold symmetry
+  const draws=[
+    [1,1],[-1,1],[1,-1],[-1,-1]
+  ];
+
+  for(const [sx,sy] of draws){
+    cx.save();
+    cx.translate(CX,CY);
+    cx.scale(sx,sy);
+
+    // Main blob shape from nodes
+    const hueBase=((rkT*22)%360+360)%360;
+    cx.beginPath();
+    for(let i=0;i<=RK_N;i++){
+      const nd=RK_NODES[i%RK_N];
+      const px3=Math.cos(nd.a)*nd.r;
+      const py3=Math.sin(nd.a)*nd.r*(0.65+R.mid*0.2);
+      i===0?cx.moveTo(px3,py3):cx.lineTo(px3,py3);
+    }
+    cx.closePath();
+    const grad=cx.createRadialGradient(0,0,0,0,0,Math.min(W,H)*0.35);
+    grad.addColorStop(0,`hsla(${hueBase},${60+R.rms*30}%,${12+R.bass*18}%,0.85)`);
+    grad.addColorStop(0.5,`hsla(${(hueBase+40)%360},${55+R.energy*30}%,${8+R.mid*14}%,0.6)`);
+    grad.addColorStop(1,`hsla(${(hueBase+80)%360},60%,5%,0)`);
+    cx.fillStyle=grad;cx.fill();
+
+    // Edge glow
+    cx.strokeStyle=`hsla(${(hueBase+120)%360},100%,${55+R.rms*35}%,${0.4+R.energy*0.4})`;
+    cx.lineWidth=1.5+R.rms*3;
+    cx.shadowColor=`hsl(${(hueBase+120)%360},100%,65%)`;
+    cx.shadowBlur=8+R.rms*20;
+    cx.stroke();cx.shadowBlur=0;
+
+    // Inner detail lines from waveform
+    cx.strokeStyle=`hsla(${(hueBase+200)%360},80%,${50+R.hi*30}%,${0.25+R.hi*0.3})`;
+    cx.lineWidth=1;
+    cx.beginPath();
+    for(let i=0;i<TB.length;i+=8){
+      const a2=i/TB.length*Math.PI;
+      const rr=(TB[i]/128-1)*(Math.min(W,H)*0.12)+Math.min(W,H)*0.09;
+      const px4=Math.cos(a2)*rr;
+      const py4=Math.sin(a2)*rr*(0.7+R.mid*0.2);
+      i===0?cx.moveTo(px4,py4):cx.lineTo(px4,py4);
+    }
+    cx.stroke();
+
+    cx.restore();
+  }
+
+  // Spawn tendrils on energy peaks
+  if(R.rms>0.25&&Math.random()<R.rms*0.35){
+    const a=Math.random()*Math.PI*2;
+    const r2=60+Math.random()*80;
+    spawnTendril(CX+Math.cos(a)*r2,CY+Math.sin(a)*r2*0.6,a);
+    spawnTendril(CX-Math.cos(a)*r2,CY+Math.sin(a)*r2*0.6,Math.PI-a);
+    spawnTendril(CX+Math.cos(a)*r2,CY-Math.sin(a)*r2*0.6,-a);
+    spawnTendril(CX-Math.cos(a)*r2,CY-Math.sin(a)*r2*0.6,Math.PI+a);
+  }
+
+  for(let i=RK_TENDRILS.length-1;i>=0;i--){
+    const p=RK_TENDRILS[i];
+    p.x+=p.vx;p.y+=p.vy;
+    p.vx*=0.97;p.vy*=0.97;
+    p.life-=dt*1.4;
+    if(p.life<=0){RK_TENDRILS.splice(i,1);continue;}
+    cx.globalAlpha=p.life*p.life*0.85;
+    cx.fillStyle=`hsl(${p.hue},100%,70%)`;
+    cx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size);
+    // Mirror
+    cx.fillRect(W-p.x-p.size/2,p.y-p.size/2,p.size,p.size);
+    cx.fillRect(p.x-p.size/2,H-p.y-p.size/2,p.size,p.size);
+    cx.fillRect(W-p.x-p.size/2,H-p.y-p.size/2,p.size,p.size);
+  }
+  cx.globalAlpha=1;
+
+  // Kick impulse: bright symmetric burst
+  if(_kickImpulse>0.1){
+    const ki=_kickImpulse;
+    const hk=((rkT*40)%360|0);
+    for(let k=0;k<6;k++){
+      const kr=(k+1)*Math.min(W,H)*0.06*(1+ki*0.5);
+      cx.strokeStyle=`hsla(${(hk+k*25)%360},100%,75%,${ki*(0.7-k*0.1)})`;
+      cx.lineWidth=2;
+      cx.beginPath();cx.ellipse(CX,CY,kr,kr*0.6,0,0,Math.PI*2);cx.stroke();
+      cx.beginPath();cx.ellipse(CX,CY,kr,kr*0.6,Math.PI/2,0,Math.PI*2);cx.stroke();
+    }
+    _kickImpulse=Math.max(0,_kickImpulse-dt*6);
+  }
+
+  // Outer FFT petals — 16-fold radial
+  const nPetals=16;
+  for(let pi=0;pi<nPetals;pi++){
+    const a=pi/nPetals*Math.PI*2+rkT*0.08;
+    const v2=(FB[Math.floor(pi/nPetals*128)]||0)/255;
+    const hpetal=((pi/nPetals*360+rkT*30)%360|0);
+    const r0=Math.min(W,H)*(0.38+R.energy*0.04);
+    const r1=r0+v2*Math.min(W,H)*0.12*(1+R.rms*0.4);
+    cx.strokeStyle=`hsla(${hpetal},100%,${50+v2*35}%,${0.3+v2*0.5})`;
+    cx.lineWidth=Math.max(1.5,v2*5);
+    cx.shadowColor=`hsl(${hpetal},100%,60%)`;
+    cx.shadowBlur=v2*12;
+    cx.beginPath();cx.moveTo(CX+Math.cos(a)*r0,CY+Math.sin(a)*r0*0.7);cx.lineTo(CX+Math.cos(a)*r1,CY+Math.sin(a)*r1*0.7);cx.stroke();
+    cx.shadowBlur=0;
+  }
+
+  // Vertical waveform mirror lines left/right
+  cx.strokeStyle=`rgba(255,255,255,${0.12+R.rms*0.25})`;
+  cx.lineWidth=1;
+  cx.beginPath();
+  for(let i=0;i<TB.length;i+=4){
+    const y=i/TB.length*H;
+    const x=(TB[i]/128-1)*(W*0.08+R.rms*W*0.1)+CX;
+    i===0?cx.moveTo(x,y):cx.lineTo(x,y);
+  }
+  cx.stroke();
+  cx.beginPath();
+  for(let i=0;i<TB.length;i+=4){
+    const y=i/TB.length*H;
+    const x=-(TB[i]/128-1)*(W*0.08+R.rms*W*0.1)+CX;
+    i===0?cx.moveTo(x,y):cx.lineTo(x,y);
+  }
+  cx.stroke();
+
+  // Snare: color flash
+  if(R.snare>0.5){
+    const hsnare=((rkT*60)%360|0);
+    cx.fillStyle=`hsla(${hsnare},100%,65%,${(R.snare-0.5)*0.3})`;
+    cx.fillRect(0,0,W,H);
+  }
+}
+
+// ── MODE SWITCHER ──
+document.querySelectorAll('.mb[data-m]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    mode=+b.dataset.m;T=0;
+    document.querySelectorAll('.mb[data-m]').forEach(x=>x.classList.toggle('on',+x.dataset.m===mode));
+    document.getElementById('mname').textContent=b.textContent;
+  });
+});
+
+// ── MAIN LOOP ──
+let lastT2=0;
+function frame(ts){
+  requestAnimationFrame(frame);
+  const dt=Math.min(0.05,(ts-lastT2)/1000);lastT2=ts;
+  rd();calcAudio();
+  if(mode===0)drawTunnel(dt);
+  else if(mode===1)drawSpectrum(dt);
+  else if(mode===2)drawRorschach(dt);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
