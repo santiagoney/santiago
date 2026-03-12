@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linear Portrait</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400&display=swap');
+  :root { --bg:#111009; --accent:#c8b99a; --paper:#f5f0e8; --ink:#0e0b08; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:18px 14px 30px;font-family:'DM Mono','Courier New',monospace;color:var(--accent);gap:10px}
+
+  header{display:flex;align-items:baseline;gap:12px;width:100%;max-width:960px;padding-bottom:6px;border-bottom:1px solid rgba(200,185,154,.1)}
+  header h1{font-size:.58rem;font-weight:300;letter-spacing:.55em;text-transform:uppercase;opacity:.4}
+  #statusLine{font-size:.48rem;letter-spacing:.22em;text-transform:uppercase;opacity:.25;margin-left:auto}
+  #liveDot{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0;margin-right:5px;vertical-align:middle;transition:opacity .3s}
+  #liveDot.on{opacity:.8;animation:blink 1.6s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:.3}50%{opacity:.9}}
+
+  .stage{position:relative;width:100%;max-width:960px;background:var(--paper);box-shadow:0 0 0 1px rgba(14,11,8,.4),0 8px 80px rgba(0,0,0,.95);overflow:hidden}
+  #c{display:block;width:100%;height:auto}
+  #scanLine{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(14,11,8,.1) 40%,rgba(14,11,8,.1) 60%,transparent);top:0;animation:scan 3s linear infinite;opacity:0;pointer-events:none;transition:opacity .4s}
+  #scanLine.on{opacity:1}
+  @keyframes scan{0%{top:0}100%{top:100%}}
+
+  .controls{display:flex;flex-direction:column;gap:8px;width:100%;max-width:960px}
+  .row{display:flex;gap:5px;flex-wrap:wrap;align-items:center;justify-content:center}
+  button{background:none;border:1px solid rgba(200,185,154,.3);color:var(--accent);padding:4px 12px;font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:background .1s,color .1s;white-space:nowrap}
+  button:hover{background:rgba(200,185,154,.1);border-color:var(--accent)}
+  button.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+  button:disabled{opacity:.15;pointer-events:none}
+  .sep{width:1px;height:18px;background:rgba(200,185,154,.13)}
+
+  /* ── Knobs ── */
+  .knobs{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;align-items:flex-end;padding:4px 0}
+  .knob-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:ns-resize;user-select:none;-webkit-user-select:none}
+  .knob-wrap label{font-size:.42rem;letter-spacing:.18em;text-transform:uppercase;opacity:.28;pointer-events:none}
+  .knob-wrap .knob-val{font-size:.42rem;letter-spacing:.06em;opacity:.38;pointer-events:none;min-width:24px;text-align:center}
+  .knob-svg{display:block;overflow:visible}
+  .knob-track{fill:none;stroke:rgba(200,185,154,.12);stroke-width:3;stroke-linecap:round}
+  .knob-arc{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset .04s}
+  .knob-body{fill:#1a1710;stroke:rgba(200,185,154,.18);stroke-width:1}
+  .knob-dot{fill:var(--accent)}
+
+  .section-label{font-size:.43rem;letter-spacing:.25em;text-transform:uppercase;opacity:.18;text-align:center;padding-top:2px}
+
+  /* ── Color picker ── */
+  .color-panel{display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 0}
+  .wheel-wrap{position:relative;width:220px;height:220px;cursor:crosshair;flex-shrink:0}
+  #wheelCanvas{border-radius:50%;display:block}
+  #wheelCursor{position:absolute;width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);transform:translate(-50%,-50%);pointer-events:none}
+  .lbar-wrap{position:relative;width:220px;height:12px;cursor:pointer}
+  #lbarCanvas{display:block;width:100%;height:100%}
+  #lbarCursor{position:absolute;top:-3px;width:6px;height:18px;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.4);transform:translateX(-50%);pointer-events:none}
+  .paper-wrap{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .paper-wrap label{font-size:.44rem;letter-spacing:.18em;text-transform:uppercase;opacity:.28}
+  #paperSwatch{width:32px;height:20px;border:1px solid rgba(200,185,154,.3);cursor:pointer;padding:0;background:var(--paper)}
+  #fillSwatch{width:32px;height:20px;border:1px solid rgba(200,185,154,.3);cursor:pointer;padding:0}
+  input[type=color]{opacity:0;position:absolute;width:0;height:0}
+  .presets{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+  .preset{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .1s,border-color .15s;flex-shrink:0}
+  .preset:hover{transform:scale(1.18)}
+  .preset.selected{border-color:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+  .color-row{display:flex;gap:18px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+  #inkPreview{width:28px;height:28px;border-radius:50%;border:1px solid rgba(200,185,154,.2);flex-shrink:0;align-self:center;transition:background .1s}
+
+  footer{font-size:.42rem;letter-spacing:.1em;opacity:.12;text-align:center;line-height:1.9}
+  video{display:none}
+</style>
+</head>
+<body>
+<video id="vid" autoplay playsinline muted></video>
+
+<header>
+  <h1>Linear Portrait</h1>
+  <span id="statusLine"><span id="liveDot"></span><span id="statusTxt">init</span></span>
+</header>
+
+<div class="stage">
+  <canvas id="c" width="640" height="480"></canvas>
+  <div id="scanLine"></div>
+</div>
+
+<div class="controls">
+  <div class="row">
+    <button id="btnLive" class="active" onclick="setMode('live')">Live</button>
+    <button id="btnCapture" onclick="capture()" disabled>Capture</button>
+    <button id="btnHold" onclick="setMode('freeze')" disabled>Hold</button>
+    <div class="sep"></div>
+    <button onclick="saveImg()">Save PNG</button>
+  </div>
+
+  <div class="section-label">— edge —</div>
+  <div class="knobs" id="edgeKnobs"></div>
+
+  <div class="section-label">— color —</div>
+  <div class="color-panel">
+    <div class="presets" id="presets"></div>
+    <div class="color-row">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div class="wheel-wrap" id="wheelWrap">
+          <canvas id="wheelCanvas" width="220" height="220"></canvas>
+          <div id="wheelCursor"></div>
+        </div>
+        <div class="lbar-wrap" id="lbarWrap">
+          <canvas id="lbarCanvas" width="220" height="12"></canvas>
+          <div id="lbarCursor"></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center">
+        <div id="inkPreview"></div>
+        <div class="paper-wrap">
+          <label>Paper</label>
+          <div style="position:relative;display:inline-block">
+            <div id="paperSwatch" onclick="document.getElementById('paperColorInput').click()"></div>
+            <input type="color" id="paperColorInput" value="#f5f0e8" oninput="setPaper(this.value)">
+          </div>
+        </div>
+        <div class="paper-wrap">
+          <label>Fill</label>
+          <div style="position:relative;display:inline-block">
+            <div id="fillSwatch" onclick="document.getElementById('fillColorInput').click()"></div>
+            <input type="color" id="fillColorInput" value="#c8e0f4" oninput="setFill(this.value)">
+          </div>
+        </div>
+        <!-- fill opacity knob lives here -->
+        <div id="fillOpKnob"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>space · capture &nbsp;|&nbsp; f · freeze / unfreeze &nbsp;|&nbsp; ctrl+s · save</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-segmentation@1.0.1/dist/body-segmentation.min.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// KNOB SYSTEM
+// Each knob is an SVG circle with a draggable arc. Drag up = increase.
+// ═══════════════════════════════════════════════════════════════════
+const KNOB_R = 22;          // radius of knob
+const KNOB_START = 135;     // degrees: start of arc (bottom-left)
+const KNOB_SWEEP = 270;     // degrees: full sweep
+
+function deg2rad(d){ return d * Math.PI / 180; }
+
+// Create a knob and append to container, returns { getValue }
+function makeKnob(container, cfg) {
+  // cfg: { id, label, min, max, value, step, decimals, onChange }
+  const { id, label, min, max, value: initVal, step=1, decimals=0, onChange } = cfg;
+
+  let val = initVal;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'knob-wrap';
+  wrap.title = label;
+
+  const SIZE = (KNOB_R + 6) * 2;
+  const CX = SIZE / 2, CY = SIZE / 2;
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', SIZE);
+  svg.setAttribute('height', SIZE);
+  svg.classList.add('knob-svg');
+
+  // track arc (full range, dim)
+  const trackPath = describeArc(CX, CY, KNOB_R, KNOB_START, KNOB_START + KNOB_SWEEP);
+  const track = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  track.setAttribute('d', trackPath);
+  track.classList.add('knob-track');
+
+  // value arc
+  const arc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  arc.classList.add('knob-arc');
+
+  // body circle
+  const body = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  body.setAttribute('cx', CX); body.setAttribute('cy', CY); body.setAttribute('r', KNOB_R - 5);
+  body.classList.add('knob-body');
+
+  // indicator dot
+  const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  dot.setAttribute('r', 2.5);
+  dot.classList.add('knob-dot');
+
+  svg.appendChild(track);
+  svg.appendChild(arc);
+  svg.appendChild(body);
+  svg.appendChild(dot);
+
+  const labelEl = document.createElement('label');
+  labelEl.textContent = label;
+
+  const valEl = document.createElement('div');
+  valEl.className = 'knob-val';
+
+  wrap.appendChild(labelEl);
+  wrap.appendChild(svg);
+  wrap.appendChild(valEl);
+  container.appendChild(wrap);
+
+  function norm() { return (val - min) / (max - min); }
+
+  function updateVisual() {
+    const n = norm();
+    const angleDeg = KNOB_START + n * KNOB_SWEEP;
+
+    // value arc
+    if (n > 0) {
+      arc.setAttribute('d', describeArc(CX, CY, KNOB_R, KNOB_START, angleDeg));
+    } else {
+      arc.setAttribute('d', '');
+    }
+
+    // dot position
+    const rad = deg2rad(angleDeg);
+    const dx = CX + (KNOB_R - 5) * Math.cos(rad);
+    const dy = CY + (KNOB_R - 5) * Math.sin(rad);
+    dot.setAttribute('cx', dx);
+    dot.setAttribute('cy', dy);
+
+    valEl.textContent = val.toFixed(decimals);
+  }
+
+  function setValue(v, emit=true) {
+    val = Math.min(max, Math.max(min, Math.round(v / step) * step));
+    updateVisual();
+    if (emit && onChange) onChange(val);
+  }
+
+  // Drag interaction: vertical drag, up = increase
+  let startY = null, startVal = null;
+
+  function onDown(e) {
+    e.preventDefault();
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    startY = clientY;
+    startVal = val;
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchend', onUp);
+  }
+  function onMove(e) {
+    e.preventDefault();
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const dy = startY - clientY; // drag up = positive
+    const range = max - min;
+    const sensitivity = 1.2; // px per unit normalized
+    const delta = (dy / 80) * range * sensitivity;
+    setValue(startVal + delta);
+  }
+  function onUp() {
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('touchmove', onMove);
+    window.removeEventListener('mouseup', onUp);
+    window.removeEventListener('touchend', onUp);
+  }
+
+  svg.addEventListener('mousedown', onDown);
+  svg.addEventListener('touchstart', onDown, { passive: false });
+
+  // Double-click to reset
+  svg.addEventListener('dblclick', () => setValue(initVal));
+
+  setValue(initVal, false);
+  return { getValue: () => val, setValue };
+}
+
+function describeArc(cx, cy, r, startDeg, endDeg) {
+  const s = deg2rad(startDeg);
+  const e = deg2rad(endDeg);
+  const x1 = cx + r * Math.cos(s), y1 = cy + r * Math.sin(s);
+  const x2 = cx + r * Math.cos(e), y2 = cy + r * Math.sin(e);
+  const large = (endDeg - startDeg) > 180 ? 1 : 0;
+  return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BUILD KNOBS
+// ═══════════════════════════════════════════════════════════════════
+const edgeKnobsEl  = document.getElementById('edgeKnobs');
+const fillOpKnobEl = document.getElementById('fillOpKnob');
+
+function rerender() {
+  if (mode === 'freeze' && frozen) render(frozen.imgData, frozen.mask);
+}
+
+const knobs = {
+  th: makeKnob(edgeKnobsEl,  { label:'Threshold', min:5,  max:90,  value:26, step:1,   decimals:0, onChange: rerender }),
+  sm: makeKnob(edgeKnobsEl,  { label:'Smooth',    min:0,  max:7,   value:2,  step:1,   decimals:0, onChange: rerender }),
+  lw: makeKnob(edgeKnobsEl,  { label:'Weight',    min:3,  max:28,  value:11, step:1,   decimals:0, onChange: rerender }),
+  si: makeKnob(edgeKnobsEl,  { label:'Simplify',  min:1,  max:10,  value:2,  step:0.5, decimals:1, onChange: rerender }),
+  ml: makeKnob(edgeKnobsEl,  { label:'Min Len',   min:3,  max:36,  value:10, step:1,   decimals:0, onChange: rerender }),
+  fo: makeKnob(fillOpKnobEl, { label:'Opacity',   min:0,  max:100, value:85, step:1,   decimals:0, onChange: rerender }),
+};
+
+const P = {
+  th: () => knobs.th.getValue(),
+  sm: () => knobs.sm.getValue(),
+  lw: () => knobs.lw.getValue() / 10,
+  si: () => knobs.si.getValue(),
+  ml: () => knobs.ml.getValue(),
+  fo: () => knobs.fo.getValue() / 100,
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// CANVAS & STATE
+// ═══════════════════════════════════════════════════════════════════
+const C   = document.getElementById('c');
+const X   = C.getContext('2d');
+const vid = document.getElementById('vid');
+let W = C.width, H = C.height;  // updated when camera opens
+const OFF = document.createElement('canvas');
+const OX  = OFF.getContext('2d', { willReadFrequently: true });
+
+let mode = 'live', frozen = null, camReady = false, frameSkip = 0;
+let inkH = 0, inkS = 0, inkL = 20;
+let paperColor = '#f5f0e8';
+let fillColor  = '#c8e0f4';
+
+let segmenter  = null;
+let lastMask   = null;
+let segPending = false;
+
+// ═══════════════════════════════════════════════════════════════════
+// COLOR HELPERS
+// ═══════════════════════════════════════════════════════════════════
+function hslToRgb(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h/30) % 12;
+  const a = s * Math.min(l, 1-l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n)-3, Math.min(9-k(n), 1)));
+  return [Math.round(f(0)*255), Math.round(f(8)*255), Math.round(f(4)*255)];
+}
+function hslToHex(h, s, l) {
+  const [r,g,b] = hslToRgb(h,s,l);
+  return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function hexToHsl(hex) {
+  let r=parseInt(hex.slice(1,3),16)/255, g=parseInt(hex.slice(3,5),16)/255, b=parseInt(hex.slice(5,7),16)/255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+  let h=0,s=0,l=(max+min)/2;
+  if(d){s=d/(1-Math.abs(2*l-1));if(max===r)h=((g-b)/d+6)%6;else if(max===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;}
+  return [h, s*100, l*100];
+}
+function getInkHex() { return hslToHex(inkH, inkS, inkL); }
+
+function updateInkPreview() {
+  document.getElementById('inkPreview').style.background = getInkHex();
+  drawLbar();
+  if (mode === 'freeze' && frozen) render(frozen.imgData, frozen.mask);
+}
+
+// ── Presets ────────────────────────────────────────────────────────
+const PRESETS = [
+  { h:0,   s:0,   l:10,  label:'Ink'       },
+  { h:220, s:60,  l:22,  label:'Indigo'    },
+  { h:355, s:55,  l:28,  label:'Carmine'   },
+  { h:30,  s:70,  l:20,  label:'Sepia'     },
+  { h:160, s:45,  l:22,  label:'Verdigris' },
+  { h:280, s:40,  l:28,  label:'Violet'    },
+  { h:200, s:55,  l:30,  label:'Slate'     },
+  { h:45,  s:80,  l:32,  label:'Ochre'     },
+];
+function buildPresets() {
+  const wrap = document.getElementById('presets');
+  PRESETS.forEach((p, i) => {
+    const el = document.createElement('div');
+    el.className = 'preset' + (i===0?' selected':'');
+    el.title = p.label;
+    el.style.background = hslToHex(p.h, p.s, p.l);
+    el.addEventListener('click', () => {
+      inkH = p.h; inkS = p.s; inkL = p.l;
+      document.querySelectorAll('.preset').forEach(e=>e.classList.remove('selected'));
+      el.classList.add('selected');
+      syncWheelCursor(); syncLbarCursor(); updateInkPreview();
+    });
+    wrap.appendChild(el);
+  });
+}
+
+// ── Hue/Sat wheel ──────────────────────────────────────────────────
+const wC = document.getElementById('wheelCanvas');
+const wX = wC.getContext('2d');
+const WR = 110;
+
+function drawWheel() {
+  const size = 220, imgData = wX.createImageData(size, size), d = imgData.data;
+  for (let y=0; y<size; y++) for (let x=0; x<size; x++) {
+    const dx=x-WR, dy=y-WR, dist=Math.sqrt(dx*dx+dy*dy);
+    if (dist>WR){d[(y*size+x)*4+3]=0;continue;}
+    const h=((Math.atan2(dy,dx)*180/Math.PI)+360)%360, s=(dist/WR)*100;
+    const [r,g,b]=hslToRgb(h,s,inkL), i=(y*size+x)*4;
+    d[i]=r;d[i+1]=g;d[i+2]=b;d[i+3]=255;
+  }
+  wX.putImageData(imgData,0,0);
+}
+function syncWheelCursor() {
+  const angle=inkH*Math.PI/180, rr=(inkS/100)*WR;
+  const cur=document.getElementById('wheelCursor');
+  cur.style.left=(WR+Math.cos(angle)*rr)+'px';
+  cur.style.top=(WR+Math.sin(angle)*rr)+'px';
+}
+function wheelPick(e) {
+  const rect=wC.getBoundingClientRect(), scale=220/rect.width;
+  const dx=(e.clientX-rect.left)*scale-WR, dy=(e.clientY-rect.top)*scale-WR;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  if(dist>WR)return;
+  inkH=((Math.atan2(dy,dx)*180/Math.PI)+360)%360;
+  inkS=Math.min(100,(dist/WR)*100);
+  syncWheelCursor(); drawWheel(); updateInkPreview();
+  document.querySelectorAll('.preset').forEach(e=>e.classList.remove('selected'));
+}
+let wheelDown=false;
+wC.addEventListener('mousedown',e=>{wheelDown=true;wheelPick(e);});
+wC.addEventListener('touchstart',e=>{wheelDown=true;wheelPick(e.touches[0]);},{passive:true});
+window.addEventListener('mousemove',e=>{if(wheelDown)wheelPick(e);});
+window.addEventListener('touchmove',e=>{if(wheelDown)wheelPick(e.touches[0]);},{passive:true});
+window.addEventListener('mouseup',()=>wheelDown=false);
+window.addEventListener('touchend',()=>wheelDown=false);
+
+// ── Lightness bar ──────────────────────────────────────────────────
+const lbC=document.getElementById('lbarCanvas'), lbX=lbC.getContext('2d');
+function drawLbar() {
+  lbC.width=220; lbC.height=12;
+  const g=lbX.createLinearGradient(0,0,220,0);
+  g.addColorStop(0,hslToHex(inkH,inkS,2));
+  g.addColorStop(.35,hslToHex(inkH,inkS,inkL<50?20:40));
+  g.addColorStop(.65,hslToHex(inkH,inkS,60));
+  g.addColorStop(1,hslToHex(inkH,inkS,95));
+  lbX.fillStyle=g; lbX.fillRect(0,0,220,12);
+}
+function syncLbarCursor(){document.getElementById('lbarCursor').style.left=(inkL/100*220)+'px';}
+function lbarPick(e) {
+  const rect=lbC.getBoundingClientRect(), scale=220/rect.width;
+  inkL=Math.max(0,Math.min(100,(e.clientX-rect.left)*scale/220*100));
+  syncLbarCursor(); drawWheel(); updateInkPreview();
+  document.querySelectorAll('.preset').forEach(e=>e.classList.remove('selected'));
+}
+let lbarDown=false;
+lbC.addEventListener('mousedown',e=>{lbarDown=true;lbarPick(e);});
+lbC.addEventListener('touchstart',e=>{lbarDown=true;lbarPick(e.touches[0]);},{passive:true});
+window.addEventListener('mousemove',e=>{if(lbarDown)lbarPick(e);});
+window.addEventListener('touchmove',e=>{if(lbarDown)lbarPick(e.touches[0]);},{passive:true});
+window.addEventListener('mouseup',()=>lbarDown=false);
+window.addEventListener('touchend',()=>lbarDown=false);
+
+// ── Paper / fill ───────────────────────────────────────────────────
+function setPaper(hex){
+  paperColor=hex;
+  document.getElementById('paperSwatch').style.background=hex;
+  document.documentElement.style.setProperty('--paper',hex);
+  if(mode==='freeze'&&frozen)render(frozen.imgData,frozen.mask);
+}
+function setFill(hex){
+  fillColor=hex;
+  document.getElementById('fillSwatch').style.background=hex;
+  if(mode==='freeze'&&frozen)render(frozen.imgData,frozen.mask);
+}
+document.getElementById('fillSwatch').style.background=fillColor;
+
+// ═══════════════════════════════════════════════════════════════════
+// EDGE DETECTION — IMPROVED PIPELINE
+// Upgrades over v2:
+//  1. Bilateral-approximation: sharpen luminance before blur so edges
+//     stay crisp while noise is smoothed
+//  2. Unsharp mask applied to luminance (boosts contrast at edges)
+//  3. Adaptive local threshold: each pixel compared to its local mean
+//     so dim-light / high-contrast regions both show edges equally
+//  4. Chain tracing: neighbour priority follows gradient direction,
+//     so chains follow the actual edge cleanly instead of zigzagging
+// ═══════════════════════════════════════════════════════════════════
+
+function boxBlur(src, w, h, r) {
+  if (r <= 0) return src;
+  const dst=new Float32Array(src.length), ww=2*r+1;
+  for(let y=0;y<h;y++){let s=0;for(let x=-r;x<r;x++)s+=src[y*w+Math.max(0,x)];for(let x=0;x<w;x++){s+=src[y*w+Math.min(w-1,x+r)];s-=src[y*w+Math.max(0,x-r-1)];dst[y*w+x]=s/ww;}}
+  const dst2=new Float32Array(src.length);
+  for(let x=0;x<w;x++){let s=0;for(let y=-r;y<r;y++)s+=dst[Math.max(0,y)*w+x];for(let y=0;y<h;y++){s+=dst[Math.min(h-1,y+r)*w+x];s-=dst[Math.max(0,y-r-1)*w+x];dst2[y*w+x]=s/ww;}}
+  return dst2;
+}
+
+// Unsharp mask: lum + amount*(lum - blurred)
+function unsharpMask(lum, w, h, radius, amount) {
+  const blurred = boxBlur(lum, w, h, radius);
+  const out = new Float32Array(w * h);
+  for (let i = 0; i < w*h; i++) out[i] = lum[i] + amount * (lum[i] - blurred[i]);
+  return out;
+}
+
+function toLum(data,w,h){
+  const l=new Float32Array(w*h);
+  for(let i=0;i<w*h;i++){const b=i*4;l[i]=.299*data[b]+.587*data[b+1]+.114*data[b+2];}
+  return l;
+}
+
+function sobel(lum,w,h){
+  const mag=new Float32Array(w*h), dir=new Float32Array(w*h);
+  for(let y=1;y<h-1;y++) for(let x=1;x<w-1;x++){
+    const tl=lum[(y-1)*w+(x-1)],tc=lum[(y-1)*w+x],tr=lum[(y-1)*w+(x+1)];
+    const ml=lum[y*w+(x-1)],mr=lum[y*w+(x+1)];
+    const bl=lum[(y+1)*w+(x-1)],bc=lum[(y+1)*w+x],br=lum[(y+1)*w+(x+1)];
+    const gx=-tl-2*ml-bl+tr+2*mr+br, gy=-tl-2*tc-tr+bl+2*bc+br;
+    mag[y*w+x]=Math.sqrt(gx*gx+gy*gy);
+    dir[y*w+x]=Math.atan2(gy,gx);
+  }
+  return {mag, dir};
+}
+
+function nms(mag, dir, w, h) {
+  const out=new Uint8Array(w*h);
+  for(let y=1;y<h-1;y++) for(let x=1;x<w-1;x++){
+    const idx=y*w+x, m=mag[idx]; if(!m) continue;
+    const ang=((dir[idx]*180/Math.PI)%180+180)%180;
+    let n1,n2;
+    if(ang<22.5||ang>=157.5){n1=mag[y*w+(x-1)];n2=mag[y*w+(x+1)];}
+    else if(ang<67.5){n1=mag[(y-1)*w+(x+1)];n2=mag[(y+1)*w+(x-1)];}
+    else if(ang<112.5){n1=mag[(y-1)*w+x];n2=mag[(y+1)*w+x];}
+    else{n1=mag[(y-1)*w+(x-1)];n2=mag[(y+1)*w+(x+1)];}
+    out[idx]=(m>=n1&&m>=n2)?1:0;
+  }
+  return out;
+}
+
+// Adaptive hysteresis: hi threshold adapts per local region
+function adaptiveHysteresis(thin, mag, w, h, baseLo, baseHi) {
+  // Compute local mean of mag over 16x16 blocks for adaptive hi
+  const BLK = 16;
+  const edge = new Uint8Array(w*h);
+  for (let by = 0; by < h; by += BLK) {
+    for (let bx = 0; bx < w; bx += BLK) {
+      let sum = 0, cnt = 0;
+      for (let dy=0; dy<BLK && by+dy<h; dy++)
+        for (let dx=0; dx<BLK && bx+dx<w; dx++) {
+          sum += mag[(by+dy)*w+(bx+dx)]; cnt++;
+        }
+      const localMean = sum / cnt;
+      // local hi = max(baseHi, localMean * 1.4) — lifts threshold in bright-edge areas
+      const hi = Math.max(baseHi, localMean * 1.4);
+      const lo = hi * 0.35;
+      for (let dy=0; dy<BLK && by+dy<h; dy++)
+        for (let dx=0; dx<BLK && bx+dx<w; dx++) {
+          const idx=(by+dy)*w+(bx+dx);
+          if (!thin[idx]) continue;
+          if (mag[idx] >= hi) edge[idx]=2;
+          else if (mag[idx] >= lo) edge[idx]=1;
+        }
+    }
+  }
+  // Flood-fill weak from strong
+  const dx8=[-1,0,1,-1,1,-1,0,1], dy8=[-1,-1,-1,0,0,1,1,1];
+  const stack=[];
+  for(let i=0;i<w*h;i++) if(edge[i]===2) stack.push(i);
+  while(stack.length){
+    const idx=stack.pop(), x=idx%w, y=(idx/w)|0;
+    for(let d=0;d<8;d++){
+      const nx=x+dx8[d], ny=y+dy8[d];
+      if(nx<0||nx>=w||ny<0||ny>=h) continue;
+      const ni=ny*w+nx;
+      if(edge[ni]===1){edge[ni]=2;stack.push(ni);}
+    }
+  }
+  const res=new Uint8Array(w*h);
+  for(let i=0;i<w*h;i++) res[i]=edge[i]===2?255:0;
+  return res;
+}
+
+// RDP simplification
+function rdpDist(p,a,b){const dx=b.x-a.x,dy=b.y-a.y;if(!dx&&!dy)return Math.hypot(p.x-a.x,p.y-a.y);const t=((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy);return Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy));}
+function rdp(pts,eps){if(pts.length<=2)return pts;let maxD=0,idx=0;for(let i=1;i<pts.length-1;i++){const d=rdpDist(pts[i],pts[0],pts[pts.length-1]);if(d>maxD){maxD=d;idx=i;}}if(maxD>eps){return[...rdp(pts.slice(0,idx+1),eps).slice(0,-1),...rdp(pts.slice(idx),eps)];}return[pts[0],pts[pts.length-1]];}
+
+// Direction-guided chain tracer: prefers pixels in the current travel direction
+function traceContours(edgeMap, mag, dir, w, h, minLen, simplify) {
+  const visited = new Uint8Array(w*h);
+  const chains  = [];
+
+  // 8-connected neighbours ordered by angle proximity
+  const DX = [-1,0,1,-1,1,-1,0,1];
+  const DY = [-1,-1,-1,0,0,1,1,1];
+
+  for (let sy=1; sy<h-1; sy++) for (let sx=1; sx<w-1; sx++) {
+    const si = sy*w+sx;
+    if (!edgeMap[si] || visited[si]) continue;
+
+    const chain = [];
+    let x=sx, y=sy, prevAngle=dir[si];
+
+    while (true) {
+      const idx=y*w+x;
+      if (visited[idx]) break;
+      visited[idx]=1;
+      chain.push({x,y});
+
+      // Sort neighbours by how well they align with current gradient direction
+      let best=-1, bestScore=-Infinity;
+      for (let d=0;d<8;d++) {
+        const nx=x+DX[d], ny=y+DY[d];
+        if (nx<0||nx>=w||ny<0||ny>=h) continue;
+        const ni=ny*w+nx;
+        if (!edgeMap[ni]||visited[ni]) continue;
+        // score = edge strength * direction alignment
+        const alignment = Math.cos(dir[ni] - prevAngle);
+        const score = mag[ni] * (alignment + 1.2);
+        if (score > bestScore) { bestScore=score; best=d; }
+      }
+      if (best < 0) break;
+      prevAngle = dir[y*w+x];
+      x += DX[best]; y += DY[best];
+    }
+
+    if (chain.length >= minLen) chains.push(rdp(chain, simplify));
+  }
+  return chains;
+}
+
+function mapPt(pt,srcW,srcH,mirrorX=true){
+  const scale=Math.max(W/srcW,H/srcH);
+  const ox=(W-srcW*scale)/2, oy=(H-srcH*scale)/2;
+  return{x:mirrorX?ox+(srcW-1-pt.x)*scale:ox+pt.x*scale, y:oy+pt.y*scale};
+}
+function drawChain(pts) {
+  if(pts.length<2)return;
+  X.beginPath(); X.moveTo(pts[0].x,pts[0].y);
+  if(pts.length===2){X.lineTo(pts[1].x,pts[1].y);X.stroke();return;}
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(pts.length-1,i+2)];
+    const t=.38;
+    X.bezierCurveTo(p1.x+(p2.x-p0.x)*t,p1.y+(p2.y-p0.y)*t,p2.x-(p3.x-p1.x)*t,p2.y-(p3.y-p1.y)*t,p2.x,p2.y);
+  }
+  X.stroke();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════════
+function render(imageData, mask) {
+  const { width:srcW, height:srcH, data } = imageData;
+  const threshold = P.th();
+  const smoothR   = P.sm();
+  const lineW     = P.lw();
+  const simplify  = P.si();
+  const minLen    = P.ml();
+
+  // 1. Luminance
+  let lum = toLum(data, srcW, srcH);
+
+  // 2. Unsharp mask — boost contrast at edges before blurring
+  //    (radius=1 sharp, amount=0.6 moderate boost)
+  lum = unsharpMask(lum, srcW, srcH, 1, 0.6);
+
+  // 3. Blur to suppress noise (but edges already boosted above)
+  if (smoothR > 0) lum = boxBlur(lum, srcW, srcH, smoothR);
+
+  // 4. Sobel
+  const { mag, dir } = sobel(lum, srcW, srcH);
+
+  // 5. NMS
+  const thin = nms(mag, dir, srcW, srcH);
+
+  // 6. Adaptive hysteresis
+  const edges = adaptiveHysteresis(thin, mag, srcW, srcH, threshold * 0.35, threshold);
+
+  // 7. Direction-guided chain tracing
+  const chains = traceContours(edges, mag, dir, srcW, srcH, minLen, simplify);
+
+  // ── Draw ──────────────────────────────────────────────────────────
+  X.clearRect(0,0,W,H);
+  X.fillStyle = paperColor;
+  X.fillRect(0,0,W,H);
+
+  // Person fill under linework
+  const useMask = mask || (frozen && frozen.mask) || lastMask;
+  if (useMask) {
+    X.save();
+    X.globalAlpha = P.fo();
+    X.fillStyle = fillColor;
+    X.fill(useMask);
+    X.restore();
+  }
+
+  // Linework — sort by length: longer chains = thick, shorter = thin
+  X.strokeStyle = getInkHex();
+  X.lineCap  = 'round';
+  X.lineJoin = 'round';
+  X.lineWidth = lineW;
+  X.globalAlpha = 1;
+
+  for (const chain of chains) {
+    const mapped = chain.map(p => mapPt(p, srcW, srcH, true));
+    drawChain(mapped);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SEGMENTATION
+// ═══════════════════════════════════════════════════════════════════
+function maskToPath(pixels, mW, mH) {
+  const path = new Path2D();
+  // Use the SAME cover-scale transform as mapPt so mask and linework align perfectly
+  const scale = Math.max(W / mW, H / mH);
+  const ox = (W - mW * scale) / 2;
+  const oy = (H - mH * scale) / 2;
+  const step = 2;
+
+  for (let my = 0; my < mH; my += step) {
+    let runStart = -1;
+    for (let mx = 0; mx <= mW; mx++) {
+      // mirror X to match selfie camera (same as mapPt mirrorX)
+      const smx = mW - 1 - mx;
+      const isPerson = mx < mW && pixels[(my * mW + smx) * 4 + 3] > 128;
+      if (isPerson && runStart < 0) {
+        runStart = mx;
+      } else if (!isPerson && runStart >= 0) {
+        // Map run from mask-space to canvas-space using cover scale
+        const x1 = ox + runStart * scale;
+        const y1 = oy + my * scale;
+        const rw = (mx - runStart) * scale;
+        const rh = step * scale + 1;
+        path.rect(x1, y1, rw, rh);
+        runStart = -1;
+      }
+    }
+    if (runStart >= 0) {
+      const x1 = ox + runStart * scale;
+      const y1 = oy + my * scale;
+      path.rect(x1, y1, (mW - runStart) * scale, step * scale + 1);
+    }
+  }
+  return path;
+}
+
+async function runSegmentation(source) {
+  if (!segmenter) return null;
+  try {
+    const seg = await segmenter.segmentPeople(source);
+    if (!seg||!seg.length) return null;
+    const maskImg = await bodySegmentation.toBinaryMask(
+      seg, {r:0,g:0,b:0,a:255}, {r:0,g:0,b:0,a:0}, false, 0.5);
+    return maskToPath(maskImg.data, maskImg.width, maskImg.height);
+  } catch(e) { return null; }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CAMERA
+// ═══════════════════════════════════════════════════════════════════
+function sampleCamera(hiRes=false) {
+  if(!camReady||vid.readyState<2)return null;
+  const vw=vid.videoWidth||640, vh=vid.videoHeight||480;
+  // Always use a consistent resolution that matches canvas aspect
+  // Live: 320px wide for speed; capture: full video width
+  const sW = hiRes ? vw : Math.min(vw, 640);
+  const sH = Math.round(sW * (vh / vw));
+  OFF.width=sW; OFF.height=sH;
+  OX.drawImage(vid,0,0,sW,sH);
+  return OX.getImageData(0,0,sW,sH);
+}
+
+function loop() {
+  requestAnimationFrame(loop);
+  if (mode!=='live'||!camReady) return;
+  frameSkip++;
+  if (frameSkip%4===0) {
+    const px=sampleCamera(false);
+    if (px) render(px);
+  }
+  if (frameSkip%24===0 && !segPending && segmenter) {
+    segPending=true;
+    runSegmentation(vid).then(path=>{ lastMask=path; segPending=false; });
+  }
+}
+
+async function capture() {
+  if (!camReady) return;
+  document.getElementById('statusTxt').textContent='segmenting…';
+  const hiRes=document.createElement('canvas');
+  hiRes.width=vid.videoWidth; hiRes.height=vid.videoHeight;
+  hiRes.getContext('2d').drawImage(vid,0,0);
+  const mask=await runSegmentation(hiRes);
+  const imgData=sampleCamera(true);
+  frozen={imgData, mask};
+  setMode('freeze');
+  if (imgData) render(imgData, mask);
+  document.getElementById('statusTxt').textContent=mask?'frozen':'frozen · no person';
+}
+
+function setMode(m) {
+  mode=m;
+  document.getElementById('btnLive').classList.toggle('active',m==='live');
+  document.getElementById('btnHold').classList.toggle('active',m==='freeze');
+  document.getElementById('scanLine').classList.toggle('on',m==='live');
+  document.getElementById('liveDot').classList.toggle('on',m==='live');
+  document.getElementById('statusTxt').textContent=m==='live'?'live':'frozen';
+}
+
+async function initCamera() {
+  document.getElementById('statusTxt').textContent='requesting…';
+  try {
+    const stream=await navigator.mediaDevices.getUserMedia({
+      video:{width:{ideal:1280},height:{ideal:720},facingMode:'user'},audio:false});
+    vid.srcObject=stream;
+    vid.onloadedmetadata=()=>{
+      vid.play(); camReady=true;
+      // Match canvas exactly to video so edge map and mask use same coordinate space
+      W = vid.videoWidth || 1280;
+      H = vid.videoHeight || 720;
+      C.width = W; C.height = H;
+      document.getElementById('statusTxt').textContent='live';
+      document.getElementById('liveDot').classList.add('on');
+      document.getElementById('scanLine').classList.add('on');
+      document.getElementById('btnCapture').disabled=false;
+      document.getElementById('btnHold').disabled=false;
+      loop();
+    };
+  } catch(e) {
+    document.getElementById('statusTxt').textContent='camera denied';
+    X.fillStyle=paperColor; X.fillRect(0,0,W,H);
+    X.fillStyle='rgba(14,11,8,.22)'; X.font='10px DM Mono'; X.textAlign='center';
+    X.fillText('CAMERA UNAVAILABLE — GRANT PERMISSION & RELOAD',W/2,H/2);
+  }
+}
+
+function saveImg() {
+  const a=document.createElement('a');
+  a.download=`portrait-${Date.now()}.png`;
+  a.href=C.toDataURL(); a.click();
+}
+
+document.addEventListener('keydown', e=>{
+  if(e.code==='Space'){e.preventDefault();capture();}
+  if(e.code==='KeyF'&&!e.ctrlKey){e.preventDefault();mode==='live'?capture():setMode('live');}
+  if(e.code==='KeyS'&&e.ctrlKey){e.preventDefault();saveImg();}
+});
+C.addEventListener('click', capture);
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+buildPresets();
+drawWheel();
+drawLbar();
+syncWheelCursor();
+syncLbarCursor();
+updateInkPreview();
+
+document.getElementById('statusTxt').textContent='loading model…';
+(async () => {
+  try {
+    segmenter = await bodySegmentation.createSegmenter(
+      bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation,
+      { runtime:'tfjs', modelType:'general' }
+    );
+  } catch(e) { console.warn('segmentation unavailable', e); }
+  initCamera();
+})();
+</script>
+</body>
+</html>
