@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>retrato vivo</title>
+<!--
+  RETRATO VIVO
+  Ciclo 1 — 2026-03-12
+
+  Qué hace:
+    Usa la cámara en vivo como instrumento de dibujo gestual.
+    El movimiento deja marca. La quietud no deja nada.
+    El cuerpo es el pincel.
+
+  Cómo usarla:
+    1. ACTIVAR — permite acceso a cámara
+    2. Mové la cámara (o tu cuerpo frente a ella) — eso dibuja
+    3. UMBRAL — cuánto movimiento se necesita para dejar marca
+    4. DECAY — qué tan rápido desaparecen las marcas (0 = permanente)
+    5. TRAZO — grosor de la marca
+    6. MODO COLOR — hue extraído del pixel en movimiento vs color fijo
+    7. FREEZE — congela el estado actual como PNG exportable
+    8. CLEAR — borra el canvas pero no detiene la cámara
+
+  Parámetros clave:
+    threshold: movimiento mínimo para pintar (0–255)
+    decay: opacidad del velo negro por frame (0 = sin decay)
+    brushSize: radio del trazo
+    colorMode: "motion" (color del pixel) | "fixed" (acento único)
+
+  Comportamientos inesperados:
+    - Con decay muy bajo y umbral alto, el canvas acumula fantasmas
+      que se superponen como capas de exposición múltiple
+    - Si la luz cambia de golpe (encender una lámpara), todo el frame
+      "explota" como si hubiera movimiento masivo — el ruido de luz
+      se vuelve gesto
+    - En colorMode "motion", zonas de piel vs fondo crean gradientes
+      que el artista no controla
+    - Con brushSize grande + threshold bajo, respirar alcanza para pintar
+
+  Librerías externas: ninguna
+
+  Licencia: MIT
+-->
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0c0b0a;
+  --surface: #131211;
+  --border: #252220;
+  --border2: #302d2a;
+  --text: #6a6460;
+  --text-hi: #b8b0a8;
+  --accent: #e8460a;
+  --accent-lo: rgba(232,70,10,0.15);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+h1 {
+  font-size: 9px;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: var(--text);
+  opacity: 0.35;
+  font-weight: normal;
+}
+
+.sep {
+  width: 1px;
+  height: 14px;
+  background: var(--border2);
+  flex-shrink: 0;
+}
+
+/* knob group */
+.knob-group {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.knob-group label {
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text);
+  opacity: 0.5;
+  white-space: nowrap;
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 64px;
+  height: 2px;
+  background: var(--border2);
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 8px;
+  height: 8px;
+  background: var(--text-hi);
+  cursor: pointer;
+  border-radius: 0;
+}
+input[type=range]::-webkit-slider-thumb:hover {
+  background: var(--accent);
+}
+
+.val {
+  font-size: 8px;
+  color: var(--accent);
+  min-width: 22px;
+  text-align: right;
+  opacity: 0.8;
+}
+
+/* toggle button */
+.btn {
+  font-family: 'Courier New', monospace;
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 3px 9px;
+  cursor: pointer;
+  transition: all 0.1s;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--text); color: var(--text-hi); }
+.btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-lo); }
+.btn.action { border-color: var(--border2); color: var(--text); }
+.btn.action:hover { border-color: var(--text-hi); color: var(--text-hi); }
+
+/* status dot */
+#dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--border2);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+#dot.live { background: var(--accent); animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+#status-txt {
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  color: var(--text);
+  opacity: 0.4;
+}
+
+/* main area */
+.workspace {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* hidden video */
+video { display: none; }
+
+/* painting canvas — fills workspace */
+#canvas-paint {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+
+/* diff canvas — hidden, used for motion detection */
+#canvas-diff {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  top: 0; left: 0;
+}
+
+/* overlay for start state */
+#overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  z-index: 10;
+  transition: opacity 0.4s;
+}
+#overlay.hidden { opacity: 0; pointer-events: none; }
+
+#start-btn {
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 14px 32px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+#start-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-lo);
+}
+
+/* freeze overlay */
+#freeze-flash {
+  position: absolute;
+  inset: 0;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 20;
+  transition: opacity 0.05s;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>retrato vivo</h1>
+  <div id="dot"></div>
+  <span id="status-txt">—</span>
+
+  <div class="sep"></div>
+
+  <div class="knob-group">
+    <label>umbral</label>
+    <input type="range" id="s-threshold" min="1" max="120" value="18">
+    <span class="val" id="v-threshold">18</span>
+  </div>
+
+  <div class="knob-group">
+    <label>decay</label>
+    <input type="range" id="s-decay" min="0" max="40" value="0">
+    <span class="val" id="v-decay">0</span>
+  </div>
+
+  <div class="knob-group">
+    <label>trazo</label>
+    <input type="range" id="s-brush" min="1" max="40" value="6">
+    <span class="val" id="v-brush">6</span>
+  </div>
+
+  <div class="sep"></div>
+
+  <button class="btn active" id="btn-color" onclick="toggleColor()">color vivo</button>
+  <button class="btn active" id="btn-mirror" onclick="toggleMirror()">espejo</button>
+
+  <div class="sep"></div>
+
+  <button class="btn action" onclick="freezeCanvas()">freeze</button>
+  <button class="btn action" onclick="clearCanvas()">clear</button>
+</header>
+
+<div class="workspace">
+  <video id="vid" autoplay playsinline muted></video>
+  <canvas id="canvas-diff"></canvas>
+  <canvas id="canvas-paint"></canvas>
+  <div id="freeze-flash"></div>
+
+  <div id="overlay">
+    <button id="start-btn" onclick="startCamera()">activar</button>
+  </div>
+</div>
+
+<script>
+// ── state ──────────────────────────────────────────────────────
+const vid       = document.getElementById('vid');
+const paintC    = document.getElementById('canvas-paint');
+const diffC     = document.getElementById('canvas-diff');
+const paintCtx  = paintC.getContext('2d');
+const diffCtx   = diffC.getContext('2d');
+
+let W = 0, H = 0;
+let prevImageData = null;
+let animId = null;
+let isLive = false;
+let colorMode = true;   // true = pixel color, false = accent
+let mirrorMode = true;
+
+// params (read from sliders each frame)
+function threshold() { return +document.getElementById('s-threshold').value; }
+function decayVal()  { return +document.getElementById('s-decay').value; }
+function brushSize() { return +document.getElementById('s-brush').value; }
+
+// ── slider readouts ──────────────────────────────────────────
+document.getElementById('s-threshold').addEventListener('input', e => {
+  document.getElementById('v-threshold').textContent = e.target.value;
+});
+document.getElementById('s-decay').addEventListener('input', e => {
+  document.getElementById('v-decay').textContent = e.target.value;
+});
+document.getElementById('s-brush').addEventListener('input', e => {
+  document.getElementById('v-brush').textContent = e.target.value;
+});
+
+// ── toggles ───────────────────────────────────────────────────
+function toggleColor() {
+  colorMode = !colorMode;
+  const btn = document.getElementById('btn-color');
+  btn.textContent = colorMode ? 'color vivo' : 'acento';
+  btn.classList.toggle('active', colorMode);
+}
+function toggleMirror() {
+  mirrorMode = !mirrorMode;
+  document.getElementById('btn-mirror').classList.toggle('active', mirrorMode);
+}
+
+// ── camera ────────────────────────────────────────────────────
+async function startCamera() {
+  try {
+    document.getElementById('status-txt').textContent = 'conectando…';
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+      audio: false
+    });
+    vid.srcObject = stream;
+    await new Promise(r => vid.onloadedmetadata = r);
+    vid.play();
+
+    W = vid.videoWidth;
+    H = vid.videoHeight;
+
+    // size canvases
+    paintC.width  = W; paintC.height  = H;
+    diffC.width   = W; diffC.height   = H;
+
+    // black bg for paint canvas
+    paintCtx.fillStyle = '#0c0b0a';
+    paintCtx.fillRect(0, 0, W, H);
+
+    isLive = true;
+    document.getElementById('dot').className = 'live';
+    document.getElementById('status-txt').textContent = 'vivo';
+    document.getElementById('overlay').classList.add('hidden');
+
+    loop();
+  } catch(err) {
+    document.getElementById('status-txt').textContent = 'cámara denegada';
+    console.error(err);
+  }
+}
+
+// ── main loop ─────────────────────────────────────────────────
+function loop() {
+  if (!isLive) return;
+  animId = requestAnimationFrame(loop);
+
+  if (vid.readyState < 2) return;
+
+  // draw current video frame to diff canvas (mirrored if needed)
+  diffCtx.save();
+  if (mirrorMode) {
+    diffCtx.translate(W, 0);
+    diffCtx.scale(-1, 1);
+  }
+  diffCtx.drawImage(vid, 0, 0, W, H);
+  diffCtx.restore();
+
+  const curr = diffCtx.getImageData(0, 0, W, H);
+
+  if (!prevImageData) {
+    prevImageData = curr;
+    return;
+  }
+
+  const currD = curr.data;
+  const prevD = prevImageData.data;
+  const thr   = threshold();
+  const brush = brushSize();
+  const decay = decayVal();
+
+  // decay — thin black veil each frame
+  if (decay > 0) {
+    paintCtx.fillStyle = `rgba(12,11,10,${decay * 0.004})`;
+    paintCtx.fillRect(0, 0, W, H);
+  }
+
+  // sample motion at grid points for performance
+  const step = Math.max(2, Math.floor(brush * 0.8));
+
+  for (let y = 0; y < H; y += step) {
+    for (let x = 0; x < W; x += step) {
+      const i = (y * W + x) * 4;
+
+      const dr = Math.abs(currD[i]   - prevD[i]);
+      const dg = Math.abs(currD[i+1] - prevD[i+1]);
+      const db = Math.abs(currD[i+2] - prevD[i+2]);
+      const motion = (dr + dg + db) / 3;
+
+      if (motion < thr) continue;
+
+      // motion intensity → opacity
+      const alpha = Math.min(1, (motion - thr) / (255 - thr));
+
+      let r, g, b;
+      if (colorMode) {
+        // color from current pixel
+        r = currD[i];
+        g = currD[i+1];
+        b = currD[i+2];
+      } else {
+        // accent: #e8460a
+        r = 232; g = 70; b = 10;
+      }
+
+      paintCtx.beginPath();
+      paintCtx.arc(x, y, brush * (0.5 + alpha * 0.5), 0, Math.PI * 2);
+      paintCtx.fillStyle = `rgba(${r},${g},${b},${alpha * 0.85})`;
+      paintCtx.fill();
+    }
+  }
+
+  prevImageData = curr;
+}
+
+// ── freeze ────────────────────────────────────────────────────
+function freezeCanvas() {
+  // flash
+  const flash = document.getElementById('freeze-flash');
+  flash.style.opacity = '0.6';
+  setTimeout(() => { flash.style.opacity = '0'; }, 120);
+
+  // export
+  const link = document.createElement('a');
+  const ts   = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+  link.download = `retrato-vivo-${ts}.png`;
+  link.href = paintC.toDataURL('image/png');
+  link.click();
+}
+
+// ── clear ─────────────────────────────────────────────────────
+function clearCanvas() {
+  paintCtx.fillStyle = '#0c0b0a';
+  paintCtx.fillRect(0, 0, W, H);
+  prevImageData = null;
+}
+
+// ── keyboard ──────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space')    { e.preventDefault(); freezeCanvas(); }
+  if (e.code === 'KeyC')     { clearCanvas(); }
+  if (e.code === 'KeyM')     { toggleMirror(); }
+  if (e.code === 'KeyK')     { toggleColor(); }
+});
+</script>
+</body>
+</html>
