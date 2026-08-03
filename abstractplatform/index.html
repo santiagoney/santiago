@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Abstracted Platform</title>
+<style>
+  :root{
+    --ink:#f2f2f2;
+    --paper:#000000;
+    --panel:#0a0a0a;
+    --accent:#ffffff;
+    --accent-dim:#6a6a6a;
+    --line:#242424;
+    --mono: 'Courier New', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:20px 14px 40px;
+  }
+  h1{
+    font-size:20px;
+    letter-spacing:0.5px;
+    margin:4px 0 2px;
+  }
+  .sub{
+    font-size:13px;
+    color:#8a8a8a;
+    margin-bottom:16px;
+    text-align:center;
+    max-width:640px;
+  }
+  .sub kbd{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-bottom-width:2px;
+    border-radius:4px;
+    padding:1px 6px;
+    font-family:var(--mono);
+    font-size:11px;
+  }
+
+  .rack{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    justify-content:center;
+    margin-bottom:16px;
+    max-width:920px;
+  }
+
+  .slot{
+    width:120px;
+    background:var(--panel);
+    border-radius:10px;
+    border:1px solid var(--line);
+    padding:10px 10px 12px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    box-shadow:0 1px 0 var(--line);
+  }
+  .slot .tag{
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:#8a8a8a;
+  }
+  .drop{
+    width:96px;
+    height:96px;
+    border:2px dashed #333;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-size:11px;
+    color:#777;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+    background:
+      linear-gradient(45deg, #141414 25%, transparent 25%) -8px 0/16px 16px,
+      linear-gradient(-45deg, #141414 25%, transparent 25%) -8px 0/16px 16px,
+      #060606;
+    transition: border-color .15s, background-color .15s, transform .1s;
+    user-select:none;
+  }
+  .drop:hover{ border-color: var(--accent-dim); }
+  .drop.drag{
+    border-color: var(--accent);
+    background-color:rgba(255,255,255,0.06);
+    transform: scale(1.03);
+  }
+  .drop img{
+    max-width:100%;
+    max-height:100%;
+    image-rendering: pixelated;
+  }
+  .drop .clear{
+    position:absolute;
+    top:2px;
+    right:2px;
+    background:rgba(28,31,46,0.75);
+    color:#fff;
+    border:none;
+    border-radius:5px;
+    font-size:10px;
+    line-height:1;
+    padding:3px 5px;
+    cursor:pointer;
+    display:none;
+  }
+  .drop.has-img .clear{ display:block; }
+
+  .drop.multi{
+    flex-wrap:wrap;
+    align-content:flex-start;
+    justify-content:center;
+    padding:4px;
+  }
+  .drop.multi .ph{
+    line-height:1.3;
+  }
+  .drop.multi .frames{
+    display:flex;
+    flex-wrap:wrap;
+    gap:2px;
+    width:100%;
+    max-height:100%;
+    overflow-y:auto;
+    align-content:flex-start;
+    justify-content:center;
+  }
+  .drop.multi .frames img{
+    width:24px;
+    height:24px;
+    object-fit:contain;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:3px;
+    image-rendering: pixelated;
+  }
+  .drop.multi .count-badge{
+    position:absolute;
+    bottom:2px;
+    right:2px;
+    background:rgba(28,31,46,0.75);
+    color:#fff;
+    font-size:9px;
+    padding:1px 5px;
+    border-radius:4px;
+    display:none;
+  }
+  .drop.multi.has-img .count-badge{ display:block; }
+  .drop.multi.has-img .ph{ display:none; }
+
+  .drop.audio-slot{
+    flex-direction:column;
+    gap:4px;
+    padding:6px;
+  }
+  .drop.audio-slot .note{
+    font-size:22px;
+  }
+  .drop.audio-slot .fname{
+    font-size:9px;
+    color:#8a8a8a;
+    max-width:88px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    display:none;
+  }
+  .drop.audio-slot.has-audio .fname{ display:block; }
+  .drop.audio-slot.has-audio .note{ color:var(--accent); }
+  .drop.audio-slot.has-audio .clear{ display:block; }
+  .slot.audio .tag{ color:#8a8a8a; }
+
+  .stage-wrap{
+    position:relative;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    border:1px solid var(--line);
+  }
+  .stage-wrap:fullscreen,
+  .stage-wrap:-webkit-full-screen{
+    width:100vw;
+    height:100vh;
+    max-width:none;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#0a0b12;
+    border:none;
+    border-radius:0;
+    box-shadow:none;
+  }
+  canvas{
+    display:block;
+    background:#bfe6ff;
+    image-rendering: pixelated;
+  }
+
+  .hud{
+    position:absolute;
+    top:10px;
+    left:10px;
+    display:flex;
+    gap:8px;
+    font-family: var(--mono);
+    font-size:13px;
+    color:#1c1f2e;
+    pointer-events:none;
+  }
+  .hud .chip{
+    background:rgba(255,255,255,0.85);
+    border-radius:6px;
+    padding:3px 9px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.15);
+  }
+
+  .controls{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  button.btn{
+    background: var(--accent);
+    color:#000;
+    border:none;
+    padding:9px 16px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    letter-spacing:0.2px;
+  }
+  button.btn.alt{
+    background:transparent;
+    color:var(--ink);
+    border:1px solid var(--line);
+  }
+  button.btn:hover{ opacity:0.88; }
+  button.btn:active{ transform: translateY(1px); }
+
+  .overlay{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,0.82);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    text-align:center;
+    font-family: var(--mono);
+    gap:10px;
+    padding:20px;
+  }
+  .overlay h2{ margin:0; font-size:22px; }
+  .overlay p{ margin:0; font-size:13px; opacity:0.85; max-width:360px; }
+  .overlay.hidden{ display:none; }
+  .overlay button{
+    margin-top:6px;
+  }
+
+  input[type=file]{ display:none; }
+
+  .fs-btn{
+    position:absolute;
+    top:10px;
+    right:10px;
+    width:32px;
+    height:32px;
+    border:none;
+    border-radius:7px;
+    background:rgba(255,255,255,0.85);
+    color:var(--ink);
+    font-size:16px;
+    line-height:1;
+    cursor:pointer;
+    box-shadow:0 1px 3px rgba(0,0,0,0.15);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .fs-btn:hover{ background:#fff; }
+
+  .persistence-label{
+    font-size:13px;
+    color:#8a8a8a;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  #persistenceSlider{
+    width:160px;
+    vertical-align:middle;
+  }
+
+  .win-msg-label{
+    font-size:13px;
+    color:#8a8a8a;
+  }
+  .win-msg-input{
+    font-family: inherit;
+    font-size:13px;
+    color:var(--ink);
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:6px 10px;
+    width:220px;
+    outline:none;
+  }
+  .win-msg-input:focus{
+    border-color: var(--accent-dim);
+  }
+</style>
+</head>
+<body>
+
+<h1>🎮 Abstracted Platform</h1>
+<p class="sub">Drop your own PNGs into the boxes below to customize the character, blocks, clouds and background — drop several PNGs into Character for a walk-cycle animation — then play with <kbd>← →</kbd> / <kbd>A D</kbd> to move and <kbd>Space</kbd> / <kbd>↑</kbd> / <kbd>W</kbd> to jump. Leave a box empty to use the default look.</p>
+
+<div class="rack" id="rack">
+  <div class="slot">
+    <div class="tag">Character</div>
+    <div class="drop multi" data-key="player" data-multi="true">
+      <span class="ph">drop 1+ pngs<br>(walk frames)</span>
+      <div class="frames"></div>
+      <span class="count-badge"></span>
+      <button class="clear" title="remove">✕</button>
+    </div>
+  </div>
+  <div class="slot">
+    <div class="tag">Block</div>
+    <div class="drop" data-key="block">
+      <span class="ph">drop here</span>
+      <img style="display:none">
+      <button class="clear" title="remove">✕</button>
+    </div>
+  </div>
+  <div class="slot">
+    <div class="tag">Cloud</div>
+    <div class="drop" data-key="cloud">
+      <span class="ph">drop here</span>
+      <img style="display:none">
+      <button class="clear" title="remove">✕</button>
+    </div>
+  </div>
+  <div class="slot">
+    <div class="tag">Coin</div>
+    <div class="drop" data-key="coin">
+      <span class="ph">drop here</span>
+      <img style="display:none">
+      <button class="clear" title="remove">✕</button>
+    </div>
+  </div>
+  <div class="slot">
+    <div class="tag">Background</div>
+    <div class="drop" data-key="background">
+      <span class="ph">drop here</span>
+      <img style="display:none">
+      <button class="clear" title="remove">✕</button>
+    </div>
+  </div>
+  <div class="slot">
+    <div class="tag">Flag / Goal</div>
+    <div class="drop" data-key="flag">
+      <span class="ph">drop here</span>
+      <img style="display:none">
+      <button class="clear" title="remove">✕</button>
+    </div>
+  </div>
+</div>
+
+<p class="sub" style="margin-bottom:10px;">Drop MP3s below for sound — background song, coin pickup, death, and victory.</p>
+<div class="rack" id="audioRack">
+  <div class="slot audio">
+    <div class="tag">Song</div>
+    <div class="drop audio-slot" data-key="song" data-type="audio">
+      <span class="note">🎵</span>
+      <span class="ph">drop mp3 here</span>
+      <span class="fname"></span>
+      <button class="clear" title="remove">✕</button>
+    </div>
+  </div>
+  <div class="slot audio">
+    <div class="tag">Coin Sound</div>
+    <div class="drop audio-slot" data-key="coinSound" data-type="audio">
+      <span class="note">🪙</span>
+      <span class="ph">drop mp3 here</span>
+      <span class="fname"></span>
+      <button class="clear" title="remove">✕</button>
+    </div>
+  </div>
+  <div class="slot audio">
+    <div class="tag">Death Sound</div>
+    <div class="drop audio-slot" data-key="deathSound" data-type="audio">
+      <span class="note">💀</span>
+      <span class="ph">drop mp3 here</span>
+      <span class="fname"></span>
+      <button class="clear" title="remove">✕</button>
+    </div>
+  </div>
+  <div class="slot audio">
+    <div class="tag">Victory Sound</div>
+    <div class="drop audio-slot" data-key="victorySound" data-type="audio">
+      <span class="note">🏆</span>
+      <span class="ph">drop mp3 here</span>
+      <span class="fname"></span>
+      <button class="clear" title="remove">✕</button>
+    </div>
+  </div>
+</div>
+
+<div class="stage-wrap" id="stageWrap">
+  <canvas id="game" width="900" height="500"></canvas>
+  <div class="hud">
+    <div class="chip">Coins: <span id="coinCount">0</span></div>
+    <div class="chip">Time: <span id="timeCount">0</span>s</div>
+  </div>
+  <button class="fs-btn" id="fullscreenBtn" title="Toggle fullscreen">⛶</button>
+  <div class="overlay" id="winOverlay">
+    <h2 id="winTitle">🏁 You made it!</h2>
+    <p id="winSub">Reached the flag. Nice moves.</p>
+    <button class="btn" id="playAgainBtn">Play Again</button>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn" id="resetLevelBtn">Restart Level</button>
+  <button class="btn alt" id="resetImagesBtn">Clear All Images</button>
+  <button class="btn alt" id="fullscreenBtn2">Fullscreen</button>
+  <button class="btn alt" id="exportBtn">⬇ Export Game</button>
+</div>
+
+<div class="controls" style="margin-top:2px;">
+  <label class="persistence-label" for="persistenceSlider">
+    Trail persistence: <span id="persistenceValue">0%</span>
+  </label>
+  <input type="range" id="persistenceSlider" min="0" max="100" value="0" step="1">
+</div>
+
+<div class="controls" style="margin-top:2px;">
+  <label class="win-msg-label" for="winMessageInput">Win message:</label>
+  <input type="text" id="winMessageInput" class="win-msg-input" placeholder="🏁 You made it!" maxlength="80">
+</div>
+
+<input type="file" id="fileInput" accept="image/png,image/*">
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Image / audio slot management ----------
+  const IMAGES = { block:null, cloud:null, coin:null, background:null, flag:null };
+  const PLAYER_FRAMES = []; // array of Image objects, in drop order
+  const SOUNDS = { song:null, coinSound:null, deathSound:null, victorySound:null };
+  const fileInput = document.getElementById('fileInput');
+  let activeSlotForClick = null;
+
+  document.querySelectorAll('.drop').forEach(dropEl => {
+    const key = dropEl.dataset.key;
+    const isAudio = dropEl.dataset.type === 'audio';
+    const isMulti = dropEl.dataset.multi === 'true';
+
+    dropEl.addEventListener('click', (e) => {
+      if (e.target.classList.contains('clear')) return;
+      activeSlotForClick = dropEl;
+      fileInput.accept = isAudio ? 'audio/*' : 'image/png,image/*';
+      fileInput.multiple = isMulti;
+      fileInput.value = '';
+      fileInput.click();
+    });
+
+    ['dragenter','dragover'].forEach(evt => {
+      dropEl.addEventListener(evt, (e) => {
+        e.preventDefault(); e.stopPropagation();
+        dropEl.classList.add('drag');
+      });
+    });
+    ['dragleave','dragend'].forEach(evt => {
+      dropEl.addEventListener(evt, (e) => {
+        e.preventDefault(); e.stopPropagation();
+        dropEl.classList.remove('drag');
+      });
+    });
+    dropEl.addEventListener('drop', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropEl.classList.remove('drag');
+      const files = e.dataTransfer.files;
+      if (!files || !files.length) return;
+      if (isAudio) loadAudioIntoSlot(files[0], dropEl, key);
+      else if (isMulti) loadFramesIntoSlot(files, dropEl);
+      else loadImageIntoSlot(files[0], dropEl, key);
+    });
+
+    dropEl.querySelector('.clear').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (isAudio) clearAudioSlot(dropEl, key);
+      else if (isMulti) clearFramesSlot(dropEl);
+      else clearSlot(dropEl, key);
+    });
+  });
+
+  fileInput.addEventListener('change', () => {
+    const files = fileInput.files;
+    if (files && files.length && activeSlotForClick) {
+      const key = activeSlotForClick.dataset.key;
+      const isMulti = activeSlotForClick.dataset.multi === 'true';
+      if (activeSlotForClick.dataset.type === 'audio') loadAudioIntoSlot(files[0], activeSlotForClick, key);
+      else if (isMulti) loadFramesIntoSlot(files, activeSlotForClick);
+      else loadImageIntoSlot(files[0], activeSlotForClick, key);
+    }
+  });
+
+  function loadImageIntoSlot(file, dropEl, key){
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const imgEl = dropEl.querySelector('img');
+      imgEl.src = ev.target.result;
+      imgEl.style.display = 'block';
+      dropEl.querySelector('.ph').style.display = 'none';
+      dropEl.classList.add('has-img');
+
+      const gameImg = new Image();
+      gameImg.onload = () => { IMAGES[key] = gameImg; };
+      gameImg.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearSlot(dropEl, key){
+    IMAGES[key] = null;
+    const imgEl = dropEl.querySelector('img');
+    imgEl.src = '';
+    imgEl.style.display = 'none';
+    dropEl.querySelector('.ph').style.display = 'block';
+    dropEl.classList.remove('has-img');
+  }
+
+  // Character walk-cycle: accepts many PNGs, appended in drop order, cycled during animation
+  function loadFramesIntoSlot(fileList, dropEl){
+    const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+    if (!files.length) return;
+    const framesEl = dropEl.querySelector('.frames');
+    const badgeEl = dropEl.querySelector('.count-badge');
+
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const thumb = document.createElement('img');
+        thumb.src = ev.target.result;
+        framesEl.appendChild(thumb);
+
+        const gameImg = new Image();
+        gameImg.onload = () => {
+          PLAYER_FRAMES.push(gameImg);
+          badgeEl.textContent = PLAYER_FRAMES.length + (PLAYER_FRAMES.length === 1 ? ' frame' : ' frames');
+        };
+        gameImg.src = ev.target.result;
+
+        dropEl.classList.add('has-img');
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function clearFramesSlot(dropEl){
+    PLAYER_FRAMES.length = 0;
+    dropEl.querySelector('.frames').innerHTML = '';
+    dropEl.querySelector('.count-badge').textContent = '';
+    dropEl.classList.remove('has-img');
+  }
+
+  function loadAudioIntoSlot(file, dropEl, key){
+    if (!file.type.startsWith('audio/') && !/\.mp3$/i.test(file.name)) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      dropEl.querySelector('.fname').textContent = file.name;
+      dropEl.querySelector('.ph').style.display = 'none';
+      dropEl.classList.add('has-audio');
+
+      const audioEl = new Audio(ev.target.result);
+      audioEl.preload = 'auto';
+      if (key === 'song') {
+        audioEl.loop = true;
+        audioEl.volume = 0.5;
+        // dropping/selecting the file counts as a user gesture, so this is allowed to autoplay
+        audioEl.play().catch(()=>{ /* will start on first keypress if blocked */ });
+      }
+      SOUNDS[key] = audioEl;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearAudioSlot(dropEl, key){
+    if (SOUNDS[key]) { SOUNDS[key].pause(); }
+    SOUNDS[key] = null;
+    dropEl.querySelector('.fname').textContent = '';
+    dropEl.querySelector('.ph').style.display = 'block';
+    dropEl.classList.remove('has-audio');
+  }
+
+  function playSound(key){
+    const src = SOUNDS[key];
+    if (!src) return;
+    if (key === 'song') { src.play().catch(()=>{}); return; }
+    // clone so overlapping plays (e.g. rapid coin pickups) don't cut each other off
+    const clone = src.cloneNode();
+    clone.volume = 0.7;
+    clone.play().catch(()=>{});
+  }
+
+  document.getElementById('resetImagesBtn').addEventListener('click', () => {
+    document.querySelectorAll('.drop').forEach(dropEl => {
+      if (dropEl.dataset.type === 'audio') clearAudioSlot(dropEl, dropEl.dataset.key);
+      else if (dropEl.dataset.multi === 'true') clearFramesSlot(dropEl);
+      else clearSlot(dropEl, dropEl.dataset.key);
+    });
+  });
+
+  // first user keypress also tries to resume the song in case autoplay was blocked
+  window.addEventListener('keydown', () => {
+    if (SOUNDS.song && SOUNDS.song.paused) SOUNDS.song.play().catch(()=>{});
+  }, { once:true });
+
+  // ---------- Game setup ----------
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const GRAVITY = 0.62;
+  const MOVE_SPEED = 4.2;
+  const JUMP_VEL = -13;
+  const TILE = 40;
+
+  const GROUND_Y = H - TILE * 2;
+
+  // Level layout: list of platforms {x, y, w, h} in pixels (w/h multiples of TILE)
+  // The level is randomized every time buildLevel() runs (page load + every
+  // restart), but bounded by the actual jump physics above so it's always
+  // beatable:
+  //   time to apex ≈ |JUMP_VEL| / GRAVITY ≈ 21 frames
+  //   max jump height ≈ JUMP_VEL^2 / (2*GRAVITY) ≈ 136px
+  //   max same-height jump distance ≈ MOVE_SPEED * 2 * timeToApex ≈ 176px
+  // Gaps/rises below stay comfortably under those limits so there's always
+  // margin for imperfect timing.
+  function buildLevel(){
+    const MAX_GAP = 130;          // safe max horizontal gap between ground pieces
+    const MIN_GAP = 55;
+    const MIN_SEG_W = 240;        // ground segment width range (multiples of TILE)
+    const MAX_SEG_W = 560;
+    const MAX_RISE = 100;         // safe max height a floating platform sits above the ground
+    const MIN_RISE = 60;
+
+    // ---- ground path: randomized segment widths and jumpable gaps ----
+    const platforms = [];
+    const groundSegments = [];
+    const targetLength = 2400 + Math.floor(Math.random() * 800); // vary overall level length a bit
+    let x = 0;
+    while (x < targetLength) {
+      const w = Math.round((MIN_SEG_W + Math.random() * (MAX_SEG_W - MIN_SEG_W)) / TILE) * TILE;
+      groundSegments.push({x, y: GROUND_Y, w, h: TILE * 2});
+      x += w;
+      if (x < targetLength - 250) {
+        x += MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
+      }
+    }
+    platforms.push(...groundSegments);
+
+    // ---- floating platforms: scattered above ground segments, always
+    // directly reachable with a single jump from the ground beneath them ----
+    const coins = [];
+    const floatCount = 10 + Math.floor(Math.random() * 6);
+    for (let i = 0; i < floatCount; i++) {
+      const seg = groundSegments[1 + Math.floor(Math.random() * Math.max(1, groundSegments.length - 1))] || groundSegments[0];
+      const fw = Math.round((80 + Math.random() * 80) / TILE) * TILE || 80;
+      const margin = 20;
+      const maxFx = seg.x + seg.w - fw - margin;
+      const minFx = seg.x + margin;
+      if (maxFx <= minFx) continue; // segment too narrow, skip
+      const fx = minFx + Math.random() * (maxFx - minFx);
+      const fy = GROUND_Y - (MIN_RISE + Math.random() * (MAX_RISE - MIN_RISE));
+      platforms.push({x: fx, y: fy, w: fw, h: TILE});
+      coins.push({x: fx + fw / 2, y: fy - 40, taken: false});
+    }
+    // sort so later collision/draw loops process them in a sane left-to-right order
+    platforms.sort((a, b) => a.x - b.x);
+    coins.sort((a, b) => a.x - b.x);
+
+    // ---- clouds: purely decorative, scaled to the randomized level length ----
+    const levelWidth = x + 120;
+    const clouds = [];
+    for (let i = 0; i < 9; i++) {
+      clouds.push({
+        x: Math.random() * (levelWidth + 400),
+        y: 30 + Math.random() * 150,
+        w: 90 + Math.random() * 60,
+        h: 44 + Math.random() * 20,
+        speed: 0.15 + Math.random() * 0.25
+      });
+    }
+
+    const lastSeg = groundSegments[groundSegments.length - 1];
+    const flag = {x: lastSeg.x + lastSeg.w - 100, y: GROUND_Y - 100, w: 40, h: 100};
+
+    return {platforms, coins, clouds, levelWidth, flag};
+  }
+
+  let level = buildLevel();
+
+  const player = {
+    x: 40, y: GROUND_Y - 60, w: 40, h: 56,
+    vx:0, vy:0, onGround:false, facing:1,
+    animFrame: 0, animTimer: 0
+  };
+  const ANIM_FRAME_MS = 90; // how long each walk frame is held while moving
+
+  const keys = {};
+  window.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return; // let the user type in text/range inputs normally
+    keys[e.key] = true;
+    if ([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+  });
+  window.addEventListener('keyup', e => {
+    if (e.target.tagName === 'INPUT') return;
+    keys[e.key] = false;
+  });
+
+  let camX = 0;
+  let prevCamX = 0;
+  // offscreen buffer that accumulates fading "ghost" copies of the player.
+  // it persists across frames and is shifted opposite to camera movement each
+  // frame so the ghosts stay pinned to world position (not screen position) —
+  // this is what makes the trail show horizontal running, not just jumps.
+  const trailCanvas = document.createElement('canvas');
+  trailCanvas.width = W; trailCanvas.height = H;
+  const trailCtx = trailCanvas.getContext('2d');
+  // same idea for clouds, but they scroll at their own parallax rate (0.4x
+  // camera) plus their own drift speed, so they need a separate buffer
+  // shifted at that rate rather than the player's 1:1 rate.
+  const cloudTrailCanvas = document.createElement('canvas');
+  cloudTrailCanvas.width = W; cloudTrailCanvas.height = H;
+  const cloudTrailCtx = cloudTrailCanvas.getContext('2d');
+  let coinScore = 0;
+  let startTime = performance.now();
+  let elapsed = 0;
+  let won = false;
+
+  const coinCountEl = document.getElementById('coinCount');
+  const timeCountEl = document.getElementById('timeCount');
+  const winOverlay = document.getElementById('winOverlay');
+  const winMessageInput = document.getElementById('winMessageInput');
+
+  function resetLevel(){
+    level = buildLevel();
+    player.x = 40; player.y = GROUND_Y - 60;
+    player.vx = 0; player.vy = 0;
+    coinScore = 0;
+    startTime = performance.now();
+    elapsed = 0;
+    won = false;
+    coinCountEl.textContent = '0';
+    winOverlay.classList.add('hidden');
+    trailCtx.clearRect(0, 0, W, H);
+    cloudTrailCtx.clearRect(0, 0, W, H);
+    prevCamX = 0;
+    if (SOUNDS.song) { SOUNDS.song.currentTime = 0; SOUNDS.song.play().catch(()=>{}); }
+  }
+  document.getElementById('resetLevelBtn').addEventListener('click', resetLevel);
+  document.getElementById('playAgainBtn').addEventListener('click', resetLevel);
+
+  // ---------- Fullscreen toggle ----------
+  const stageWrap = document.getElementById('stageWrap');
+  function toggleFullscreen(){
+    if (!document.fullscreenElement) {
+      (stageWrap.requestFullscreen || stageWrap.webkitRequestFullscreen || function(){}).call(stageWrap).catch(()=>{});
+    } else {
+      (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document);
+    }
+  }
+  document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+  document.getElementById('fullscreenBtn2').addEventListener('click', toggleFullscreen);
+  document.getElementById('exportBtn').addEventListener('click', exportGame);
+
+  // entering fullscreen only makes the *container* fill the screen — the canvas
+  // still needs to be told to grow to match, while keeping its aspect ratio
+  // (900:500) so it isn't stretched/squashed and stays centered/letterboxed.
+  function fitCanvasToScreen(){
+    const inFullscreen = document.fullscreenElement === stageWrap || document.webkitFullscreenElement === stageWrap;
+    if (inFullscreen) {
+      const aspect = canvas.width / canvas.height;
+      let w = window.innerWidth, h = window.innerHeight;
+      if (w / h > aspect) w = h * aspect; else h = w / aspect;
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+    } else {
+      canvas.style.width = '';
+      canvas.style.height = '';
+    }
+  }
+  document.addEventListener('fullscreenchange', fitCanvasToScreen);
+  document.addEventListener('webkitfullscreenchange', fitCanvasToScreen);
+  window.addEventListener('resize', fitCanvasToScreen);
+
+  // ---------- Trail persistence ----------
+  let trailPersistence = 0; // 0..1, 0 = no trail, 1 = trail never fades
+  const persistenceSlider = document.getElementById('persistenceSlider');
+  const persistenceValueEl = document.getElementById('persistenceValue');
+  persistenceSlider.addEventListener('input', () => {
+    trailPersistence = Number(persistenceSlider.value) / 100;
+    persistenceValueEl.textContent = persistenceSlider.value + '%';
+    if (trailPersistence === 0) { trailCtx.clearRect(0, 0, W, H); cloudTrailCtx.clearRect(0, 0, W, H); }
+  });
+
+  // ---------- Export game as a standalone playable .zip ----------
+  function ensureJSZip(){
+    return new Promise((resolve, reject) => {
+      if (window.JSZip) { resolve(); return; }
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('Could not load the zip library (check your internet connection).'));
+      document.head.appendChild(s);
+    });
+  }
+
+  function dataUrlInfo(dataUrl){
+    const match = /^data:([^;]+);base64,/.exec(dataUrl);
+    const mime = match ? match[1] : 'application/octet-stream';
+    let ext = mime.split('/')[1] || 'bin';
+    if (ext === 'jpeg') ext = 'jpg';
+    if (ext === 'mpeg') ext = 'mp3';
+    return { mime, ext };
+  }
+
+  function dataUrlToBlob(dataUrl){
+    const { mime } = dataUrlInfo(dataUrl);
+    const base64 = dataUrl.split(',')[1] || '';
+    const byteStr = atob(base64);
+    const bytes = new Uint8Array(byteStr.length);
+    for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  }
+
+  // Builds the exported index.html: a *player-only* version of the page —
+  // the asset drag-and-drop rack, audio rack, file input, and "Clear All
+  // Images" / "Export Game" controls are all stripped out, since none of
+  // that editor UI is needed once the assets are baked into real files.
+  // What ships is just: canvas, HUD, Restart/Fullscreen, the trail-persistence
+  // slider and win-message field (harmless presentation options), and the
+  // gameplay JS (physics/rendering/audio) with IMAGES/PLAYER_FRAMES/SOUNDS
+  // populated directly from the manifest instead of from file drops.
+  function buildExportedHTML(manifest){
+    const clone = document.documentElement.cloneNode(true);
+
+    clone.querySelector('#rack')?.remove();
+    clone.querySelector('#audioRack')?.remove();
+    clone.querySelector('#fileInput')?.remove();
+    clone.querySelector('#resetImagesBtn')?.remove();
+    clone.querySelector('#exportBtn')?.remove();
+
+    const subParas = clone.querySelectorAll('p.sub');
+    if (subParas[0]) subParas[0].textContent = 'Use ← → / A D to move and Space / ↑ / W to jump.';
+    if (subParas[1]) subParas[1].remove();
+
+    const clonedWinInput = clone.querySelector('#winMessageInput');
+    if (clonedWinInput) clonedWinInput.setAttribute('value', winMessageInput.value);
+    const clonedSlider = clone.querySelector('#persistenceSlider');
+    if (clonedSlider) clonedSlider.setAttribute('value', String(persistenceSlider.value));
+
+    // Select by "no src attribute" rather than "last script tag" — a dynamically
+    // loaded external script (e.g. JSZip, injected into <head> by ensureJSZip)
+    // would otherwise be mistaken for the inline game script.
+    const inlineScripts = Array.from(clone.querySelectorAll('script:not([src])'));
+    const mainScript = inlineScripts[inlineScripts.length - 1];
+    if (!mainScript) throw new Error('Could not find the game script to export.');
+
+    const src = mainScript.textContent;
+
+    // NOTE: marker strings below are deliberately split via concatenation
+    // (e.g. 'play' + 'Sound') rather than written as whole literals. Written
+    // whole, each marker would also match its own appearance right here in
+    // buildExportedHTML's source (since that source is itself part of `src`),
+    // causing indexOf to find the wrong occurrence. Splitting avoids that.
+    let cursor = 0;
+    function findFrom(marker){
+      const i = src.indexOf(marker, cursor);
+      if (i === -1) throw new Error('Export template out of sync (missing a marker) — export aborted.');
+      return i;
+    }
+
+    const playSoundStart = findFrom('  function play' + 'Sound(key){');
+    const playSoundEnd = src.indexOf("  document.getElementById('reset" + "ImagesBtn')", playSoundStart);
+    const playSoundChunk = src.slice(playSoundStart, playSoundEnd);
+    cursor = playSoundEnd;
+
+    const keydownStart = findFrom('  // first user keypress' + ' also tries to resume the song');
+    const keydownEnd = src.indexOf('  // ---------- Game ' + 'setup ----------', keydownStart);
+    const keydownResumeChunk = src.slice(keydownStart, keydownEnd);
+    cursor = keydownEnd;
+
+    const gameSetupStart = cursor;
+    const gameSetupEnd = src.indexOf('  // ---------- Export ' + 'game as a standalone playable .zip ----------', gameSetupStart);
+    let gameSetupChunk = src.slice(gameSetupStart, gameSetupEnd);
+    gameSetupChunk = gameSetupChunk.replace("  document.getElementById('export" + "Btn').addEventListener('click', exportGame);\n", '');
+    cursor = gameSetupEnd;
+
+    const restStart = src.indexOf('  function aabb' + 'Overlap(a,b){', cursor);
+    if (restStart === -1) throw new Error('Export template out of sync (missing aabbOverlap) — export aborted.');
+    const restChunk = src.slice(restStart);
+
+
+    const bakedAssetInit = `  const IMAGES = { block:null, cloud:null, coin:null, background:null, flag:null };
+  const PLAYER_FRAMES = []; // populated below, in manifest order
+  const SOUNDS = { song:null, coinSound:null, deathSound:null, victorySound:null };
+  (function loadBakedAssets(){
+    const manifest = window.__ASSET_MANIFEST__ || { images:{}, playerFrames:[], sounds:{} };
+    Object.keys(manifest.images || {}).forEach(key => {
+      const img = new Image();
+      img.onload = () => { IMAGES[key] = img; };
+      img.src = manifest.images[key];
+    });
+    (manifest.playerFrames || []).forEach(url => {
+      const img = new Image();
+      img.onload = () => { PLAYER_FRAMES.push(img); };
+      img.src = url;
+    });
+    Object.keys(manifest.sounds || {}).forEach(key => {
+      const audioEl = new Audio(manifest.sounds[key]);
+      audioEl.preload = 'auto';
+      if (key === 'song') { audioEl.loop = true; audioEl.volume = 0.5; }
+      SOUNDS[key] = audioEl;
+    });
+  })();
+
+`;
+
+    const newScript = '(function(){\n  "use strict";\n\n'
+      + bakedAssetInit
+      + playSoundChunk + '\n\n'
+      + keydownResumeChunk + '\n'
+      + gameSetupChunk
+      + restChunk;
+
+    mainScript.textContent = newScript;
+
+    const manifestScript = document.createElement('script');
+    manifestScript.textContent = `window.__ASSET_MANIFEST__ = ${JSON.stringify(manifest)};`;
+    mainScript.parentNode.insertBefore(manifestScript, mainScript);
+
+    return '<!DOCTYPE html>\n' + clone.outerHTML;
+  }
+
+  async function exportGame(){
+    const exportBtn = document.getElementById('exportBtn');
+    const originalLabel = exportBtn.textContent;
+    exportBtn.disabled = true;
+    exportBtn.textContent = 'Exporting…';
+    try {
+      await ensureJSZip();
+      const zip = new JSZip();
+      const imagesFolder = zip.folder('assets/images');
+      const soundsFolder = zip.folder('assets/sounds');
+      const manifest = { images: {}, playerFrames: [], sounds: {} };
+
+      for (const key of Object.keys(IMAGES)) {
+        const img = IMAGES[key];
+        if (img && img.src && img.src.startsWith('data:')) {
+          const { ext } = dataUrlInfo(img.src);
+          const filename = `${key}.${ext}`;
+          imagesFolder.file(filename, dataUrlToBlob(img.src));
+          manifest.images[key] = `assets/images/${filename}`;
+        }
+      }
+
+      PLAYER_FRAMES.forEach((frame, i) => {
+        if (frame && frame.src && frame.src.startsWith('data:')) {
+          const { ext } = dataUrlInfo(frame.src);
+          const filename = `player_${i}.${ext}`;
+          imagesFolder.file(filename, dataUrlToBlob(frame.src));
+          manifest.playerFrames.push(`assets/images/${filename}`);
+        }
+      });
+
+      for (const key of Object.keys(SOUNDS)) {
+        const snd = SOUNDS[key];
+        if (snd && snd.src && snd.src.startsWith('data:')) {
+          const { ext } = dataUrlInfo(snd.src);
+          const filename = `${key}.${ext}`;
+          soundsFolder.file(filename, dataUrlToBlob(snd.src));
+          manifest.sounds[key] = `assets/sounds/${filename}`;
+        }
+      }
+
+      const htmlStr = buildExportedHTML(manifest);
+      zip.file('index.html', htmlStr);
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'abstracted-platform-game.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    } catch (err) {
+      console.error(err);
+      alert('Export failed: ' + err.message);
+    } finally {
+      exportBtn.disabled = false;
+      exportBtn.textContent = originalLabel;
+    }
+  }
+
+  function aabbOverlap(a,b){
+    return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+  }
+
+  function update(dt){
+    if (won) return;
+
+    // horizontal input
+    let moveDir = 0;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) moveDir -= 1;
+    if (keys['ArrowRight'] || keys['d'] || keys['D']) moveDir += 1;
+    player.vx = moveDir * MOVE_SPEED;
+    if (moveDir !== 0) player.facing = moveDir;
+
+    // walk-cycle animation: step through frames while moving on the ground
+    if (moveDir !== 0 && player.onGround && PLAYER_FRAMES.length > 1) {
+      player.animTimer += dt;
+      if (player.animTimer >= ANIM_FRAME_MS) {
+        player.animTimer = 0;
+        player.animFrame = (player.animFrame + 1) % PLAYER_FRAMES.length;
+      }
+    } else if (moveDir === 0) {
+      player.animFrame = 0;
+      player.animTimer = 0;
+    }
+
+    // jump
+    if ((keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W']) && player.onGround) {
+      player.vy = JUMP_VEL;
+      player.onGround = false;
+    }
+
+    // gravity
+    player.vy += GRAVITY;
+    if (player.vy > 20) player.vy = 20;
+
+    // move X then resolve collisions
+    player.x += player.vx;
+    for (const p of level.platforms) {
+      if (aabbOverlap(player, p)) {
+        if (player.vx > 0) player.x = p.x - player.w;
+        else if (player.vx < 0) player.x = p.x + p.w;
+      }
+    }
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.w > level.levelWidth) player.x = level.levelWidth - player.w;
+
+    // move Y then resolve collisions
+    player.y += player.vy;
+    player.onGround = false;
+    for (const p of level.platforms) {
+      if (aabbOverlap(player, p)) {
+        if (player.vy > 0) {
+          player.y = p.y - player.h;
+          player.vy = 0;
+          player.onGround = true;
+        } else if (player.vy < 0) {
+          player.y = p.y + p.h;
+          player.vy = 0;
+        }
+      }
+    }
+
+    // fell off world -> respawn
+    if (player.y > H + 200) {
+      player.x = 40; player.y = GROUND_Y - 60; player.vx = 0; player.vy = 0;
+      playSound('deathSound');
+    }
+
+    // coins
+    for (const c of level.coins) {
+      if (!c.taken) {
+        const cb = {x:c.x-12,y:c.y-12,w:24,h:24};
+        const pb = {x:player.x,y:player.y,w:player.w,h:player.h};
+        if (aabbOverlap(cb,pb)) {
+          c.taken = true;
+          coinScore++;
+          coinCountEl.textContent = coinScore;
+          playSound('coinSound');
+        }
+      }
+    }
+
+    // flag
+    if (aabbOverlap(player, level.flag)) {
+      won = true;
+      const customMsg = winMessageInput.value.trim();
+      document.getElementById('winTitle').textContent = customMsg || '🏁 You made it!';
+      document.getElementById('winSub').textContent =
+        `Collected ${coinScore} of ${level.coins.length} coins in ${elapsed}s.`;
+      winOverlay.classList.remove('hidden');
+      if (SOUNDS.song) SOUNDS.song.pause();
+      playSound('victorySound');
+    }
+
+    // clouds drift
+    for (const cl of level.clouds) {
+      cl.x += cl.speed;
+      if (cl.x > level.levelWidth + 200) cl.x = -200;
+    }
+
+    // camera
+    camX = player.x - W/2 + player.w/2;
+    if (camX < 0) camX = 0;
+    if (camX > level.levelWidth - W) camX = Math.max(0, level.levelWidth - W);
+
+    elapsed = Math.floor((performance.now() - startTime)/1000);
+    timeCountEl.textContent = elapsed;
+  }
+
+  // ---------- Drawing helpers ----------
+  function drawBackground(){
+    if (IMAGES.background) {
+      // tile the background image across the whole level width, parallax x0.4
+      const img = IMAGES.background;
+      const bh = H;
+      const bw = img.width * (bh / img.height);
+      let startX = -((camX*0.4) % bw);
+      for (let x = startX; x < W; x += bw) {
+        ctx.drawImage(img, x, 0, bw, bh);
+      }
+    } else {
+      const grad = ctx.createLinearGradient(0,0,0,H);
+      grad.addColorStop(0, '#8ec9ff');
+      grad.addColorStop(1, '#d8f0ff');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,W,H);
+    }
+  }
+
+  function drawClouds(targetCtx){
+    targetCtx = targetCtx || ctx;
+    for (const cl of level.clouds) {
+      const sx = cl.x - camX*0.4;
+      if (sx < -300 || sx > W+300) continue;
+      if (IMAGES.cloud) {
+        targetCtx.drawImage(IMAGES.cloud, sx, cl.y, cl.w, cl.h);
+      } else {
+        targetCtx.fillStyle = 'rgba(255,255,255,0.9)';
+        roundRect(sx, cl.y, cl.w, cl.h*0.6, cl.h*0.3, targetCtx);
+        roundRect(sx+cl.w*0.2, cl.y-cl.h*0.25, cl.w*0.6, cl.h*0.55, cl.h*0.25, targetCtx);
+      }
+    }
+  }
+
+  function roundRect(x,y,w,h,r,targetCtx){
+    targetCtx = targetCtx || ctx;
+    targetCtx.beginPath();
+    targetCtx.moveTo(x+r,y);
+    targetCtx.arcTo(x+w,y,x+w,y+h,r);
+    targetCtx.arcTo(x+w,y+h,x,y+h,r);
+    targetCtx.arcTo(x,y+h,x,y,r);
+    targetCtx.arcTo(x,y,x+w,y,r);
+    targetCtx.closePath();
+    targetCtx.fill();
+  }
+
+  function drawPlatforms(){
+    for (const p of level.platforms) {
+      const sx = p.x - camX;
+      if (sx + p.w < 0 || sx > W) continue;
+      if (IMAGES.block) {
+        // tile the block image across the platform
+        for (let tx = 0; tx < p.w; tx += TILE) {
+          for (let ty = 0; ty < p.h; ty += TILE) {
+            ctx.drawImage(IMAGES.block, sx+tx, p.y+ty, TILE, TILE);
+          }
+        }
+      } else {
+        ctx.fillStyle = '#6b4a2f';
+        ctx.fillRect(sx, p.y, p.w, p.h);
+        ctx.fillStyle = '#7fbf4d';
+        ctx.fillRect(sx, p.y, p.w, 10);
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+        for (let tx = 0; tx < p.w; tx += TILE) {
+          ctx.strokeRect(sx+tx, p.y, TILE, p.h);
+        }
+      }
+    }
+  }
+
+  function drawCoins(){
+    for (const c of level.coins) {
+      if (c.taken) continue;
+      const sx = c.x - camX;
+      if (sx < -50 || sx > W+50) continue;
+      if (IMAGES.coin) {
+        ctx.drawImage(IMAGES.coin, sx-14, c.y-14, 28, 28);
+      } else {
+        ctx.save();
+        ctx.translate(sx, c.y);
+        const bob = Math.sin((performance.now()/200)+c.x) * 3;
+        ctx.translate(0, bob);
+        ctx.fillStyle = '#ffd447';
+        ctx.beginPath();
+        ctx.arc(0,0,12,0,Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = '#c99a1e';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+
+  function drawFlag(){
+    const f = level.flag;
+    const sx = f.x - camX;
+    if (sx < -100 || sx > W+100) return;
+    if (IMAGES.flag) {
+      ctx.drawImage(IMAGES.flag, sx, f.y, f.w, f.h);
+    } else {
+      ctx.fillStyle = '#8a8ea3';
+      ctx.fillRect(sx+f.w/2-3, f.y, 6, f.h);
+      ctx.fillStyle = '#ff6b4a';
+      ctx.beginPath();
+      ctx.moveTo(sx+f.w/2+3, f.y+6);
+      ctx.lineTo(sx+f.w/2+3+34, f.y+18);
+      ctx.lineTo(sx+f.w/2+3, f.y+30);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  function drawPlayer(targetCtx){
+    targetCtx = targetCtx || ctx;
+    const sx = player.x - camX;
+    const currentFrame = PLAYER_FRAMES.length ? PLAYER_FRAMES[player.animFrame % PLAYER_FRAMES.length] : null;
+    if (currentFrame) {
+      targetCtx.save();
+      if (player.facing < 0) {
+        targetCtx.translate(sx+player.w, player.y);
+        targetCtx.scale(-1,1);
+        targetCtx.drawImage(currentFrame, 0, 0, player.w, player.h);
+      } else {
+        targetCtx.drawImage(currentFrame, sx, player.y, player.w, player.h);
+      }
+      targetCtx.restore();
+    } else {
+      targetCtx.fillStyle = '#ff6b4a';
+      roundRect(sx, player.y, player.w, player.h, 8, targetCtx);
+      // simple face
+      targetCtx.fillStyle = '#1c1f2e';
+      const eyeX = player.facing > 0 ? sx+player.w-14 : sx+6;
+      targetCtx.beginPath();
+      targetCtx.arc(eyeX, player.y+18, 3.5, 0, Math.PI*2);
+      targetCtx.fill();
+    }
+  }
+
+  function draw(){
+    const deltaCamX = camX - prevCamX; // how far the world scrolled under the camera this frame
+
+    // scene is always drawn crisp and opaque, every frame
+    drawBackground();
+
+    if (trailPersistence > 0) {
+      // clouds scroll at 0.4x the camera rate (parallax) plus their own drift,
+      // so their ghost buffer is shifted at that same 0.4x rate to stay pinned
+      // to the clouds' apparent world position.
+      if (deltaCamX !== 0) {
+        cloudTrailCtx.save();
+        cloudTrailCtx.globalCompositeOperation = 'copy';
+        cloudTrailCtx.drawImage(cloudTrailCanvas, -deltaCamX * 0.4, 0);
+        cloudTrailCtx.restore();
+      }
+      cloudTrailCtx.save();
+      cloudTrailCtx.globalCompositeOperation = 'destination-out';
+      cloudTrailCtx.fillStyle = `rgba(0,0,0,${(1 - trailPersistence).toFixed(3)})`;
+      cloudTrailCtx.fillRect(0, 0, W, H);
+      cloudTrailCtx.restore();
+
+      drawClouds(cloudTrailCtx);
+      ctx.drawImage(cloudTrailCanvas, 0, 0);
+    }
+    drawClouds(); // live clouds drawn crisp on top of their own ghost trail
+
+    drawPlatforms();
+    drawCoins();
+    drawFlag();
+
+    if (trailPersistence > 0) {
+      // shift the accumulated ghost trail opposite to the camera scroll so it
+      // stays pinned to world position rather than screen position — this is
+      // what makes the trail follow horizontal running as well as jumping.
+      if (deltaCamX !== 0) {
+        trailCtx.save();
+        trailCtx.globalCompositeOperation = 'copy';
+        trailCtx.drawImage(trailCanvas, -deltaCamX, 0);
+        trailCtx.restore();
+      }
+
+      // fade the trail: higher persistence erases less each frame (100% = never fades)
+      trailCtx.save();
+      trailCtx.globalCompositeOperation = 'destination-out';
+      trailCtx.fillStyle = `rgba(0,0,0,${(1 - trailPersistence).toFixed(3)})`;
+      trailCtx.fillRect(0, 0, W, H);
+      trailCtx.restore();
+
+      // stamp the player's current pose into the trail buffer, then draw the
+      // accumulated ghosts onto the main scene, underneath the live player
+      drawPlayer(trailCtx);
+      ctx.drawImage(trailCanvas, 0, 0);
+    }
+
+    prevCamX = camX;
+    drawPlayer();
+  }
+
+  let lastTime = performance.now();
+  function loop(now){
+    const dt = Math.min(32, now - lastTime);
+    lastTime = now;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
