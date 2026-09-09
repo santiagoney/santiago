@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>warped voronoi — field weird</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body {
+  background:#050505; color:#888;
+  font-family:'Courier New',monospace; font-size:11px;
+  display:flex; flex-direction:column; align-items:center;
+  height:100vh; padding:8px 12px; gap:6px; overflow:hidden;
+}
+#ui { flex-shrink:0; display:flex; flex-direction:column; gap:5px; width:100%; max-width:1700px; }
+#top { display:flex; gap:7px; align-items:center; flex-wrap:wrap; justify-content:center; }
+#params { display:flex; gap:9px; align-items:flex-start; flex-wrap:wrap; justify-content:center; padding:5px 0; border-top:1px solid #0e0e0e; border-bottom:1px solid #0e0e0e; }
+.param { display:flex; flex-direction:column; align-items:center; gap:2px; min-width:74px; }
+.param label { color:#2a2a2a; font-size:9px; letter-spacing:.06em; text-transform:uppercase; }
+.param .val { color:#555; font-size:10px; min-width:24px; text-align:center; }
+button { background:#0f0f0f; color:#aaa; border:1px solid #1e1e1e; padding:5px 12px; font-family:'Courier New',monospace; font-size:11px; cursor:pointer; transition:border-color .1s, background .1s, color .1s; }
+button:hover { background:#181818; border-color:#444; }
+button:active { background:#222; }
+select, input[type=number] { background:#0f0f0f; color:#aaa; border:1px solid #1e1e1e; padding:4px 6px; font-family:'Courier New',monospace; font-size:11px; }
+input[type=range] { -webkit-appearance:none; appearance:none; width:74px; height:2px; background:#181818; outline:none; cursor:pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:8px; height:8px; background:#3a3a3a; border-radius:50%; cursor:pointer; }
+input[type=range]::-webkit-slider-thumb:hover { background:#39d0ff; }
+#brandom { transition: background .12s, border-color .12s, color .12s; }
+#brandom.on { background:#0a1418; color:#39d0ff; border-color:#1d3a44; }
+#seed-wrap { display:flex; align-items:center; gap:5px; transition:opacity .15s; }
+#seed-wrap.dim { opacity:.2; pointer-events:none; }
+#amt-val, #status { color:#2a2a2a; font-size:10px; }
+#status { min-width:90px; }
+#grid-wrap { flex:1; overflow:auto; width:100%; max-width:1700px; display:flex; align-items:flex-start; }
+#grid { display:grid; gap:6px; width:100%; }
+.tile { display:flex; flex-direction:column; gap:2px; }
+.tile canvas { width:100%; height:auto; display:block; cursor:pointer; }
+.tile canvas:hover { outline:1px solid #252525; }
+.tile-bar { display:flex; gap:3px; align-items:center; }
+.tile-seed { color:#181818; font-size:9px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tile-btn { background:#0a0a0a; color:#383838; border:1px solid #161616; padding:2px 6px; font-family:'Courier New',monospace; font-size:9px; cursor:pointer; flex-shrink:0; }
+.tile-btn:hover { color:#39d0ff; border-color:#1d3a44; }
+.gen { color:#39d0ff; }
+</style>
+</head>
+<body>
+
+<div id="ui">
+<div id="top">
+  <button id="bgen">GENERATE</button>
+  <button id="brandom">RANDOM OFF</button>
+  <button id="bexp-all">EXPORT ALL</button>
+  <label style="color:#2a2a2a">SIZE</label>
+  <select id="ssel">
+    <option value="600">600</option>
+    <option value="900">900</option>
+    <option value="1200" selected>1200</option>
+    <option value="2000">2000</option>
+    <option value="3000">3000</option>
+  </select>
+  <div id="seed-wrap">
+    <label style="color:#2a2a2a">SEED</label>
+    <input type="number" id="iseed" placeholder="fixed seed" style="width:82px">
+  </div>
+  <label style="color:#2a2a2a">AMOUNT</label>
+  <input type="range" id="iamt" min="1" max="60" value="6">
+  <span id="amt-val">6</span>
+  <span id="status">–</span>
+</div>
+
+<div id="params">
+  <div class="param"><label>WEIRDNESS</label><input type="range" id="p-weird" min="0" max="10" value="5" step="1"><span class="val" id="v-weird">5</span></div>
+  <div class="param"><label>CELLS</label><input type="range" id="p-cells" min="2" max="10" value="5" step="1"><span class="val" id="v-cells">5</span></div>
+  <div class="param"><label>WARP</label><input type="range" id="p-warp" min="0" max="10" value="5" step="1"><span class="val" id="v-warp">5</span></div>
+  <div class="param"><label>WARP SCALE</label><input type="range" id="p-wsc" min="1" max="10" value="5" step="1"><span class="val" id="v-wsc">5</span></div>
+  <div class="param"><label>EDGE</label><input type="range" id="p-edge" min="0" max="10" value="5" step="1"><span class="val" id="v-edge">5</span></div>
+  <div class="param"><label>COLORCHAOS</label><input type="range" id="p-color" min="1" max="10" value="5" step="1"><span class="val" id="v-color">5</span></div>
+  <div class="param"><label>GLOW</label><input type="range" id="p-glow" min="0" max="10" value="4" step="1"><span class="val" id="v-glow-y">4</span></div>
+  <div class="param"><label>GRAIN</label><input type="range" id="p-grain" min="0" max="10" value="4" step="1"><span class="val" id="v-grain">4</span></div>
+  <div class="param"><label>BLUR</label><input type="range" id="p-blur" min="0" max="10" value="2" step="1"><span class="val" id="v-blur">2</span></div>
+</div>
+</div>
+
+<div id="grid-wrap"><div id="grid"></div></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════
+// warped voronoi — single-generator field-weird build
+// noise-warped Voronoi cells, with edge contours, glow, and warp-scale control
+// ════════════════════════════════════════════════════════════════════════
+
+function mulberry32(a){
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function hslToRgb(h, s, l){
+  h/=360; s/=100; l/=100;
+  let r,g,b;
+  if(s===0){ r=g=b=l; }
+  else{
+    const hue2rgb=(p,q,t)=>{
+      if(t<0)t+=1; if(t>1)t-=1;
+      if(t<1/6)return p+(q-p)*6*t;
+      if(t<1/2)return q;
+      if(t<2/3)return p+(q-p)*(2/3-t)*6;
+      return p;
+    };
+    const q = l<0.5 ? l*(1+s) : l+s-l*s;
+    const p = 2*l-q;
+    r=hue2rgb(p,q,h+1/3); g=hue2rgb(p,q,h); b=hue2rgb(p,q,h-1/3);
+  }
+  return [Math.round(r*255), Math.round(g*255), Math.round(b*255)];
+}
+function makePerlin(rng){
+  const perm = new Uint8Array(256);
+  for(let i=0;i<256;i++) perm[i]=i;
+  for(let i=255;i>0;i--){ const j=(rng()*(i+1))|0; const t=perm[i]; perm[i]=perm[j]; perm[j]=t; }
+  const p = new Uint8Array(512);
+  for(let i=0;i<512;i++) p[i]=perm[i&255];
+  const grad3=[[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]];
+  const fade=t=>t*t*t*(t*(t*6-15)+10);
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const grad=(h,x,y)=>{ const g=grad3[h&7]; return g[0]*x+g[1]*y; };
+  function noise(x,y){
+    const X=Math.floor(x)&255, Y=Math.floor(y)&255;
+    x-=Math.floor(x); y-=Math.floor(y);
+    const u=fade(x), v=fade(y);
+    const aa=p[p[X]+Y], ab=p[p[X]+Y+1], ba=p[p[X+1]+Y], bb=p[p[X+1]+Y+1];
+    const x1=lerp(grad(aa,x,y), grad(ba,x-1,y), u);
+    const x2=lerp(grad(ab,x,y-1), grad(bb,x-1,y-1), u);
+    return lerp(x1,x2,v);
+  }
+  function fbm(x,y,oct=4){
+    let amp=0.5, freq=1, sum=0, norm=0;
+    for(let i=0;i<oct;i++){ sum+=amp*noise(x*freq,y*freq); norm+=amp; amp*=0.5; freq*=2; }
+    return sum/norm;
+  }
+  return { noise, fbm };
+}
+function makePalette(rng, chaos){
+  const base = rng()*360;
+  const scheme = (rng()*4)|0;
+  const n = 4 + ((rng()*4)|0);
+  const cols = [];
+  for(let i=0;i<n;i++){
+    let h, s, l;
+    if(scheme===0) h = base + i*(360/n);
+    else if(scheme===1) h = base + (i%2?150:30);
+    else if(scheme===2) h = base + (rng()*2-1)*chaos*60;
+    else h = rng()*360;
+    s = 35 + rng()*60;
+    l = 22 + rng()*58;
+    cols.push([((h%360)+360)%360, s, l]);
+  }
+  return cols;
+}
+function makeBg(rng, palette){
+  const c = palette[(rng()*palette.length)|0];
+  return `hsl(${c[0]}, ${Math.max(8,c[1]*0.4)}%, ${4+rng()*8}%)`;
+}
+
+// ---- warped voronoi ----
+function renderVoronoi(ctx, S, P, rng, perlin, palette, bg){
+  const RS=Math.min(S, 640);
+  const off=document.createElement('canvas'); off.width=RS; off.height=RS;
+  const o=off.getContext('2d');
+  const K = Math.max(2, (4 + P.cells*16)|0);
+  const warpAmt = P.warp*34;
+  const wsc = 0.002 + P.wsc*0.006;
+  const edgeW = 0.5 + P.edge*4;          // thickness of contour (in cell-space)
+  const glow = P.glow/10;
+  const pts=[]; const rgbs=[];
+  for(let i=0;i<K;i++){
+    pts.push([rng()*RS, rng()*RS]);
+    const c=palette[i%palette.length];
+    rgbs.push(hslToRgb(c[0],c[1],c[2]));
+  }
+  const img=o.createImageData(RS,RS);
+  for(let y=0;y<RS;y++){
+    for(let x=0;x<RS;x++){
+      let wx=x, wy=y;
+      if(warpAmt>0){
+        wx += perlin.fbm(x*wsc, y*wsc, 4)*warpAmt;
+        wy += perlin.fbm(x*wsc+50, y*wsc+50, 4)*warpAmt;
+      }
+      // two nearest cells
+      let best=1e18, second=1e18, bi=0;
+      for(let k=0;k<K;k++){
+        const dx=wx-pts[k][0], dy=wy-pts[k][1];
+        const dd=dx*dx+dy*dy;
+        if(dd<best){ second=best; best=dd; bi=k; }
+        else if(dd<second){ second=dd; }
+      }
+      const d1=Math.sqrt(best), d2=Math.sqrt(second);
+      let rgb=rgbs[bi];
+      // edge contour: darken where d2-d1 is small
+      if(edgeW>0){
+        const edge = Math.max(0, 1 - ((d2-d1)/edgeW));
+        const e = edge*edge;
+        rgb = [ rgb[0]*(1-e*0.92), rgb[1]*(1-e*0.92), rgb[2]*(1-e*0.92) ];
+      }
+      // glow: brighten toward cell center
+      if(glow>0){
+        const g = Math.max(0, 1 - d1/(RS*0.5)) * glow;
+        rgb = [ Math.min(255,rgb[0]*(1+g)), Math.min(255,rgb[1]*(1+g)), Math.min(255,rgb[2]*(1+g)) ];
+      }
+      const idx=(y*RS+x)*4;
+      img.data[idx]=rgb[0]; img.data[idx+1]=rgb[1]; img.data[idx+2]=rgb[2]; img.data[idx+3]=255;
+    }
+  }
+  o.putImageData(img,0,0);
+  ctx.drawImage(off,0,0,S,S);
+}
+
+function applyPost(ctx,S,P,rng){
+  if(P.blur>0){
+    try{ ctx.save(); ctx.globalAlpha=0.6; ctx.filter=`blur(${P.blur*0.8}px)`; ctx.drawImage(ctx.canvas,0,0); ctx.restore(); ctx.filter='none'; }catch(e){}
+  }
+  if(P.grain>0){
+    const g=Math.min(60, P.grain*8);
+    ctx.save(); ctx.globalAlpha=0.05;
+    for(let i=0;i<g;i++){ ctx.fillStyle = rng()<0.5?'#fff':'#000'; ctx.fillRect(rng()*S, rng()*S, 2, 2); }
+    ctx.restore();
+  }
+}
+
+// ══════════════════════════════ UI / RUNTIME ════════════════════════════
+const $ = id => document.getElementById(id);
+const PARAMS=['weird','cells','warp','wsc','edge','color','glow','grain','blur'];
+function rawP(name){ return parseInt($('p-'+name).value,10); }
+function deriveP(){
+  const p={};
+  for(const k of PARAMS) p[k]=rawP(k);
+  const wb=p.weird/10;
+  return {
+    weird:p.weird,
+    cells:p.cells,
+    warp:Math.min(10, p.warp + wb*4),
+    wsc:Math.min(10, p.wsc + wb*3),
+    edge:Math.min(10, p.edge + wb*3),
+    color:p.color,
+    glow:p.glow,
+    grain:p.grain,
+    blur:p.blur,
+  };
+}
+function renderTile(canvas, seed){
+  const S=canvas.width;
+  const ctx=canvas.getContext('2d');
+  const rng=mulberry32(seed>>>0);
+  const prng=mulberry32((seed^0x9e3779b9)>>>0);
+  const perlin=makePerlin(prng);
+  const palette=makePalette(rng, deriveP().color/10);
+  const bg=makeBg(rng, palette);
+  ctx.fillStyle=bg; ctx.fillRect(0,0,S,S);
+  const P=deriveP();
+  renderVoronoi(ctx,S,P,rng,perlin,palette,bg);
+  applyPost(ctx,S,P,rng);
+}
+
+let randomMode=false;
+let tiles=[];
+
+function generate(){
+  const grid=$('grid');
+  grid.innerHTML='';
+  tiles=[];
+  const size=parseInt($('ssel').value,10);
+  const amount=parseInt($('iamt').value,10);
+  const seedVal=$('iseed').value.trim();
+  const baseSeed = seedVal==='' ? (Math.random()*1e9)|0 : (parseInt(seedVal,10)>>>0);
+  const cols = amount<=4?2 : amount<=12?3 : 4;
+  grid.style.gridTemplateColumns=`repeat(${cols},1fr)`;
+  $('status').textContent='rendering…';
+  setTimeout(()=>{
+    for(let i=0;i<amount;i++){
+      const seed = baseSeed + (randomMode ? ((Math.random()*1e9)|0) : i*2654435761);
+      const wrap=document.createElement('div'); wrap.className='tile';
+      const cv=document.createElement('canvas'); cv.width=size; cv.height=size;
+      wrap.appendChild(cv);
+      const bar=document.createElement('div'); bar.className='tile-bar';
+      const sd=document.createElement('span'); sd.className='tile-seed';
+      sd.textContent='#'+(seed>>>0).toString(16).slice(0,8)+' · voronoi';
+      const dl=document.createElement('button'); dl.className='tile-btn'; dl.textContent='↓';
+      dl.onclick=()=>{ const a=document.createElement('a'); a.download='warpedvoronoi-'+(seed>>>0).toString(16)+'.png'; a.href=cv.toDataURL('image/png'); a.click(); };
+      bar.appendChild(sd); bar.appendChild(dl); wrap.appendChild(bar);
+      grid.appendChild(wrap);
+      renderTile(cv, seed);
+      tiles.push(cv);
+    }
+    $('status').textContent='done · '+amount;
+  }, 30);
+}
+function exportAll(){
+  tiles.forEach((cv,i)=>{
+    setTimeout(()=>{ const a=document.createElement('a'); a.download='warpedvoronoi-'+(i+1)+'.png'; a.href=cv.toDataURL('image/png'); a.click(); }, i*250);
+  });
+}
+PARAMS.forEach(k=>{
+  const el=$('p-'+k); const v=$('v-'+k);
+  el.addEventListener('input', ()=>{ v.textContent=el.value; });
+});
+$('iamt').addEventListener('input', ()=>{ $('amt-val').textContent=$('iamt').value; });
+$('bgen').addEventListener('click', generate);
+$('bexp-all').addEventListener('click', exportAll);
+$('brandom').addEventListener('click', ()=>{
+  randomMode=!randomMode;
+  $('brandom').classList.toggle('on', randomMode);
+  $('brandom').textContent = randomMode ? 'RANDOM ON' : 'RANDOM OFF';
+  $('seed-wrap').classList.toggle('dim', randomMode);
+});
+$('iseed').addEventListener('input', ()=>{ if($('iseed').value.trim()!=='') $('brandom').classList.add('dim'); else if(!randomMode) $('seed-wrap').classList.remove('dim'); });
+generate();
+</script>
+</body>
+</html>
