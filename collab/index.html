@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>mirror</title>
+<style>
+  :root{--paper:#f4ecd8;--ink:#111}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#e7dcc1;font:600 14px/1 system-ui,sans-serif;color:var(--ink);overflow:hidden;touch-action:none}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:64px 12px 12px}
+  #stage{position:relative;border:3px solid var(--ink);border-radius:6px;overflow:hidden;background:var(--paper)}
+  #stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+  #c{cursor:crosshair}
+  #liveN,#liveM{pointer-events:none}
+  #liveM{mix-blend-mode:multiply}
+  #bar{position:fixed;top:0;left:0;right:0;height:56px;display:flex;gap:8px;align-items:center;padding:0 10px;background:#fff;border-bottom:3px solid var(--ink);overflow-x:auto;z-index:3}
+  .sw{width:30px;height:30px;border-radius:50%;border:3px solid var(--ink);flex:none;cursor:pointer}
+  .sw.on{outline:3px solid var(--ink);outline-offset:2px}
+  #cur{width:38px;height:38px;border-radius:10px;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);padding:6px}
+  #cur i{display:block;width:100%;height:100%;border-radius:50%;border:2px solid var(--ink);background:#111}
+  button{font:inherit;border:3px solid var(--ink);background:#fff;border-radius:999px;padding:7px 12px;cursor:pointer;flex:none;color:var(--ink)}
+  button.on{background:var(--ink);color:#fff}
+  #who{margin-left:auto;flex:none;white-space:nowrap}
+  #who b{display:inline-block;width:10px;height:10px;border-radius:50%;background:#3bb273;border:2px solid var(--ink);margin-right:5px;vertical-align:-1px}
+  input[type=range]{width:90px;flex:none}
+  .pop{position:fixed;top:66px;background:#fff;border:3px solid var(--ink);border-radius:12px;padding:12px;z-index:5;display:none}
+  #picker{left:10px;width:262px}
+  #sv{width:232px;height:232px;border:2px solid var(--ink);border-radius:6px;display:block;cursor:crosshair;touch-action:none}
+  #hue{width:232px;height:22px;margin-top:10px;border:2px solid var(--ink);border-radius:6px;display:block;cursor:ew-resize;touch-action:none}
+  #pickrow{display:flex;gap:8px;margin-top:10px;align-items:center}
+  #hex{flex:1;min-width:0;font:600 14px ui-monospace,monospace;padding:7px;border:2px solid var(--ink);border-radius:8px}
+  #prev{width:34px;height:34px;border-radius:50%;border:3px solid var(--ink);flex:none}
+  #sharebox{left:10px;right:10px;max-width:640px;gap:8px;align-items:center}
+  #lnk{flex:1;min-width:0;font:600 14px system-ui;padding:8px;border:2px solid var(--ink);border-radius:8px}
+  #pend{position:absolute;outline:3px dashed var(--ink);cursor:move;touch-action:none;display:none;user-select:none;-webkit-user-drag:none}
+  #placebar{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#fff;border:3px solid var(--ink);border-radius:999px;padding:6px 10px;display:none;gap:8px;align-items:center;z-index:5}
+  #toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:999px;opacity:0;transition:.2s;pointer-events:none;z-index:6;white-space:nowrap}
+  #mintbox{left:10px;right:10px;max-width:420px;max-height:84vh;overflow-y:auto;touch-action:pan-y;flex-direction:column;gap:10px;display:none}
+  #mintbox.open{display:flex}
+  #mintbox h3{margin:0 0 2px;font-size:16px}
+  #mintbox label{font-size:11px;opacity:.7;display:block;margin:6px 0 3px}
+  #mintbox input[type=text],#mintbox textarea,#mintbox input[type=number],#mintbox input[type=password]{width:100%;font:600 14px ui-monospace,monospace;padding:8px;border:2px solid var(--ink);border-radius:8px;background:#fff}
+  #mintbox textarea{resize:vertical;min-height:50px;font-family:system-ui,sans-serif;font-weight:500}
+  #mint-wallet-row{display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:2px solid var(--ink);border-radius:10px}
+  #mint-wallet-addr{flex:1;font:600 12px ui-monospace,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #mint-preview{width:100%;aspect-ratio:1;border:2px solid var(--ink);border-radius:8px;object-fit:cover;background:var(--paper)}
+  #mint-row{display:flex;gap:8px}
+  #mint-row>div{flex:1}
+  #mint-status{font-size:12px;opacity:.75;min-height:16px}
+  #mint-settings{display:none;flex-direction:column;gap:4px;padding-top:4px;border-top:2px dashed var(--ink);margin-top:4px}
+  #mint-settings.open{display:flex}
+  #mint-settings-toggle{align-self:flex-start;background:none;border:none;text-decoration:underline;padding:4px 0;font-size:11px;opacity:.7;cursor:pointer}
+  #mintbtn-go{width:100%}
+  #mintbtn-go:disabled{opacity:.5;cursor:default}
+</style></head><body>
+<div id="bar">
+  <button id="share">🔗 share link</button>
+  <div id="cur" class="sw" title="any colour"><i></i></div>
+  <span id="pal" style="display:flex;gap:6px"></span>
+  <input id="size" type="range" min="2" max="80" value="10" title="brush size">
+  <button id="mult" title="colours darken where they overlap, like ink or watercolour">multiply</button>
+  <button id="eraser">eraser</button>
+  <button id="paste" title="or press Ctrl+V">📋 paste</button>
+  <button id="clear">clear all</button>
+  <button id="mintbtn" title="mint the current drawing on Tezos">⬙ mint</button>
+  <span id="who"><b></b><span id="n">1</span> here</span>
+</div>
+<div id="wrap"><div id="stage">
+  <canvas id="c" width="1024" height="1024"></canvas>
+  <canvas id="liveN" width="1024" height="1024"></canvas>
+  <canvas id="liveM" width="1024" height="1024"></canvas>
+  <img id="pend" alt="">
+</div></div>
+<div id="picker" class="pop">
+  <canvas id="sv" width="232" height="232"></canvas>
+  <canvas id="hue" width="232" height="22"></canvas>
+  <div id="pickrow"><div id="prev"></div><input id="hex" spellcheck="false" maxlength="7"><button id="pickok">ok</button></div>
+</div>
+<div id="sharebox" class="pop"><input id="lnk" readonly><button id="cp">copy</button><button id="join" style="display:none">join</button><button id="shx">✕</button></div>
+<div id="placebar"><span>drag it · size</span><input id="psize" type="range" min="5" max="150" value="50"><button id="pok" class="on">place ✓</button><button id="pno">✕</button></div>
+<div id="toast"></div>
+
+<div id="mintbox" class="pop">
+  <h3>Mint on Tezos</h3>
+
+  <div id="mint-wallet-row">
+    <span id="mint-wallet-addr">wallet not connected</span>
+    <button id="mint-connect">connect</button>
+  </div>
+
+  <img id="mint-preview" alt="current drawing">
+
+  <label>Title</label>
+  <input id="mint-title" type="text" maxlength="50" placeholder="mirror room">
+
+  <label>Description</label>
+  <textarea id="mint-desc" maxlength="500" placeholder="A collaborative drawing."></textarea>
+
+  <div id="mint-row">
+    <div>
+      <label>Editions</label>
+      <input id="mint-editions" type="number" min="1" max="1000" value="1">
+    </div>
+    <div>
+      <label>Royalties %</label>
+      <input id="mint-royalties" type="number" min="0" max="25" value="10">
+    </div>
+  </div>
+
+  <button id="mint-settings-toggle">Pinata settings</button>
+  <div id="mint-settings">
+    <label>Pinata JWT <span style="opacity:.6;font-weight:400">(stored only in this browser)</span></label>
+    <input id="mint-pinata-jwt" type="password" placeholder="eyJhbGciOi...">
+  </div>
+
+  <button id="mintbtn-go" class="on">mint</button>
+  <div id="mint-confirm-row" style="display:none;gap:8px">
+    <button id="mint-confirm" class="on" style="flex:1">confirm &amp; broadcast</button>
+    <button id="mint-cancel" style="flex:none">cancel</button>
+  </div>
+  <div id="mint-status"></div>
+  <button id="mint-close" style="align-self:center">close</button>
+</div>
+
+<!-- Taquito/Beacon are published as bundler-oriented packages (their UMD
+     builds chain through several other packages' own globals — @taquito/core,
+     @taquito/utils, @ecadlabs/beacon-dapp, etc. — which is fragile to wire up
+     by hand with plain <script> tags). esm.sh resolves that whole dependency
+     graph into a single working browser module, Node-polyfills included, so
+     we load it as one ES module instead and hand the three classes we need
+     to the classic script below via window.*. -->
+<script type="module">
+  try {
+    const [{ TezosToolkit, MichelsonMap }, { BeaconWallet }] = await Promise.all([
+      import('https://esm.sh/@taquito/taquito@25.1.3'),
+      import('https://esm.sh/@taquito/beacon-wallet@25.1.3'),
+    ]);
+    window.TaquitoToolkit = TezosToolkit;
+    window.TaquitoMichelsonMap = MichelsonMap;
+    window.TaquitoBeaconWallet = BeaconWallet;
+    window.dispatchEvent(new Event('taquito-ready'));
+  } catch (e) {
+    console.error('Taquito failed to load', e);
+    window.taquitoLoadError = e;
+  }
+</script>
+<script>
+// ---------- room seed in the URL
+// Downloaded copy (opened from disk) talks to the online room server.
+const ONLINE = 'https://creators.manifold.xyz/preview/6nHerGxrswqGdvzDsA7GYw/';
+const BASE = location.protocol === 'file:' ? ONLINE : '';
+const q = new URLSearchParams(location.search);
+let ROOM = q.get('room');
+if (!ROOM || !/^[a-z0-9-]{3,40}$/.test(ROOM)) {
+  const w = ['goblin','pill','field','knee','seam','box','moon','tooth','cloth','star','hand','ear'];
+  const pick = () => w[Math.random()*w.length|0];
+  ROOM = pick()+'-'+pick()+'-'+Math.random().toString(36).slice(2,7);
+  q.set('room', ROOM);
+  try { history.replaceState(null, '', location.pathname + '?' + q); } catch {}
+}
+const $ = id => document.getElementById(id);
+const PAPER = '#f4ecd8';
+const COLORS = ['#111111','#ffffff','#e63b2e','#f2a516','#ffd93b','#3bb273','#2f6fdf','#8e4fd6','#ff7eb6','#7a4a2b'];
+const cv = $('c'), cx = cv.getContext('2d');
+const lN = $('liveN').getContext('2d'), lM = $('liveM').getContext('2d');
+const stage = $('stage');
+function fit(){ const s = Math.min(innerWidth-24, innerHeight-76); stage.style.width = stage.style.height = s+'px'; }
+addEventListener('resize', fit); fit();
+function wipe(){ cx.globalCompositeOperation='source-over'; cx.fillStyle = PAPER; cx.fillRect(0,0,1024,1024); }
+wipe();
+const toast = t => { const el = $('toast'); el.textContent = t; el.style.opacity = 1; clearTimeout(toast.t); toast.t = setTimeout(()=>el.style.opacity=0, 2200); };
+
+// ---------- tools state
+let color = COLORS[0], erase = false, multiply = false;
+const pal = $('pal');
+function setColor(c, el){ color = c; erase = false; $('eraser').classList.remove('on'); $('cur').firstElementChild.style.background = c;
+  document.querySelectorAll('#bar .sw').forEach(x => x.classList.toggle('on', x===el)); }
+COLORS.forEach(c => { const d = document.createElement('div'); d.className = 'sw'; d.style.background = c; d.onclick = () => setColor(c, d); pal.appendChild(d); });
+setColor(COLORS[0], pal.firstChild);
+$('eraser').onclick = () => { erase = !erase; $('eraser').classList.toggle('on', erase); };
+$('mult').onclick = () => { multiply = !multiply; $('mult').classList.toggle('on', multiply); toast(multiply ? 'multiply on: colours darken where they overlap' : 'multiply off'); };
+const size = $('size');
+
+// ---------- full-gamut colour picker (hue strip + saturation/brightness square)
+let H = 0, S = 0, V = .07;
+const svc = $('sv').getContext('2d'), huec = $('hue').getContext('2d');
+const hsv2hex = (h,s,v) => { const f = n => { const k = (n + h/60) % 6; return v - v*s*Math.max(0, Math.min(k, 4-k, 1)); };
+  return '#' + [f(5),f(3),f(1)].map(x => Math.round(x*255).toString(16).padStart(2,'0')).join(''); };
+function hex2hsv(hex){ const n = parseInt(hex.slice(1),16), r=(n>>16&255)/255, g=(n>>8&255)/255, b=(n&255)/255;
+  const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn; let h=0;
+  if (d) h = mx===r ? ((g-b)/d)%6 : mx===g ? (b-r)/d+2 : (r-g)/d+4;
+  return [(h*60+360)%360, mx ? d/mx : 0, mx]; }
+function drawPicker(){
+  svc.fillStyle = hsv2hex(H,1,1); svc.fillRect(0,0,232,232);
+  let g = svc.createLinearGradient(0,0,232,0); g.addColorStop(0,'#fff'); g.addColorStop(1,'rgba(255,255,255,0)'); svc.fillStyle=g; svc.fillRect(0,0,232,232);
+  g = svc.createLinearGradient(0,0,0,232); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'#000'); svc.fillStyle=g; svc.fillRect(0,0,232,232);
+  svc.lineWidth=3; svc.strokeStyle = V>.5 ? '#111' : '#fff'; svc.beginPath(); svc.arc(S*232,(1-V)*232,8,0,7); svc.stroke();
+  g = huec.createLinearGradient(0,0,232,0); for (let i=0;i<=6;i++) g.addColorStop(i/6, hsv2hex(i*60,1,1)); huec.fillStyle=g; huec.fillRect(0,0,232,22);
+  huec.fillStyle='#fff'; huec.strokeStyle='#111'; huec.lineWidth=2; huec.fillRect(H/360*226,1,6,20); huec.strokeRect(H/360*226,1,6,20);
+  const hx = hsv2hex(H,S,V); $('prev').style.background = hx; if (document.activeElement !== $('hex')) $('hex').value = hx;
+  setColor(hx, $('cur'));
+}
+function drag(el, fn){ el.addEventListener('pointerdown', e => { el.setPointerCapture(e.pointerId); fn(e); const mv = ev => fn(ev);
+  el.addEventListener('pointermove', mv); el.addEventListener('pointerup', () => el.removeEventListener('pointermove', mv), {once:true}); }); }
+const rel = (e, el) => { const r = el.getBoundingClientRect(); return [Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)), Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))]; };
+drag($('sv'), e => { const [x,y] = rel(e,$('sv')); S = x; V = 1-y; drawPicker(); });
+drag($('hue'), e => { H = rel(e,$('hue'))[0]*359.9; drawPicker(); });
+$('hex').oninput = () => { const v = $('hex').value.trim(); if (/^#[0-9a-f]{6}$/i.test(v)) { [H,S,V] = hex2hsv(v); drawPicker(); } };
+$('cur').onclick = () => { const p = $('picker'); const open = p.style.display !== 'block';
+  p.style.display = open ? 'block' : 'none'; if (open) { [H,S,V] = hex2hsv(color.length===7?color:'#111111'); drawPicker(); } };
+$('pickok').onclick = () => $('picker').style.display = 'none';
+
+// ---------- rendering. Events are applied strictly in order (images load async).
+// Strokes in progress live on overlay canvases (multiply overlay blends via CSS),
+// and are committed to the main canvas in one go when they end — so multiply never
+// "beads" where chunks overlap.
+const live = new Map(); // id -> {c,w,e,m,pts}
+function path(g, s){ const p = s.pts; if (p.length < 2) return;
+  g.strokeStyle = s.e ? PAPER : s.c; g.lineWidth = s.w; g.lineCap = g.lineJoin = 'round';
+  g.beginPath(); g.moveTo(p[0],p[1]);
+  if (p.length === 2) g.lineTo(p[0]+.01,p[1]); else for (let i=2;i<p.length;i+=2) g.lineTo(p[i],p[i+1]);
+  g.stroke(); }
+let dirty = false;
+function redrawLive(){ dirty = false; lN.clearRect(0,0,1024,1024); lM.clearRect(0,0,1024,1024);
+  for (const s of live.values()) path(s.m && !s.e ? lM : lN, s); }
+const schedule = () => { if (!dirty) { dirty = true; requestAnimationFrame(redrawLive); } };
+function commit(s){ cx.globalCompositeOperation = s.m && !s.e ? 'multiply' : 'source-over'; path(cx, s); cx.globalCompositeOperation = 'source-over'; }
+const loadImg = src => new Promise(r => { const im = new Image(); im.onload = () => r(im); im.onerror = () => r(null); im.src = src; });
+let chain = Promise.resolve();
+function apply(ev){ chain = chain.then(async () => {
+  if (ev.type === 'clear') { wipe(); live.clear(); schedule(); return; }
+  if (ev.type === 'img') { const im = await loadImg(ev.src); if (im) { cx.globalCompositeOperation = ev.m ? 'multiply' : 'source-over'; cx.drawImage(im, ev.x, ev.y, ev.w, ev.h); cx.globalCompositeOperation = 'source-over'; } return; }
+  if (!ev.id) { commit(ev); return; } // strokes from the first version
+  let s = live.get(ev.id);
+  if (!s) { s = {c:ev.c, w:ev.w, e:ev.e, m:ev.m, pts:[]}; live.set(ev.id, s); }
+  s.pts.push(...(s.pts.length ? ev.pts.slice(2) : ev.pts));
+  if (ev.end) { live.delete(ev.id); commit(s); }
+  schedule();
+}); }
+
+// ---------- my strokes
+const me = Math.random().toString(36).slice(2,8);
+function post(body){ return fetch(BASE+'stroke?room='+ROOM, {method:'POST', body: JSON.stringify({...body, by: me}), keepalive: JSON.stringify(body).length < 6e4})
+  .then(r => { if (!r.ok) throw r.status; }); }
+let cur = null, sent = 0, sid = 0;
+function pt(e){ const r = cv.getBoundingClientRect(); return [ (e.clientX-r.left)*1024/r.width, (e.clientY-r.top)*1024/r.height ]; }
+function flush(end){
+  if (!cur) return;
+  const from = Math.max(0, sent-2), chunk = cur.pts.slice(from);
+  if (!end && chunk.length < 4) return;
+  post({type:'stroke', id:cur.id, c:cur.c, w:cur.w, e:cur.e, m:cur.m, end, pts: chunk}).catch(()=>{});
+  sent = cur.pts.length;
+}
+cv.addEventListener('pointerdown', e => { if (pending) return; try { cv.setPointerCapture(e.pointerId); } catch {} $('picker').style.display='none';
+  const [x,y] = pt(e); cur = {id: me+'-'+(++sid), c: color, w: +size.value, e: erase, m: multiply, pts:[x,y]}; sent = 0;
+  live.set(cur.id, cur); schedule(); });
+cv.addEventListener('pointermove', e => { if (!cur) return;
+  const co = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+  for (const ev of (co.length ? co : [e])) { const [x,y] = pt(ev); cur.pts.push(x,y); }
+  schedule(); });
+const up = () => { if (!cur) return; if (cur.pts.length === 2) cur.pts.push(cur.pts[0]+.01, cur.pts[1]);
+  flush(true); const s = cur; cur = null;
+  chain = chain.then(() => { live.delete(s.id); commit(s); schedule(); }); };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+setInterval(() => flush(false), 60);
+
+// ---------- everyone's events (history first, then live); my own echoes skipped
+let lastSeq = 0;
+function connect(){
+  const es = new EventSource(BASE+'events?room='+ROOM+'&since='+lastSeq);
+  es.onmessage = m => { const ev = JSON.parse(m.data); lastSeq = ev.seq; if (ev.type === 'clear' || ev.by !== me) apply(ev); };
+  es.addEventListener('presence', m => $('n').textContent = m.data);
+  es.onerror = () => { es.close(); setTimeout(connect, 800); };
+}
+connect();
+$('clear').onclick = () => { if (confirm('Clear the drawing for everyone in this room?')) fetch(BASE+'clear?room='+ROOM, {method:'POST'}); };
+
+// ---------- paste from clipboard: place it, then it goes to everyone
+let pending = null; // {src, ar, x, y, w}
+const pend = $('pend');
+function layoutPend(){ const k = stage.clientWidth/1024, w = pending.w, h = w/pending.ar;
+  Object.assign(pend.style, {left: pending.x*k+'px', top: pending.y*k+'px', width: w*k+'px', height: h*k+'px',
+    mixBlendMode: multiply ? 'multiply' : 'normal'}); }
+async function startPlace(blob){
+  if (!blob || !/^image\//.test(blob.type)) return toast('no image in the clipboard');
+  const im = await loadImg(URL.createObjectURL(blob)); if (!im) return toast("couldn't read that image");
+  // shrink so it travels fast: max 1024px side, JPEG unless it has transparency (PNG)
+  const sc = Math.min(1, 1024/Math.max(im.width, im.height)), c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(im.width*sc)); c.height = Math.max(1, Math.round(im.height*sc));
+  c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+  let src = blob.type === 'image/png' ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', .9);
+  if (src.length > 3.5e6) src = c.toDataURL('image/jpeg', .85);
+  const ar = c.width/c.height, w = 512*Math.min(1, ar >= 1 ? 1 : ar*1);
+  pending = {src, ar, w: Math.min(512, 512*ar), x: 0, y: 0};
+  pending.x = (1024-pending.w)/2; pending.y = (1024-pending.w/ar)/2;
+  $('psize').value = Math.round(pending.w/1024*100);
+  pend.src = src; pend.style.display = 'block'; $('placebar').style.display = 'flex'; layoutPend();
+}
+let dragOff = null;
+pend.addEventListener('pointerdown', e => { e.preventDefault(); pend.setPointerCapture(e.pointerId); const [x,y] = pt(e); dragOff = [x-pending.x, y-pending.y]; });
+pend.addEventListener('pointermove', e => { if (!dragOff) return; const [x,y] = pt(e); pending.x = x-dragOff[0]; pending.y = y-dragOff[1]; layoutPend(); });
+pend.addEventListener('pointerup', () => dragOff = null);
+$('psize').oninput = () => { const cxm = pending.x + pending.w/2, cym = pending.y + pending.w/pending.ar/2;
+  pending.w = $('psize').value/100*1024; pending.x = cxm - pending.w/2; pending.y = cym - pending.w/pending.ar/2; layoutPend(); };
+function endPlace(){ pending = null; pend.style.display = 'none'; $('placebar').style.display = 'none'; }
+$('pno').onclick = endPlace;
+$('pok').onclick = () => { const p = pending, ev = {type:'img', src:p.src, x:p.x, y:p.y, w:p.w, h:p.w/p.ar, m: multiply};
+  endPlace(); apply(ev); toast('sending image…');
+  post(ev).then(() => toast('image placed for everyone'), () => toast('image too big to send — try a smaller one')); };
+addEventListener('paste', e => { const it = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+  if (it) { e.preventDefault(); startPlace(it.getAsFile()); } });
+$('paste').onclick = async () => {
+  try {
+    if (!navigator.clipboard?.read) throw 0;
+    for (const item of await navigator.clipboard.read()) { const t = item.types.find(t => t.startsWith('image/')); if (t) return startPlace(await item.getType(t)); }
+    toast('no image in the clipboard');
+  } catch { toast('press Ctrl+V to paste'); }
+};
+addEventListener('keydown', e => { if (!pending) return; if (e.key === 'Enter') $('pok').click(); if (e.key === 'Escape') endPlace(); });
+
+// ---------- share link
+const lnk = $('lnk');
+function copyLink(){ lnk.focus(); lnk.select(); lnk.setSelectionRange(0, 9999);
+  let ok = false; try { ok = document.execCommand('copy'); } catch {}
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(lnk.value).then(() => toast('link copied — send it to someone'), () => { if (!ok) toast('select the link and copy it'); });
+  else toast(ok ? 'link copied — send it to someone' : 'select the link and copy it'); }
+const roomLink = () => (BASE ? ONLINE : location.origin + location.pathname) + '?room=' + ROOM;
+$('share').onclick = () => { lnk.value = roomLink(); lnk.readOnly = !BASE; $('sharebox').style.display = 'flex'; copyLink(); };
+$('cp').onclick = copyLink;
+// in the downloaded copy: paste a friend's room link into the box and press join
+if (BASE) { $('join').style.display = ''; $('join').onclick = () => { const m = lnk.value.match(/room=([a-z0-9-]{3,40})/); if (m) location.search = '?room=' + m[1]; else toast('paste a mirror room link first'); }; } $('shx').onclick = () => $('sharebox').style.display = 'none';
+
+// ---------- mint on Tezos ---------------------------------------------
+// HEN minter contract (the one with the mint_OBJKT entrypoint). It forwards to
+// the OBJKT FA2 token contract (KT1RJ6Pb…) itself — don't call that one directly.
+// Image + TZIP-21 metadata are pinned to IPFS via Pinata before minting,
+// using the same JWT-in-localStorage pattern as Santiago's other tools.
+const HEN_CONTRACT = 'KT1Hkg5qeNhfwpKW4fXvq7HGZB9z2EnmCCA9';
+const TZ_RPC = 'https://rpc.tzkt.io/mainnet';
+
+let Tezos = null, wallet = null, walletAddr = null;
+function tezosToolkit(){ if (!Tezos) Tezos = new TaquitoToolkit(TZ_RPC); return Tezos; }
+
+// The esm.sh module script (above, in <head>) loads async; this flips true
+// once TaquitoToolkit/TaquitoBeaconWallet/TaquitoMichelsonMap are ready.
+let taquitoReady = typeof TaquitoToolkit !== 'undefined';
+window.addEventListener('taquito-ready', () => { taquitoReady = true; });
+
+function strToHex(s){ return Array.from(new TextEncoder().encode(s)).map(b => b.toString(16).padStart(2,'0')).join(''); }
+
+function loadPinataJWT(){ return localStorage.getItem('mirror_pinata_jwt') || ''; }
+function savePinataJWT(v){ localStorage.setItem('mirror_pinata_jwt', v); }
+
+async function pinataUpload(body, isJSON){
+  const jwt = loadPinataJWT();
+  if (!jwt) throw new Error('no Pinata JWT set — open "Pinata settings" below and paste one');
+  const url = isJSON ? 'https://api.pinata.cloud/pinning/pinJSONToIPFS' : 'https://api.pinata.cloud/pinning/pinFileToIPFS';
+  const opts = { method:'POST', headers:{ Authorization:'Bearer '+jwt } };
+  if (isJSON) { opts.headers['Content-Type']='application/json'; opts.body = JSON.stringify(body); }
+  else { opts.body = body; } // body is a FormData with the file
+  const res = await fetch(url, opts);
+  if (!res.ok) throw new Error('Pinata upload failed ('+res.status+')');
+  const data = await res.json();
+  return data.IpfsHash;
+}
+
+async function connectWallet(){
+  if (!taquitoReady) {
+    toast(window.taquitoLoadError ? 'wallet library failed to load (check connection / esm.sh)' : 'wallet library still loading — try again in a second');
+    return;
+  }
+  try {
+    wallet = new TaquitoBeaconWallet({ name: 'mirror', network: { type: 'mainnet' }, preferredNetwork: 'mainnet' });
+    await wallet.requestPermissions();
+    walletAddr = await wallet.getPKH();
+    tezosToolkit().setWalletProvider(wallet);
+    $('mint-wallet-addr').textContent = walletAddr.slice(0,6)+'…'+walletAddr.slice(-4);
+    $('mint-connect').textContent = 'connected';
+    $('mint-connect').classList.add('on');
+    toast('wallet connected');
+  } catch (e) {
+    console.error('Beacon connect failed:', e);
+    // Surface the real reason instead of a generic message — this is the
+    // single most common point of failure, worth seeing exactly why.
+    toast('wallet connect failed: ' + (e && e.message ? e.message : e));
+  }
+}
+$('mint-connect').onclick = () => { if (!walletAddr) connectWallet(); };
+
+function resetMintUI(){
+  $('mintbtn-go').style.display = '';
+  $('mintbtn-go').disabled = false;
+  $('mint-confirm-row').style.display = 'none';
+  $('mint-status').textContent = '';
+  pendingMint = null;
+}
+
+$('mintbtn').onclick = () => {
+  $('mint-preview').src = cv.toDataURL('image/png');
+  resetMintUI();
+  $('mintbox').classList.add('open');
+};
+$('mint-close').onclick = () => $('mintbox').classList.remove('open');
+$('mint-settings-toggle').onclick = () => $('mint-settings').classList.toggle('open');
+$('mint-pinata-jwt').value = loadPinataJWT();
+$('mint-pinata-jwt').addEventListener('change', () => savePinataJWT($('mint-pinata-jwt').value.trim()));
+
+function setMintStatus(msg){ $('mint-status').textContent = msg; }
+
+// Holds everything needed to actually broadcast, built once during the
+// estimate step so confirming doesn't re-upload to IPFS a second time.
+let pendingMint = null;
+
+// Step 1: upload to IPFS, build the mint call, dry-run it for gas/fees,
+// and show a confirm/cancel pair instead of sending anything yet.
+$('mintbtn-go').onclick = async () => {
+  if (!walletAddr) { toast('connect your wallet first'); return; }
+  const jwt = loadPinataJWT();
+  if (!jwt) { toast('add a Pinata JWT under "Pinata settings" first'); $('mint-settings').classList.add('open'); return; }
+
+  const title = $('mint-title').value.trim() || ('mirror room — '+ROOM);
+  const desc = $('mint-desc').value.trim() || 'A collaborative drawing made in mirror.';
+  const editions = Math.max(1, Math.min(1000, +$('mint-editions').value || 1));
+  const royaltiesPct = Math.max(0, Math.min(25, +$('mint-royalties').value || 0));
+  const royaltiesHen = Math.round(royaltiesPct * 10); // HEN's mint_OBJKT scale is per-mille, not percent
+
+  const btn = $('mintbtn-go');
+  btn.disabled = true;
+  try {
+    setMintStatus('uploading image to IPFS…');
+    const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+    const fd = new FormData();
+    fd.append('file', blob, 'mirror.png');
+    const imgCid = await pinataUpload(fd, false);
+    const imgUri = 'ipfs://'+imgCid;
+
+    setMintStatus('uploading metadata to IPFS…');
+    const metadata = {
+      name: title,
+      description: desc,
+      tags: ['mirror','collaborative','drawing'],
+      symbol: 'MIRROR',
+      artifactUri: imgUri,
+      displayUri: imgUri,
+      thumbnailUri: imgUri,
+      decimals: 0,
+      isBooleanAmount: editions === 1,
+      creators: [walletAddr],
+      formats: [{ uri: imgUri, mimeType: 'image/png' }],
+      date: new Date().toISOString(),
+    };
+    const metaCid = await pinataUpload(metadata, true);
+    const metaUri = 'ipfs://'+metaCid;
+
+    setMintStatus('simulating the mint (no wallet prompt yet)…');
+    const contract = await tezosToolkit().wallet.at(HEN_CONTRACT);
+    const callArgs = {
+      address: walletAddr,
+      amount: editions,
+      metadata: TaquitoMichelsonMap.fromLiteral({ '': strToHex(metaUri) }),
+      royalties: royaltiesHen,
+    };
+    const method = contract.methodsObject.mint_OBJKT(callArgs);
+    pendingMint = { contract, callArgs };
+    try {
+      const tp = method.toTransferParams();
+      const est = await tezosToolkit().estimate.transfer({ to: HEN_CONTRACT, amount: 0, parameter: tp.parameter, source: walletAddr });
+      const feeTez = (est.suggestedFeeMutez / 1e6).toFixed(6);
+      const burnTez = (est.burnFeeMutez / 1e6).toFixed(6);
+      const totalTez = ((est.suggestedFeeMutez + est.burnFeeMutez) / 1e6).toFixed(6);
+      setMintStatus(
+        `Estimated cost: ~${totalTez} ꜩ total (fee ${feeTez} ꜩ + storage burn ${burnTez} ꜩ). `+
+        `Gas: ${est.gasLimit}, storage: ${est.storageLimit} bytes. Nothing has been sent yet — review and confirm below.`
+      );
+    } catch (estErr) {
+      console.warn('estimate failed, continuing without it:', estErr);
+      setMintStatus('Image + metadata are on IPFS. Couldn’t pre-estimate the fee — your wallet will show it when you confirm. Nothing has been sent yet.');
+    }
+    btn.style.display = 'none';
+    $('mint-confirm-row').style.display = 'flex';
+  } catch (e) {
+    console.error(e);
+    setMintStatus('failed to prepare mint: ' + (e.message || e));
+    toast('could not prepare the mint — see status in the panel');
+    btn.disabled = false;
+  }
+};
+
+// Step 2: only now does anything actually get signed and broadcast.
+$('mint-confirm').onclick = async () => {
+  if (!pendingMint) return;
+  const { contract, callArgs } = pendingMint;
+  $('mint-confirm').disabled = true;
+  $('mint-cancel').disabled = true;
+  try {
+    setMintStatus('waiting for wallet signature…');
+    const op = await contract.methodsObject.mint_OBJKT(callArgs).send();
+
+    setMintStatus('broadcasting…');
+    await op.confirmation();
+
+    setMintStatus('✅ minted — check your objkt profile in a minute or two');
+    toast('minted on Tezos');
+    resetMintUI();
+  } catch (e) {
+    console.error(e);
+    setMintStatus('failed: ' + (e.message || e));
+    toast('mint failed — see status in the mint panel');
+    $('mint-confirm').disabled = false;
+    $('mint-cancel').disabled = false;
+  }
+};
+
+$('mint-cancel').onclick = () => {
+  toast('mint cancelled — nothing was sent');
+  resetMintUI();
+};
+</script>
+</body></html>
