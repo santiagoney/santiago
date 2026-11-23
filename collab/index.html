@@ -130,16 +130,11 @@
      to the classic script below via window.*. -->
 <script type="module">
   try {
-    const [{ TezosToolkit, MichelsonMap }, { BeaconWallet }] = await Promise.all([
-      import('https://esm.sh/@taquito/taquito@25.1.3'),
-      import('https://esm.sh/@taquito/beacon-wallet@25.1.3'),
-    ]);
-    window.TaquitoToolkit = TezosToolkit;
-    window.TaquitoMichelsonMap = MichelsonMap;
+    const { BeaconWallet } = await import('https://esm.sh/@taquito/beacon-wallet@25.1.3');
     window.TaquitoBeaconWallet = BeaconWallet;
     window.dispatchEvent(new Event('taquito-ready'));
   } catch (e) {
-    console.error('Taquito failed to load', e);
+    console.error('Beacon wallet library failed to load', e);
     window.taquitoLoadError = e;
   }
 </script>
@@ -337,17 +332,54 @@ if (BASE) { $('join').style.display = ''; $('join').onclick = () => { const m = 
 const HEN_CONTRACT = 'KT1Hkg5qeNhfwpKW4fXvq7HGZB9z2EnmCCA9';
 const TZ_RPC = 'https://rpc.tzkt.io/mainnet';
 
-let Tezos = null, wallet = null, walletAddr = null;
-function tezosToolkit(){ if (!Tezos) Tezos = new TaquitoToolkit(TZ_RPC); return Tezos; }
+let wallet = null, walletAddr = null;
+const RPCS = [TZ_RPC, 'https://mainnet.api.tez.ie'];
+
+// Read the minter's real mint_OBJKT parameter type from a node, then build the
+// Michelson value from it by field name (so we never guess the pair layout).
+async function fetchEntrypointType(){
+  let lastErr;
+  for (const rpc of RPCS) {
+    try {
+      const r = await fetch(rpc + '/chains/main/blocks/head/context/contracts/' + HEN_CONTRACT + '/entrypoints/mint_OBJKT');
+      if (!r.ok) throw new Error('RPC ' + r.status);
+      const j = await r.json();
+      return j.prim ? j : (j.entrypoints && j.entrypoints.mint_OBJKT) || j;
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error('could not read the mint_OBJKT type from the Tezos RPC (' + (lastErr && lastErr.message || lastErr) + ')');
+}
+function michelsonValue(type, vals){
+  if (type.prim === 'pair') return { prim:'Pair', args: type.args.map(t => michelsonValue(t, vals)) };
+  const a = (type.annots || []).find(x => x[0] === '%'); const name = a ? a.slice(1) : null;
+  if (!name || !(name in vals)) throw new Error('unexpected field in mint_OBJKT type: ' + JSON.stringify(type));
+  const v = vals[name];
+  switch (type.prim) {
+    case 'address': case 'string': return { string: String(v) };
+    case 'nat': case 'int': case 'mutez': return { int: String(v) };
+    case 'bytes': return { bytes: String(v) };
+    default: throw new Error('unsupported type ' + type.prim + ' in mint_OBJKT');
+  }
+}
+async function waitForOp(hash){
+  for (let i = 0; i < 40; i++) {
+    await new Promise(r => setTimeout(r, 5000));
+    try {
+      const r = await fetch('https://api.tzkt.io/v1/operations/' + hash);
+      if (r.ok) { const ops = await r.json(); if (ops.length) return ops.every(o => o.status === 'applied'); }
+    } catch {}
+  }
+  return null; // unknown / still pending
+}
 
 // The esm.sh module script (above, in <head>) loads async; this flips true
 // once TaquitoToolkit/TaquitoBeaconWallet/TaquitoMichelsonMap are ready.
-let taquitoReady = typeof TaquitoToolkit !== 'undefined';
+let taquitoReady = typeof TaquitoBeaconWallet !== 'undefined';
 window.addEventListener('taquito-ready', () => { taquitoReady = true; });
 
 function strToHex(s){ return Array.from(new TextEncoder().encode(s)).map(b => b.toString(16).padStart(2,'0')).join(''); }
 
-function loadPinataJWT(){ return localStorage.getItem('mirror_pinata_jwt') || ''; }
+function loadPinataJWT(){ return (localStorage.getItem('mirror_pinata_jwt') || '').replace(/^\s*bearer\s+/i,'').replace(/\s+/g,''); }
 function savePinataJWT(v){ localStorage.setItem('mirror_pinata_jwt', v); }
 
 async function pinataUpload(body, isJSON){
@@ -358,7 +390,10 @@ async function pinataUpload(body, isJSON){
   if (isJSON) { opts.headers['Content-Type']='application/json'; opts.body = JSON.stringify(body); }
   else { opts.body = body; } // body is a FormData with the file
   const res = await fetch(url, opts);
-  if (!res.ok) throw new Error('Pinata upload failed ('+res.status+')');
+  if (!res.ok) {
+    let detail = ''; try { detail = (await res.text()).slice(0,200); } catch {}
+    throw new Error('Pinata upload failed ('+res.status+')'+(detail ? ': '+detail : '')+(res.status===403 ? ' — check the JWT is valid and its key has pinFileToIPFS + pinJSONToIPFS permissions' : ''));
+  }
   const data = await res.json();
   return data.IpfsHash;
 }
@@ -372,7 +407,6 @@ async function connectWallet(){
     wallet = new TaquitoBeaconWallet({ name: 'mirror', network: { type: 'mainnet' }, preferredNetwork: 'mainnet' });
     await wallet.requestPermissions();
     walletAddr = await wallet.getPKH();
-    tezosToolkit().setWalletProvider(wallet);
     $('mint-wallet-addr').textContent = walletAddr.slice(0,6)+'…'+walletAddr.slice(-4);
     $('mint-connect').textContent = 'connected';
     $('mint-connect').classList.add('on');
@@ -402,7 +436,7 @@ $('mintbtn').onclick = () => {
 $('mint-close').onclick = () => $('mintbox').classList.remove('open');
 $('mint-settings-toggle').onclick = () => $('mint-settings').classList.toggle('open');
 $('mint-pinata-jwt').value = loadPinataJWT();
-$('mint-pinata-jwt').addEventListener('change', () => savePinataJWT($('mint-pinata-jwt').value.trim()));
+$('mint-pinata-jwt').addEventListener('input', () => savePinataJWT($('mint-pinata-jwt').value.trim()));
 
 function setMintStatus(msg){ $('mint-status').textContent = msg; }
 
@@ -451,30 +485,16 @@ $('mintbtn-go').onclick = async () => {
     const metaCid = await pinataUpload(metadata, true);
     const metaUri = 'ipfs://'+metaCid;
 
-    setMintStatus('simulating the mint (no wallet prompt yet)…');
-    const contract = await tezosToolkit().wallet.at(HEN_CONTRACT);
-    const callArgs = {
+    setMintStatus('reading the minter contract…');
+    const type = await fetchEntrypointType();
+    const value = michelsonValue(type, {
       address: walletAddr,
       amount: editions,
-      metadata: TaquitoMichelsonMap.fromLiteral({ '': strToHex(metaUri) }),
+      metadata: strToHex(metaUri), // bytes: the minter builds the token_info map itself
       royalties: royaltiesHen,
-    };
-    const method = contract.methodsObject.mint_OBJKT(callArgs);
-    pendingMint = { contract, callArgs };
-    try {
-      const tp = method.toTransferParams();
-      const est = await tezosToolkit().estimate.transfer({ to: HEN_CONTRACT, amount: 0, parameter: tp.parameter, source: walletAddr });
-      const feeTez = (est.suggestedFeeMutez / 1e6).toFixed(6);
-      const burnTez = (est.burnFeeMutez / 1e6).toFixed(6);
-      const totalTez = ((est.suggestedFeeMutez + est.burnFeeMutez) / 1e6).toFixed(6);
-      setMintStatus(
-        `Estimated cost: ~${totalTez} ꜩ total (fee ${feeTez} ꜩ + storage burn ${burnTez} ꜩ). `+
-        `Gas: ${est.gasLimit}, storage: ${est.storageLimit} bytes. Nothing has been sent yet — review and confirm below.`
-      );
-    } catch (estErr) {
-      console.warn('estimate failed, continuing without it:', estErr);
-      setMintStatus('Image + metadata are on IPFS. Couldn’t pre-estimate the fee — your wallet will show it when you confirm. Nothing has been sent yet.');
-    }
+    });
+    pendingMint = { value };
+    setMintStatus('Image + metadata are pinned to IPFS and the call is ready. Nothing has been sent yet — your wallet will show the exact fee when you confirm.');
     btn.style.display = 'none';
     $('mint-confirm-row').style.display = 'flex';
   } catch (e) {
@@ -488,18 +508,20 @@ $('mintbtn-go').onclick = async () => {
 // Step 2: only now does anything actually get signed and broadcast.
 $('mint-confirm').onclick = async () => {
   if (!pendingMint) return;
-  const { contract, callArgs } = pendingMint;
+  const { value } = pendingMint;
   $('mint-confirm').disabled = true;
   $('mint-cancel').disabled = true;
   try {
     setMintStatus('waiting for wallet signature…');
-    const op = await contract.methodsObject.mint_OBJKT(callArgs).send();
-
-    setMintStatus('broadcasting…');
-    await op.confirmation();
-
-    setMintStatus('✅ minted — check your objkt profile in a minute or two');
-    toast('minted on Tezos');
+    const hash = await wallet.sendOperations([{
+      kind: 'transaction', destination: HEN_CONTRACT, amount: '0',
+      parameters: { entrypoint: 'mint_OBJKT', value },
+    }]);
+    setMintStatus('broadcast ✓ ' + hash + ' — waiting for confirmation…');
+    const ok = await waitForOp(hash);
+    if (ok === false) throw new Error('operation was included but failed on chain');
+    setMintStatus(ok ? '✅ minted — check your objkt profile in a minute or two' : 'sent — still pending, check ' + hash + ' on tzkt.io');
+    toast(ok ? 'minted on Tezos' : 'sent to Tezos');
     resetMintUI();
   } catch (e) {
     console.error(e);
