@@ -51,25 +51,60 @@
   #mint-settings-toggle{align-self:flex-start;background:none;border:none;text-decoration:underline;padding:4px 0;font-size:11px;opacity:.7;cursor:pointer}
   #mintbtn-go{width:100%}
   #mintbtn-go:disabled{opacity:.5;cursor:default}
+  #view{position:absolute;inset:0;transform-origin:0 0;will-change:transform}
+  .grp{display:flex;gap:4px;flex:none;align-items:center}
+  .grp button{padding:7px 10px;min-width:38px}
+  #zlvl{min-width:56px}
+  .sep{width:3px;height:26px;background:var(--ink);opacity:.15;border-radius:2px;flex:none}
+  #profbox{left:auto;right:10px;width:300px;max-width:calc(100% - 20px)}
+  #profbox label{display:block;font-size:11px;opacity:.8;margin:8px 0 3px}
+  #profbox input[type=text]{width:100%;font:600 14px ui-monospace,monospace;padding:8px;border:2px solid var(--ink);border-radius:8px}
+  #profbox label.chk{display:flex;gap:8px;align-items:center;font-size:12px;opacity:1;margin-top:12px}
+  #p-msg{font-size:12px;min-height:16px;margin:8px 0}
+  #roster{position:fixed;left:10px;bottom:10px;z-index:4;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+  #roster.empty{display:none}
+  #r-list{display:none;background:#fff;border:3px solid var(--ink);border-radius:12px;padding:6px 12px;max-width:min(320px,calc(100vw - 20px));max-height:40vh;overflow-y:auto;touch-action:pan-y}
+  #roster.open #r-list{display:block}
+  .r-row{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;padding:6px 0;font-size:13px}
+  .r-row+.r-row{border-top:2px dashed rgba(17,17,17,.2)}
+  .r-row a{font:600 11px ui-monospace,monospace;color:var(--ink);opacity:.7}
 </style></head><body>
 <div id="bar">
   <button id="share">🔗 share link</button>
   <div id="cur" class="sw" title="any colour"><i></i></div>
   <span id="pal" style="display:flex;gap:6px"></span>
   <input id="size" type="range" min="2" max="80" value="10" title="brush size">
+  <span class="sep"></span>
+  <span id="tools" class="grp">
+    <button data-tool="draw" class="on" title="brush (D)">✎</button>
+    <button data-tool="line" title="line (L) · hold Shift to snap angle">╱</button>
+    <button data-tool="rect" title="box (R) · Shift = square">▭</button>
+    <button data-tool="oval" title="oval (O) · Shift = circle">◯</button>
+    <button data-tool="fill" title="bucket fill (F)">🪣</button>
+    <button data-tool="pick" title="eyedropper (I)">💧</button>
+    <button data-tool="hand" title="move canvas (H) · or hold Space">✋</button>
+  </span>
+  <span class="grp">
+    <button id="zout" title="zoom out (−)">−</button>
+    <button id="zlvl" title="reset zoom (0)">100%</button>
+    <button id="zin" title="zoom in (+)">+</button>
+  </span>
+  <span class="sep"></span>
   <button id="mult" title="colours darken where they overlap, like ink or watercolour">multiply</button>
   <button id="eraser">eraser</button>
   <button id="paste" title="or press Ctrl+V">📋 paste</button>
   <button id="clear">clear all</button>
+  <button id="dl" title="download the drawing as a PNG">⬇ png</button>
+  <button id="profbtn" title="add your name & Tezos wallet">👤 you</button>
   <button id="mintbtn" title="mint the current drawing on Tezos">⬙ mint</button>
   <span id="who"><b></b><span id="n">1</span> here</span>
 </div>
-<div id="wrap"><div id="stage">
+<div id="wrap"><div id="stage"><div id="view">
   <canvas id="c" width="1024" height="1024"></canvas>
   <canvas id="liveN" width="1024" height="1024"></canvas>
   <canvas id="liveM" width="1024" height="1024"></canvas>
   <img id="pend" alt="">
-</div></div>
+</div></div></div>
 <div id="picker" class="pop">
   <canvas id="sv" width="232" height="232"></canvas>
   <canvas id="hue" width="232" height="22"></canvas>
@@ -77,6 +112,17 @@
 </div>
 <div id="sharebox" class="pop"><input id="lnk" readonly><button id="cp">copy</button><button id="join" style="display:none">join</button><button id="shx">✕</button></div>
 <div id="placebar"><span>drag it · size</span><input id="psize" type="range" min="5" max="150" value="50"><button id="pok" class="on">place ✓</button><button id="pno">✕</button></div>
+<div id="profbox" class="pop">
+  <h3 style="margin:0 0 4px;font-size:16px">you in this room</h3>
+  <label>Name</label>
+  <input id="p-name" type="text" maxlength="24" placeholder="optional" autocomplete="off">
+  <label>Tezos wallet</label>
+  <input id="p-wallet" type="text" maxlength="36" placeholder="tz1… (optional)" spellcheck="false" autocomplete="off">
+  <label class="chk"><input id="p-share" type="checkbox"> show my name &amp; wallet to everyone in this room</label>
+  <div id="p-msg"></div>
+  <div style="display:flex;gap:8px"><button id="p-save" class="on" style="flex:1">save</button><button id="p-x">✕</button></div>
+</div>
+<div id="roster" class="empty"><button id="r-toggle">👥 <span id="r-n">0</span></button><div id="r-list"></div></div>
 <div id="toast"></div>
 
 <div id="mintbox" class="pop">
@@ -158,8 +204,30 @@ const COLORS = ['#111111','#ffffff','#e63b2e','#f2a516','#ffd93b','#3bb273','#2f
 const cv = $('c'), cx = cv.getContext('2d');
 const lN = $('liveN').getContext('2d'), lM = $('liveM').getContext('2d');
 const stage = $('stage');
-function fit(){ const s = Math.min(innerWidth-24, innerHeight-76); stage.style.width = stage.style.height = s+'px'; }
+
+// ---------- view: zoom & pan (CSS transform on #view; drawing math uses the on-screen rect, so it just works)
+const viewEl = $('view'); let VK = 1, VX = 0, VY = 0; const VMAX = 8;
+function applyView(){
+  const s = stage.clientWidth; VK = Math.max(1, Math.min(VMAX, VK));
+  VX = Math.max(s - VK*s, Math.min(0, VX)); VY = Math.max(s - VK*s, Math.min(0, VY)); // canvas always covers the stage
+  viewEl.style.transform = 'translate('+VX+'px,'+VY+'px) scale('+VK+')';
+  $('zlvl').textContent = Math.round(VK*100)+'%'; }
+const stageOrigin = () => { const r = stage.getBoundingClientRect(); return [r.left + stage.clientLeft, r.top + stage.clientTop]; };
+function zoomAt(f, sx, sy){ const [ox,oy] = stageOrigin(), px = sx-ox, py = sy-oy, nk = Math.max(1, Math.min(VMAX, VK*f)), r = nk/VK;
+  VX = px - (px-VX)*r; VY = py - (py-VY)*r; VK = nk; applyView(); }
+function zoomCenter(f){ const r = stage.getBoundingClientRect(); zoomAt(f, r.left+r.width/2, r.top+r.height/2); }
+function fitView(){ VK = 1; VX = VY = 0; applyView(); }
+function fit(){ const s = Math.min(innerWidth-24, innerHeight-76); stage.style.width = stage.style.height = s+'px'; applyView(); }
 addEventListener('resize', fit); fit();
+$('zin').onclick = () => zoomCenter(1.5); $('zout').onclick = () => zoomCenter(1/1.5); $('zlvl').onclick = fitView;
+$('wrap').addEventListener('wheel', e => { e.preventDefault();
+  zoomAt(Math.exp(-e.deltaY*(e.deltaMode===1 ? .05 : .0015)*(e.ctrlKey ? 3 : 1)), e.clientX, e.clientY); }, {passive:false});
+
+// ---------- tool selection
+let tool = 'draw', spaceDown = false;
+function updCursor(){ cv.style.cursor = (tool==='hand' || spaceDown) ? 'grab' : tool==='pick' ? 'copy' : tool==='fill' ? 'cell' : 'crosshair'; }
+function setTool(t){ tool = t; document.querySelectorAll('#tools button').forEach(b => b.classList.toggle('on', b.dataset.tool === t)); updCursor(); }
+document.querySelectorAll('#tools button').forEach(b => b.onclick = () => setTool(b.dataset.tool));
 function wipe(){ cx.globalCompositeOperation='source-over'; cx.fillStyle = PAPER; cx.fillRect(0,0,1024,1024); }
 wipe();
 const toast = t => { const el = $('toast'); el.textContent = t; el.style.opacity = 1; clearTimeout(toast.t); toast.t = setTimeout(()=>el.style.opacity=0, 2200); };
@@ -224,13 +292,14 @@ let chain = Promise.resolve();
 function apply(ev){ chain = chain.then(async () => {
   if (ev.type === 'clear') { wipe(); live.clear(); schedule(); return; }
   if (ev.type === 'img') { const im = await loadImg(ev.src); if (im) { cx.globalCompositeOperation = ev.m ? 'multiply' : 'source-over'; cx.drawImage(im, ev.x, ev.y, ev.w, ev.h); cx.globalCompositeOperation = 'source-over'; } return; }
-  if (!ev.id) { commit(ev); return; } // strokes from the first version
+  if (ev.type === 'fill') { floodFill(ev.x, ev.y, ev.c, ev.m); return; }
+  if (!ev.id) { if (ev.pts) commit(ev); return; } // strokes from the first version
   let s = live.get(ev.id);
   if (!s) { s = {c:ev.c, w:ev.w, e:ev.e, m:ev.m, pts:[]}; live.set(ev.id, s); }
   s.pts.push(...(s.pts.length ? ev.pts.slice(2) : ev.pts));
   if (ev.end) { live.delete(ev.id); commit(s); }
   schedule();
-}); }
+}).catch(err => console.error('event skipped', err)); }
 
 // ---------- my strokes
 const me = Math.random().toString(36).slice(2,8);
@@ -239,30 +308,107 @@ function post(body){ return fetch(BASE+'stroke?room='+ROOM, {method:'POST', body
 let cur = null, sent = 0, sid = 0;
 function pt(e){ const r = cv.getBoundingClientRect(); return [ (e.clientX-r.left)*1024/r.width, (e.clientY-r.top)*1024/r.height ]; }
 function flush(end){
-  if (!cur) return;
+  if (!cur || (cur.shape && !end)) return; // shapes are sent once, when released
   const from = Math.max(0, sent-2), chunk = cur.pts.slice(from);
   if (!end && chunk.length < 4) return;
   post({type:'stroke', id:cur.id, c:cur.c, w:cur.w, e:cur.e, m:cur.m, end, pts: chunk}).catch(()=>{});
   sent = cur.pts.length;
 }
-cv.addEventListener('pointerdown', e => { if (pending) return; try { cv.setPointerCapture(e.pointerId); } catch {} $('picker').style.display='none';
-  const [x,y] = pt(e); cur = {id: me+'-'+(++sid), c: color, w: +size.value, e: erase, m: multiply, pts:[x,y]}; sent = 0;
+// shapes are just polylines, so the room server and other clients need no changes
+function shapePts(t, x0, y0, x1, y1, sh){
+  if (t === 'line') { if (sh) { const a = Math.round(Math.atan2(y1-y0, x1-x0)/(Math.PI/4))*Math.PI/4, l = Math.hypot(x1-x0, y1-y0); x1 = x0+Math.cos(a)*l; y1 = y0+Math.sin(a)*l; } return [x0,y0,x1,y1]; }
+  if (sh) { const d = Math.max(Math.abs(x1-x0), Math.abs(y1-y0)); x1 = x0 + (x1<x0 ? -d : d); y1 = y0 + (y1<y0 ? -d : d); }
+  if (t === 'rect') return [x0,y0, x1,y0, x1,y1, x0,y1, x0,y0];
+  const mx = (x0+x1)/2, my = (y0+y1)/2, rx = Math.abs(x1-x0)/2, ry = Math.abs(y1-y0)/2, o = [];
+  for (let i = 0; i <= 72; i++) { const a = i/72*Math.PI*2; o.push(mx+Math.cos(a)*rx, my+Math.sin(a)*ry); }
+  return o;
+}
+// bucket fill: scanline flood fill on the committed canvas. It travels as a small
+// {type:'fill'} event and every client runs it in order, like strokes and images.
+function floodFill(x, y, hex, mul){
+  const N = 1024; x = Math.max(0, Math.min(N-1, x|0)); y = Math.max(0, Math.min(N-1, y|0));
+  const img = cx.getImageData(0,0,N,N), d = img.data, n = parseInt(hex.slice(1),16), R = n>>16&255, G = n>>8&255, B = n&255;
+  const i0 = (y*N+x)*4, tr = d[i0], tg = d[i0+1], tb = d[i0+2];
+  if (!mul && tr === R && tg === G && tb === B) return;
+  const TOL = 48, mask = new Uint8Array(N*N);
+  const ok = i => Math.abs(d[i]-tr) + Math.abs(d[i+1]-tg) + Math.abs(d[i+2]-tb) <= TOL;
+  const st = [x,y];
+  while (st.length) {
+    let yy = st.pop(), xx = st.pop(); const row = yy*N;
+    while (xx > 0 && !mask[row+xx-1] && ok((row+xx-1)*4)) xx--;
+    let up = false, dn = false;
+    while (xx < N && !mask[row+xx] && ok((row+xx)*4)) {
+      mask[row+xx] = 1;
+      if (yy > 0)   { const m = !mask[row-N+xx] && ok((row-N+xx)*4); if (m && !up) st.push(xx, yy-1); up = m; }
+      if (yy < N-1) { const m = !mask[row+N+xx] && ok((row+N+xx)*4); if (m && !dn) st.push(xx, yy+1); dn = m; }
+      xx++;
+    }
+  }
+  // grow the region by 1px so the anti-aliased fringe of surrounding lines gets covered too
+  const g = mask.slice();
+  for (let i = 0; i < N*N; i++) if (!mask[i]) { const px = i%N;
+    if ((px>0 && mask[i-1]) || (px<N-1 && mask[i+1]) || (i>=N && mask[i-N]) || (i<N*N-N && mask[i+N])) g[i] = 1; }
+  for (let i = 0; i < N*N; i++) if (g[i]) { const p = i*4;
+    if (mul) { d[p] = d[p]*R/255; d[p+1] = d[p+1]*G/255; d[p+2] = d[p+2]*B/255; } else { d[p] = R; d[p+1] = G; d[p+2] = B; d[p+3] = 255; } }
+  cx.putImageData(img, 0, 0);
+}
+function doFill(x, y){ const ev = {type:'fill', x, y, c: erase ? PAPER : color, m: multiply && !erase};
+  apply(ev); post(ev).catch(() => toast("couldn't send the fill to the room")); }
+$('dl').onclick = () => cv.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b);
+  a.download = 'mirror-'+ROOM+'.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }, 'image/png');
+function pickAt([x,y]){
+  const d = cx.getImageData(Math.max(0,Math.min(1023,x|0)), Math.max(0,Math.min(1023,y|0)), 1, 1).data;
+  const hx = '#'+[d[0],d[1],d[2]].map(v => v.toString(16).padStart(2,'0')).join('');
+  [H,S,V] = hex2hsv(hx); drawPicker(); setTool('draw'); toast('picked '+hx);
+}
+const ptrs = new Map(); let gest = null, panning = null;
+cv.addEventListener('pointerdown', e => { try { cv.setPointerCapture(e.pointerId); } catch {} $('picker').style.display='none';
+  ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if (ptrs.size === 2) { // two fingers: pinch-zoom + pan. Drop a stroke the first finger only just started.
+    if (cur) { if (!sent) { live.delete(cur.id); cur = null; schedule(); } else up(); }
+    const [a,b] = [...ptrs.values()]; panning = null;
+    gest = {d: Math.hypot(a.x-b.x, a.y-b.y) || 1, mx:(a.x+b.x)/2, my:(a.y+b.y)/2, k:VK, x:VX, y:VY}; return; }
+  if (ptrs.size > 2 || pending) return;
+  if (e.button === 1 || tool === 'hand' || spaceDown) { e.preventDefault(); panning = {x:e.clientX, y:e.clientY, vx:VX, vy:VY}; cv.style.cursor = 'grabbing'; return; }
+  const [x,y] = pt(e);
+  if (tool === 'pick') return pickAt([x,y]);
+  if (tool === 'fill') return doFill(x|0, y|0);
+  cur = {id: me+'-'+(++sid), c: color, w: +size.value, e: erase, m: multiply, pts:[x,y], shape: tool === 'draw' ? null : tool, x0:x, y0:y}; sent = 0;
   live.set(cur.id, cur); schedule(); });
-cv.addEventListener('pointermove', e => { if (!cur) return;
+cv.addEventListener('pointermove', e => {
+  if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if (gest && ptrs.size >= 2) { const [a,b] = [...ptrs.values()], [ox,oy] = stageOrigin();
+    const d = Math.hypot(a.x-b.x, a.y-b.y) || 1, mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
+    const nk = Math.max(1, Math.min(VMAX, gest.k*d/gest.d)), r = nk/gest.k;
+    VK = nk; VX = (mx-ox) - (gest.mx-ox-gest.x)*r; VY = (my-oy) - (gest.my-oy-gest.y)*r; applyView(); return; }
+  if (panning) { VX = panning.vx + e.clientX - panning.x; VY = panning.vy + e.clientY - panning.y; applyView(); return; }
+  if (!cur) return;
+  if (cur.shape) { const [x,y] = pt(e); cur.pts = shapePts(cur.shape, cur.x0, cur.y0, x, y, e.shiftKey); schedule(); return; }
   const co = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
   for (const ev of (co.length ? co : [e])) { const [x,y] = pt(ev); cur.pts.push(x,y); }
   schedule(); });
-const up = () => { if (!cur) return; if (cur.pts.length === 2) cur.pts.push(cur.pts[0]+.01, cur.pts[1]);
+function up(e){
+  if (e) { ptrs.delete(e.pointerId); if (ptrs.size < 2) gest = null; if (panning) { panning = null; updCursor(); } }
+  if (!cur) return; if (cur.pts.length === 2) cur.pts.push(cur.pts[0]+.01, cur.pts[1]);
   flush(true); const s = cur; cur = null;
-  chain = chain.then(() => { live.delete(s.id); commit(s); schedule(); }); };
+  chain = chain.then(() => { live.delete(s.id); commit(s); schedule(); }); }
 cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
 setInterval(() => flush(false), 60);
+
+// keyboard: Space = temporary hand, letters switch tools, +/-/0 zoom
+addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || '')) return;
+  if (e.key === ' ') { e.preventDefault(); if (!spaceDown) { spaceDown = true; updCursor(); } return; }
+  const k = e.key.toLowerCase(), t = {d:'draw', l:'line', r:'rect', o:'oval', f:'fill', i:'pick', h:'hand'}[k];
+  if (t && !pending) setTool(t);
+  else if (k === '+' || k === '=') zoomCenter(1.5); else if (k === '-') zoomCenter(1/1.5); else if (k === '0') fitView(); });
+addEventListener('keyup', e => { if (e.key === ' ') { spaceDown = false; updCursor(); } });
 
 // ---------- everyone's events (history first, then live); my own echoes skipped
 let lastSeq = 0;
 function connect(){
   const es = new EventSource(BASE+'events?room='+ROOM+'&since='+lastSeq);
-  es.onmessage = m => { const ev = JSON.parse(m.data); lastSeq = ev.seq; if (ev.type === 'clear' || ev.by !== me) apply(ev); };
+  es.onmessage = m => { const ev = JSON.parse(m.data); lastSeq = ev.seq; if (ev.type === 'who') return onWho(ev); if (ev.type === 'clear' || ev.by !== me) apply(ev); };
   es.addEventListener('presence', m => $('n').textContent = m.data);
   es.onerror = () => { es.close(); setTimeout(connect, 800); };
 }
@@ -323,6 +469,46 @@ $('share').onclick = () => { lnk.value = roomLink(); lnk.readOnly = !BASE; $('sh
 $('cp').onclick = copyLink;
 // in the downloaded copy: paste a friend's room link into the box and press join
 if (BASE) { $('join').style.display = ''; $('join').onclick = () => { const m = lnk.value.match(/room=([a-z0-9-]{3,40})/); if (m) location.search = '?room=' + m[1]; else toast('paste a mirror room link first'); }; } $('shx').onclick = () => $('sharebox').style.display = 'none';
+
+// ---------- people who choose to share their name / wallet
+// Each person posts a small {type:'who'} event; the room history replays them, so the
+// latest one per person wins. Everything is shown with textContent (never as HTML).
+const roster = new Map(), TZ = /^(tz[1-4]|KT1)[1-9A-HJ-NP-Za-km-z]{33}$/;
+function renderRoster(){
+  const list = $('r-list'); list.textContent = '';
+  for (const [id, p] of roster) {
+    const row = document.createElement('div'); row.className = 'r-row';
+    const nm = document.createElement('b'); nm.textContent = (p.name || 'anonymous') + (id === me ? ' (you)' : ''); row.appendChild(nm);
+    if (p.wallet) { const a = document.createElement('a'); a.href = 'https://objkt.com/profile/' + p.wallet; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.textContent = p.wallet.slice(0,6) + '…' + p.wallet.slice(-4); a.title = p.wallet; row.appendChild(a); }
+    list.appendChild(row);
+  }
+  $('r-n').textContent = roster.size; $('roster').classList.toggle('empty', !roster.size);
+}
+function onWho(ev){
+  if (!ev.by) return;
+  const name = String(ev.name || '').trim().slice(0,24), wallet = TZ.test(String(ev.wallet || '')) ? ev.wallet : '';
+  if (ev.share === false || (!name && !wallet)) roster.delete(ev.by); else roster.set(ev.by, {name, wallet});
+  renderRoster();
+}
+function announce(name, wallet, share){
+  const ev = share ? {type:'who', share:true, name, wallet} : {type:'who', share:false};
+  onWho({...ev, by: me}); post(ev).catch(() => toast("couldn't tell the room — check your connection"));
+}
+$('r-toggle').onclick = () => $('roster').classList.toggle('open');
+let prof = {}; try { prof = JSON.parse(localStorage.getItem('mirror_profile') || '{}'); } catch {}
+$('p-name').value = prof.name || ''; $('p-wallet').value = prof.wallet || ''; $('p-share').checked = !!prof.share;
+$('profbtn').onclick = () => { const b = $('profbox'); b.style.display = b.style.display === 'block' ? 'none' : 'block'; $('p-msg').textContent = ''; };
+$('p-x').onclick = () => $('profbox').style.display = 'none';
+$('p-save').onclick = () => {
+  const name = $('p-name').value.trim().slice(0,24), wallet = $('p-wallet').value.trim(), share = $('p-share').checked, msg = $('p-msg');
+  if (wallet && !TZ.test(wallet)) { msg.textContent = "that doesn't look like a Tezos address (tz1… / tz2… / tz3… / KT1…, 36 characters)"; return; }
+  if (share && !name && !wallet) { msg.textContent = 'add a name or a wallet to share'; return; }
+  try { localStorage.setItem('mirror_profile', JSON.stringify({name, wallet, share})); } catch {}
+  announce(name, wallet, share); $('profbox').style.display = 'none';
+  toast(share ? 'shared with the room' : 'saved — not shown to others');
+};
+if (prof.share && (prof.name || prof.wallet)) setTimeout(() => announce(prof.name || '', prof.wallet || '', true), 800); // re-announce on join
 
 // ---------- mint on Tezos ---------------------------------------------
 // HEN minter contract (the one with the mint_OBJKT entrypoint). It forwards to
@@ -410,6 +596,7 @@ async function connectWallet(){
     $('mint-wallet-addr').textContent = walletAddr.slice(0,6)+'…'+walletAddr.slice(-4);
     $('mint-connect').textContent = 'connected';
     $('mint-connect').classList.add('on');
+    if (!$('p-wallet').value) $('p-wallet').value = walletAddr;
     toast('wallet connected');
   } catch (e) {
     console.error('Beacon connect failed:', e);
